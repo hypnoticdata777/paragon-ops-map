@@ -1,247 +1,256 @@
 /*! HTML5 Boilerplate v9.0.1 | MIT License | https://html5boilerplate.com/ */
 
-/* main.css 3.0.0 | MIT License | https://github.com/h5bp/main.css#readme */
-/*
- * What follows is the result of much research on cross-browser styling.
- * Credit left inline and big thanks to Nicolas Gallagher, Jonathan Neal,
- * Kroc Camen, and the H5BP dev community and team.
- */
-
 /* ==========================================================================
-   Base styles: opinionated defaults
+   Base styles
    ========================================================================== */
 
-html {
-  color: #222;
-  font-size: 1em;
-  line-height: 1.4;
-}
+::-moz-selection { background: #b3d4fc; text-shadow: none; }
+::selection { background: #b3d4fc; text-shadow: none; }
 
-/*
- * Remove text-shadow in selection highlight:
- * https://twitter.com/miketaylr/status/12228805301
- *
- * Customize the background color to match your design.
- */
+hr { display: block; height: 1px; border: 0; border-top: 1px solid #ccc; margin: 1em 0; padding: 0; }
 
-::-moz-selection {
-  background: #b3d4fc;
-  text-shadow: none;
-}
+audio, canvas, iframe, img, svg, video { vertical-align: middle; }
 
-::selection {
-  background: #b3d4fc;
-  text-shadow: none;
-}
+fieldset { border: 0; margin: 0; padding: 0; }
 
-/*
- * A better looking default horizontal rule
- */
+textarea { resize: vertical; }
 
-hr {
-  display: block;
-  height: 1px;
-  border: 0;
-  border-top: 1px solid #ccc;
-  margin: 1em 0;
-  padding: 0;
-}
-
-/*
- * Remove the gap between audio, canvas, iframes,
- * images, videos and the bottom of their containers:
- * https://github.com/h5bp/html5-boilerplate/issues/440
- */
-
-audio,
-canvas,
-iframe,
-img,
-svg,
-video {
-  vertical-align: middle;
-}
-
-/*
- * Remove default fieldset styles.
- */
-
-fieldset {
-  border: 0;
-  margin: 0;
-  padding: 0;
-}
-
-/*
- * Allow only vertical resizing of textareas.
- */
-
-textarea {
-  resize: vertical;
-}
+.hidden, [hidden] { display: none !important; }
 
 /* ==========================================================================
-   Author's custom styles
+   Paragon Operations Map - Application Styles
    ========================================================================== */
 
-/* ==========================================================================
-   Helper classes
-   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-/*
- * Hide visually and from screen readers
- */
-
-.hidden,
-[hidden] {
-  display: none !important;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #455a64 0%, #263238 100%);
+  min-height: 100vh;
+  padding: 20px;
 }
 
-/*
- * Hide only visually, but have it available for screen readers:
- * https://snook.ca/archives/html_and_css/hiding-content-for-accessibility
- *
- * 1. For long content, line feeds are not interpreted as spaces and small width
- *    causes content to wrap 1 word per line:
- *    https://medium.com/@jessebeach/beware-smushed-off-screen-accessible-text-5952a4c2cbfe
- */
-
-.visually-hidden {
-  border: 0;
-  clip: rect(0, 0, 0, 0);
-  height: 1px;
-  margin: -1px;
+.container {
+  max-width: 1800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
   overflow: hidden;
-  padding: 0;
-  position: absolute;
+}
+
+.header {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: white;
+  padding: 30px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 { font-size: 32px; font-weight: 700; }
+.header-meta { text-align: right; }
+.header-meta p { margin: 5px 0; opacity: 0.9; font-size: 14px; }
+
+/* Three-way nav tabs */
+.nav-tabs {
+  display: flex;
+  background: #546e7a;
+}
+
+.nav-tab {
+  flex: 1;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  color: white;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.nav-tab:hover { background: #455a64; }
+.nav-tab.active {
+  background: white;
+  color: #263238;
+  border-bottom: 3px solid #00897b;
+}
+
+.controls {
+  padding: 20px 40px;
+  background: #eceff1;
+  border-bottom: 2px solid #cfd8dc;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary { background: #546e7a; color: white; }
+.btn-primary:hover { background: #455a64; transform: translateY(-2px); }
+.btn-secondary { background: #78909c; color: white; }
+.btn-secondary:hover { background: #607d8b; }
+
+.legend { display: flex; gap: 20px; margin-left: auto; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.legend-color { width: 20px; height: 20px; border-radius: 4px; }
+
+.content { padding: 40px; min-height: 600px; }
+
+/* Hide inactive views */
+.view-panel { display: none; }
+.view-panel.active { display: block; }
+
+/* Department cards for tracking view */
+.departments { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
+.department { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+.department-header {
+  padding: 20px 25px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+.department-body { padding: 25px; display: none; }
+.department.expanded .department-body { display: block; }
+
+.task-item {
+  background: #f5f5f5;
+  padding: 15px 20px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #78909c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.task-item.unowned { border-left-color: #d32f2f; background: #ffebee; }
+.task-name { font-weight: 600; color: #263238; flex: 1; }
+.task-owner {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
   white-space: nowrap;
-  width: 1px;
-  /* 1 */
+  margin-left: 10px;
 }
 
-/*
- * Extends the .visually-hidden class to allow the element
- * to be focusable when navigated to via the keyboard:
- * https://www.drupal.org/node/897638
- */
+/* Owner colors */
+.owner-nathan { background: #ff6f00; }
+.owner-patrick { background: #1976d2; }
+.owner-austin { background: #00897b; }
+.owner-cathryn { background: #6a1b9a; }
+.owner-linda { background: #00695c; }
+.owner-jason { background: #263238; }
+.owner-carlos { background: #c62828; }
+.owner-kevin { background: #5e35b1; }
+.owner-unowned { background: #d32f2f; animation: pulse 2s infinite; }
 
-.visually-hidden.focusable:active,
-.visually-hidden.focusable:focus {
-  clip: auto;
-  height: auto;
-  margin: 0;
-  overflow: visible;
-  position: static;
-  white-space: inherit;
-  width: auto;
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+/* Map view SVG wrapper - allow horizontal scroll on small screens */
+.map-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#flowMap { display: block; min-height: 1400px; }
+.map-connection { stroke: #b0bec5; stroke-width: 2; fill: none; }
+.map-connection.unowned { stroke: #d32f2f; stroke-width: 3; stroke-dasharray: 5,5; animation: dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -10; } }
+
+/* Stats */
+.stats {
+  padding: 20px 40px;
+  background: #eceff1;
+  border-top: 2px solid #cfd8dc;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
 }
+.stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.stat-label { font-size: 13px; color: #546e7a; font-weight: 600; text-transform: uppercase; }
+.stat-value { font-size: 32px; font-weight: 700; color: #263238; margin-top: 8px; }
+.stat-card.danger .stat-value { color: #d32f2f; }
 
-/*
- * Hide visually and from screen readers, but maintain layout
- */
-
-.invisible {
-  visibility: hidden;
+/* Strategic Models page styling */
+.models-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 40px; }
+.model-card {
+  background: white;
+  border: 2px solid #cfd8dc;
+  border-radius: 12px;
+  padding: 25px;
+  transition: all 0.3s;
 }
+.model-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
+.model-card h3 { color: #00897b; margin-bottom: 15px; }
+.model-card ul { list-style: none; padding: 0; }
+.model-card li { padding: 6px 0; padding-left: 20px; position: relative; }
+.model-card li:before { content: "→"; position: absolute; left: 0; color: #00897b; }
 
-/*
- * Clearfix: contain floats
- *
- * The use of `table` rather than `block` is only necessary if using
- * `::before` to contain the top-margins of child elements.
- */
-
-.clearfix::before,
-.clearfix::after {
-  content: "";
-  display: table;
-}
-
-.clearfix::after {
-  clear: both;
-}
+.case-study { background: white; border: 2px solid #cfd8dc; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
+.case-study h3 { color: #1976d2; margin-bottom: 10px; }
+.case-study ul { margin: 15px 0; }
 
 /* ==========================================================================
-   EXAMPLE Media Queries for Responsive Design.
-   These examples override the primary ('mobile first') styles.
-   Modify as content requires.
+   Mobile Responsiveness
    ========================================================================== */
 
-@media only screen and (min-width: 35em) {
-  /* Style adjustments for viewports that meet the condition */
+@media (max-width: 768px) {
+  body { padding: 10px; }
+
+  .header {
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    text-align: center;
+  }
+  .header h1 { font-size: 22px; }
+  .header-meta { text-align: center; }
+
+  .nav-tab { font-size: 12px; padding: 12px 6px; }
+
+  .controls { padding: 15px; gap: 10px; }
+  .legend { margin-left: 0; gap: 12px; }
+
+  .content { padding: 15px; }
+
+  /* Stack department cards to single column */
+  .departments { grid-template-columns: 1fr; gap: 20px; }
+
+  /* Stack model cards to single column */
+  .models-grid { grid-template-columns: 1fr; }
+
+  .stats { padding: 15px; gap: 12px; }
+
+  /* Let task-item wrap owner badge below task name on narrow screens */
+  .task-item { flex-wrap: wrap; gap: 8px; }
+  .task-owner { margin-left: 0; }
 }
 
-@media print,
-  (-webkit-min-device-pixel-ratio: 1.25),
-  (min-resolution: 1.25dppx),
-  (min-resolution: 120dpi) {
-  /* Style adjustments for high resolution devices */
+@media (max-width: 480px) {
+  .nav-tab { font-size: 11px; padding: 10px 4px; }
+  .header h1 { font-size: 18px; }
 }
 
 /* ==========================================================================
-   Print styles.
-   Inlined to avoid the additional HTTP request:
-   https://www.phpied.com/delay-loading-your-print-css/
+   Print styles
    ========================================================================== */
 
 @media print {
-  *,
-  *::before,
-  *::after {
-    background: #fff !important;
-    color: #000 !important;
-    /* Black prints faster */
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-
-  a[href]::after {
-    content: " (" attr(href) ")";
-  }
-
-  abbr[title]::after {
-    content: " (" attr(title) ")";
-  }
-
-  /*
-   * Don't show links that are fragment identifiers,
-   * or use the `javascript:` pseudo protocol
-   */
-  a[href^="#"]::after,
-  a[href^="javascript:"]::after {
-    content: "";
-  }
-
-  pre {
-    white-space: pre-wrap !important;
-  }
-
-  pre,
-  blockquote {
-    border: 1px solid #999;
-    page-break-inside: avoid;
-  }
-
-  tr,
-  img {
-    page-break-inside: avoid;
-  }
-
-  p,
-  h2,
-  h3 {
-    orphans: 3;
-    widows: 3;
-  }
-
-  h2,
-  h3 {
-    page-break-after: avoid;
-  }
+  body { background: white; padding: 0; }
+  .container { box-shadow: none; border-radius: 0; }
+  .nav-tabs, .controls { display: none; }
+  .view-panel { display: block !important; }
+  .department-body { display: block !important; }
+  .stats { border-top: 1px solid #ccc; }
 }
-
