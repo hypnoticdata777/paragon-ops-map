@@ -163,10 +163,7 @@ body {
 
 /* Map view SVG wrapper - allow horizontal scroll on small screens */
 .map-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-#flowMap { display: block; min-height: 1400px; }
-.map-connection { stroke: #b0bec5; stroke-width: 2; fill: none; }
-.map-connection.unowned { stroke: #d32f2f; stroke-width: 3; stroke-dasharray: 5,5; animation: dash 1s linear infinite; }
-@keyframes dash { to { stroke-dashoffset: -10; } }
+#flowMap { display: block; }
 
 /* Stats */
 .stats {
@@ -181,6 +178,22 @@ body {
 .stat-label { font-size: 13px; color: #546e7a; font-weight: 600; text-transform: uppercase; }
 .stat-value { font-size: 32px; font-weight: 700; color: #263238; margin-top: 8px; }
 .stat-card.danger .stat-value { color: #d32f2f; }
+
+/* Tracking view hero banner */
+.tracking-hero {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+.tracking-hero h2 { font-size: 28px; }
+.tracking-hero p  { margin-top: 10px; opacity: 0.9; }
+
+/* Shared section heading used in models view */
+.section-heading { margin-bottom: 30px; color: #263238; }
+.section-heading--spaced { margin-top: 40px; }
 
 /* Strategic Models page styling */
 .models-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 40px; }
@@ -197,9 +210,26 @@ body {
 .model-card li { padding: 6px 0; padding-left: 20px; position: relative; }
 .model-card li:before { content: "→"; position: absolute; left: 0; color: #00897b; }
 
+/* Model card inner elements (moved from inline styles) */
+.model-subtitle       { color: #546e7a; font-style: italic; margin-bottom: 15px; }
+.model-best-for       { background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+.model-structure-heading { margin-bottom: 10px; color: #263238; }
+.model-pros-cons      { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.model-pros           { background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 3px solid #00897b; }
+.model-pros h5        { margin-bottom: 8px; color: #00897b; }
+.model-cons           { background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 3px solid #d32f2f; }
+.model-cons h5        { margin-bottom: 8px; color: #d32f2f; }
+.model-pros ul,
+.model-cons ul        { font-size: 13px; }
+.model-example        { margin-top: 15px; font-size: 14px; color: #546e7a; }
+
+/* Case study inner elements (moved from inline styles) */
 .case-study { background: white; border: 2px solid #cfd8dc; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
 .case-study h3 { color: #1976d2; margin-bottom: 10px; }
 .case-study ul { margin: 15px 0; }
+.case-study-source    { color: #546e7a; font-size: 14px; margin-bottom: 15px; }
+.case-study-link      { margin-top: 15px; }
+.case-study-link a    { color: #1976d2; font-weight: 600; }
 
 /* ==========================================================================
    Search & Filter Bar
@@ -315,6 +345,7 @@ body {
 
   /* Stack model cards to single column */
   .models-grid { grid-template-columns: 1fr; }
+  .model-pros-cons { grid-template-columns: 1fr; }
 
   .stats { padding: 15px; gap: 12px; }
 
