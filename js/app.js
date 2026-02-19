@@ -22,6 +22,15 @@ function switchView(view, tabEl) {
   });
   tabEl.classList.add('active');
 
+  // Show search/filter bar only on the Tracking view; reset it on leave
+  const filterBar = document.getElementById('filter-bar');
+  if (view === 'tracking') {
+    filterBar.style.display = 'flex';
+  } else {
+    filterBar.style.display = 'none';
+    clearFilter(); // reset so returning to tracking shows everything
+  }
+
   // Render view-specific content
   if (view === 'map') {
     renderFlowMap();
@@ -47,18 +56,23 @@ function renderTrackingView() {
 
     deptDiv.innerHTML = `
       <div class="department-header" style="background: ${dept.color}" onclick="toggleDepartment('${dept.id}')">
-        <span>${dept.name} (${dept.tasks.length} tasks)</span>
+        <span>${dept.name} (<span class="dept-task-count">${dept.tasks.length}</span> tasks)</span>
         <span>&#9660;</span>
       </div>
       <div class="department-body">
-        ${dept.tasks.map(task => `
-          <div class="task-item ${task.owner === 'UNOWNED' ? 'unowned' : ''}">
+        ${dept.tasks.map(task => {
+          // Escape special characters for safe use in data attributes
+          const safeName = task.name.replace(/"/g, '&quot;');
+          return `
+          <div class="task-item ${task.owner === 'UNOWNED' ? 'unowned' : ''}"
+               data-owner="${task.owner}"
+               data-name="${safeName.toLowerCase()}">
             <div class="task-name">${task.name}</div>
             <div class="task-owner ${ownerColors[task.owner]?.class || 'owner-unowned'}">
               ${task.owner}
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
     `;
 
@@ -73,6 +87,116 @@ function toggleDepartment(deptId) {
   if (dept) {
     dept.classList.toggle('expanded');
   }
+}
+
+// ====================
+// SEARCH & FILTER
+// ====================
+
+// Populate the owner dropdown from the data once on init
+function populateOwnerFilter() {
+  const select = document.getElementById('owner-filter');
+  // Collect unique owners in the order they appear, then sort alphabetically
+  const owners = [...new Set(
+    orgData.departments.flatMap(d => d.tasks.map(t => t.owner))
+  )].sort((a, b) => {
+    // Always put UNOWNED at the end
+    if (a === 'UNOWNED') return 1;
+    if (b === 'UNOWNED') return -1;
+    return a.localeCompare(b);
+  });
+
+  owners.forEach(owner => {
+    const opt = document.createElement('option');
+    opt.value = owner;
+    opt.textContent = owner === 'UNOWNED' ? '⚠️ UNOWNED' : owner;
+    select.appendChild(opt);
+  });
+}
+
+function applyFilter() {
+  const keyword = document.getElementById('search-input').value.toLowerCase().trim();
+  const selectedOwner = document.getElementById('owner-filter').value;
+  const isFiltering = keyword !== '' || selectedOwner !== '';
+
+  let visibleTaskTotal = 0;
+  let visibleDeptCount = 0;
+
+  document.querySelectorAll('.department').forEach(deptEl => {
+    const taskItems = deptEl.querySelectorAll('.task-item');
+    let deptVisibleCount = 0;
+
+    taskItems.forEach(item => {
+      const name = item.dataset.name;       // already lowercased at render time
+      const owner = item.dataset.owner;
+
+      const matchesKeyword = !keyword || name.includes(keyword);
+      const matchesOwner = !selectedOwner || owner === selectedOwner;
+
+      if (matchesKeyword && matchesOwner) {
+        item.style.display = '';
+        deptVisibleCount++;
+        visibleTaskTotal++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    if (deptVisibleCount === 0) {
+      deptEl.style.display = 'none';
+    } else {
+      deptEl.style.display = '';
+      // Auto-expand matched departments so results are visible
+      deptEl.classList.add('expanded');
+      // Update the task count shown in the header
+      const countSpan = deptEl.querySelector('.dept-task-count');
+      if (countSpan) {
+        countSpan.textContent = isFiltering
+          ? `${deptVisibleCount}/${deptEl.querySelectorAll('.task-item').length}`
+          : deptEl.querySelectorAll('.task-item').length;
+      }
+      visibleDeptCount++;
+    }
+  });
+
+  // Show/hide the "no results" message
+  const noResults = document.getElementById('no-results');
+  noResults.style.display = visibleDeptCount === 0 ? 'block' : 'none';
+
+  // Update match count badge
+  const countEl = document.getElementById('filter-count');
+  if (isFiltering) {
+    countEl.textContent = `${visibleTaskTotal} task${visibleTaskTotal !== 1 ? 's' : ''} found`;
+    countEl.style.display = 'inline-flex';
+  } else {
+    countEl.style.display = 'none';
+  }
+}
+
+function clearFilter() {
+  const searchInput = document.getElementById('search-input');
+  const ownerFilter = document.getElementById('owner-filter');
+  if (searchInput) searchInput.value = '';
+  if (ownerFilter) ownerFilter.value = '';
+
+  // Restore all departments and tasks
+  document.querySelectorAll('.department').forEach(deptEl => {
+    deptEl.style.display = '';
+    deptEl.querySelectorAll('.task-item').forEach(item => {
+      item.style.display = '';
+    });
+    // Restore original task count in header
+    const countSpan = deptEl.querySelector('.dept-task-count');
+    if (countSpan) {
+      countSpan.textContent = deptEl.querySelectorAll('.task-item').length;
+    }
+  });
+
+  const noResults = document.getElementById('no-results');
+  if (noResults) noResults.style.display = 'none';
+
+  const countEl = document.getElementById('filter-count');
+  if (countEl) countEl.style.display = 'none';
 }
 
 // ====================
@@ -328,6 +452,7 @@ function updateStats() {
 document.addEventListener('DOMContentLoaded', () => {
   renderTrackingView();
   updateStats();
+  populateOwnerFilter();
 
   // Expand all departments by default
   document.querySelectorAll('.department').forEach(dept => {

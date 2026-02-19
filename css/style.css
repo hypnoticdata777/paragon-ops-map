@@ -202,6 +202,89 @@ body {
 .case-study ul { margin: 15px 0; }
 
 /* ==========================================================================
+   Search & Filter Bar
+   ========================================================================== */
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #cfd8dc;
+  margin-bottom: 4px;
+}
+
+.search-input {
+  padding: 9px 14px;
+  border: 2px solid #b0bec5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  min-width: 220px;
+  flex: 1;
+  max-width: 360px;
+  transition: border-color 0.2s;
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #546e7a;
+}
+
+.owner-select {
+  padding: 9px 12px;
+  border: 2px solid #b0bec5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.owner-select:focus {
+  outline: none;
+  border-color: #546e7a;
+}
+
+.filter-count {
+  display: none;
+  align-items: center;
+  padding: 5px 12px;
+  background: #263238;
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* "No results" message */
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: #546e7a;
+  font-size: 16px;
+  grid-column: 1 / -1;  /* span full grid width if departments is a grid */
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #1976d2;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.btn-link:hover { color: #0d47a1; }
+
+/* ==========================================================================
    Mobile Responsiveness
    ========================================================================== */
 
@@ -221,6 +304,9 @@ body {
 
   .controls { padding: 15px; gap: 10px; }
   .legend { margin-left: 0; gap: 12px; }
+  .filter-bar { gap: 8px; }
+  .search-input { min-width: 0; max-width: 100%; }
+  .owner-select { width: 100%; }
 
   .content { padding: 15px; }
 
