@@ -1,92 +1,104 @@
-# 🏢 PM Ops Map
+# PM Ops Map
 
 A complete operational visualization and strategic analysis tool built to map, analyze, and scale property management operations.
 
-## 📊 Overview
+## Overview
 
 The **PM Ops Map** provides a full operational breakdown of a property management company, including:
 
 - 17 departments
 - 350+ operational tasks
-- Ownership visibility
-- Unowned task detection
-- Strategic scaling models
+- Ownership visibility per task
+- Unowned task detection (highlighted in red)
+- Strategic scaling models with pros/cons analysis
 - Industry case study insights
 
 Designed to support operational stabilization and scaling from **150 → 500 units**.
 
 ---
 
-## ✨ Features
+## Features
 
-### 📊 Tracking View
-- Department-based task tracking
-- Ownership visibility
-- Highlighted unowned responsibilities
-- Expandable operational sections
+### Tracking View
+- Department-based task cards, all expanded by default
+- Color-coded owner badges per task
+- Red highlighting for unowned responsibilities
+- Click any department header to collapse/expand
 
-### 🗺️ Map View
+### Map View
 - SVG-generated operational flow map
 - Company → Department → Task → Owner visualization
-- Animated indicators for unowned work
+- Animated dashed lines for unowned tasks
+- Horizontally scrollable on smaller screens
 
-### 🎯 Strategic Models
-- 4 organizational scaling models
+### Strategic Models
+- 4 organizational scaling models (Functional, Portfolio, Pod, Hybrid)
 - Real-world industry case studies
-- Growth strategy comparison
+- Side-by-side pros/cons comparison
 
 ---
 
-## 🧱 Project Structure
-├── index.html # Main UI and layout
+## Project Structure
 
-├── data.js # Organizational data & strategic models
-
-├── app.js # Rendering logic & visualization engine
+```
+index.html          - Main UI, layout, and view templates
+css/style.css       - All application styles + mobile media queries
+js/data.js          - Organizational data, strategic models, case studies
+js/app.js           - Rendering logic and visualization engine
+```
 
 ---
 
-## ⚙️ Technologies Used
+## Getting Started
+
+Open `index.html` directly in any browser — no build step required. The app uses plain HTML, CSS, and vanilla JavaScript with no dependencies.
+
+For development with the included webpack setup:
+
+```bash
+npm install
+npm start    # dev server
+npm run build  # production build to dist/
+```
+
+---
+
+## Technologies Used
 
 - HTML5
-- CSS3 (custom UI styling)
-- Vanilla JavaScript
-- SVG rendering engine
-- Data-driven UI architecture
+- CSS3 with responsive media queries
+- Vanilla JavaScript (ES6)
+- SVG rendering engine (no external library)
 
 No frameworks — pure logic-driven implementation.
 
 ---
 
-## 🎯 Purpose
+## Browser Compatibility
+
+Works in all modern browsers. The `switchView()` function explicitly passes the clicked element rather than relying on `window.event`, ensuring correct behavior in Firefox, Safari, and Chrome.
+
+---
+
+## Purpose
 
 This project was created to:
 
-- Identify operational gaps
-- Clarify ownership
+- Identify operational gaps and unowned responsibilities
+- Clarify task ownership across all departments
 - Reduce single points of failure
-- Support leadership decision-making
+- Support leadership decision-making during growth
 - Enable scalable organizational design
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 **Carlos Sanchez**
 Operations Manager & Systems Builder
 
 ---
 
-## 🚀 Future Improvements
-
-- KPI dashboards
-- Live data integration
-- Role simulation modeling
-- Automation recommendations
-- API integration
-
----
-
-## 📅 Created
+## Created
 
 February 2026
