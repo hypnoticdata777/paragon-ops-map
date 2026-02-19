@@ -200,174 +200,218 @@ function clearFilter() {
 }
 
 // ====================
-// MAP VIEW - SVG with RED LINES
+// MAP VIEW - Department → Owner relationship map
+// Aggregated 3-column layout: Company → Depts → Owners
+// Bezier curves per dept→owner pair; thickness = task count.
+// No individual task rows — zero overlap guaranteed.
 // ====================
 function renderFlowMap() {
   const svg = document.getElementById('flowMap');
-  const svgNS = "http://www.w3.org/2000/svg";
-
   svg.innerHTML = '';
 
-  const width = 1600;
-  const height = Math.max(1400, orgData.departments.length * 100 + 400);
-  svg.setAttribute('width', width);
-  svg.setAttribute('height', height);
-  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  // ── Layout constants ──────────────────────────────────────────────
+  const PADDING_TOP    = 60;   // space for the legend line at the top
+  const PADDING_BOTTOM = 50;
+  const DEPT_SPACING   = 72;   // px between consecutive dept center lines
+  const DEPT_W         = 248;
+  const DEPT_H         = 56;
+  const DEPT_X         = 230;
+  const OWNER_R        = 42;
+  const OWNER_X        = 1230;
+  const COMPANY_W      = 150;
+  const COMPANY_H      = 110;
+  const COMPANY_X      = 28;
 
-  const companyX = 60;
-  const companyY = height / 2;
-  const deptX = 380;
-  const taskX = 820;
-  const ownerX = width - 180;
+  const depts       = orgData.departments;
+  const deptCount   = depts.length;
+  const uniqueOwners = [...new Set(depts.flatMap(d => d.tasks.map(t => t.owner)))];
+  const ownerCount  = uniqueOwners.length;
 
-  // Connection lines group
-  const linesGroup = document.createElementNS(svgNS, 'g');
-  svg.appendChild(linesGroup);
+  // Canvas dimensions
+  const deptsTotalH = (deptCount - 1) * DEPT_SPACING + DEPT_H;
+  const canvasH = PADDING_TOP + deptsTotalH + PADDING_BOTTOM;
+  const canvasW = OWNER_X + OWNER_R + 34;
 
-  // Draw company box
-  drawBox(svg, companyX, companyY - 50, 240, 100, '#37474f', 'PARAGON\nPROPERTY\nMANAGEMENT', '#fff');
+  svg.setAttribute('width', canvasW);
+  svg.setAttribute('height', canvasH);
+  svg.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
 
-  // Get unique owners and position them
-  const owners = {};
-  const uniqueOwners = [...new Set(orgData.departments.flatMap(d => d.tasks.map(t => t.owner)))];
+  // ── Computed Y positions ──────────────────────────────────────────
+  // Dept centers: evenly spaced starting at PADDING_TOP + DEPT_H/2
+  const deptCY = (i) => PADDING_TOP + i * DEPT_SPACING + DEPT_H / 2;
 
+  // Owner centers: spread over the same vertical range as the depts
+  const topCY    = deptCY(0);
+  const bottomCY = deptCY(deptCount - 1);
+  const ownerCY  = (i) => {
+    if (ownerCount === 1) return (topCY + bottomCY) / 2;
+    return topCY + (i / (ownerCount - 1)) * (bottomCY - topCY);
+  };
+
+  const ownerPos = {};
   uniqueOwners.forEach((owner, i) => {
-    const y = 120 + (i * 90);
-    owners[owner] = { x: ownerX, y };
-    const color = ownerColors[owner]?.hex || '#d32f2f';
-    drawCircle(svg, ownerX, y, 45, color, owner, '#fff');
+    ownerPos[owner] = { x: OWNER_X, y: ownerCY(i) };
   });
 
-  // Draw departments and tasks
-  orgData.departments.forEach((dept, i) => {
-    const deptY = 120 + (i * 80);
+  const companyCY = (topCY + bottomCY) / 2;  // vertically centered over dept range
 
-    // Department box
-    drawBox(svg, deptX, deptY - 35, 220, 70, dept.color, dept.name, '#fff');
+  // ── Layer 1: Company → Dept connector lines (drawn first) ─────────
+  const compLineLayer = svgGroup(svg);
+  depts.forEach((dept, i) => {
+    svgLine(compLineLayer,
+      COMPANY_X + COMPANY_W, companyCY,
+      DEPT_X, deptCY(i),
+      '#cfd8dc', 1.5);
+  });
 
-    // Line from company to department
-    drawLine(linesGroup, companyX + 240, companyY, deptX, deptY, false);
+  // ── Layer 2: Dept → Owner bezier curves ──────────────────────────
+  // Each dept draws one curve per unique owner it has tasks for.
+  // Stroke width scales with task count; UNOWNED uses a dashed red line.
+  const curveLayer = svgGroup(svg);
 
-    // Tasks
-    dept.tasks.forEach((task, j) => {
-      const taskY = deptY + (j - dept.tasks.length / 2) * 38;
-      const unowned = task.owner === 'UNOWNED';
+  depts.forEach((dept, i) => {
+    const cy = deptCY(i);
+    const x1 = DEPT_X + DEPT_W;
 
-      // Task box
-      const taskBg = unowned ? '#ffebee' : '#f5f5f5';
-      const taskBorder = unowned ? '#d32f2f' : '#90a4ae';
-      drawTaskBox(svg, taskX, taskY - 14, 300, 28, taskBg, taskBorder, task.name);
+    // Aggregate: tasks per owner for this department
+    const ownerCounts = {};
+    dept.tasks.forEach(t => {
+      ownerCounts[t.owner] = (ownerCounts[t.owner] || 0) + 1;
+    });
 
-      // Lines: dept to task, task to owner
-      drawLine(linesGroup, deptX + 220, deptY, taskX, taskY, unowned);
+    Object.entries(ownerCounts).forEach(([owner, count]) => {
+      const op = ownerPos[owner];
+      if (!op) return;
 
-      const ownerPos = owners[task.owner];
-      if (ownerPos) {
-        drawLine(linesGroup, taskX + 300, taskY, ownerPos.x - 45, ownerPos.y, unowned);
-      }
+      const x2   = op.x - OWNER_R;
+      const y2   = op.y;
+      const midX = x1 + (x2 - x1) * 0.55;
+      const color   = ownerColors[owner]?.hex || '#d32f2f';
+      const strokeW = Math.max(1.5, Math.min(count * 0.85, 7));
+      const dash    = owner === 'UNOWNED' ? '6,4' : null;
+
+      svgPath(
+        curveLayer,
+        `M${x1},${cy} C${midX},${cy} ${midX},${y2} ${x2},${y2}`,
+        color, strokeW, dash, 0.6
+      );
     });
   });
-}
 
-function drawBox(parent, x, y, w, h, fill, text, textColor) {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  // ── Layer 3: Company box ──────────────────────────────────────────
+  const boxLayer = svgGroup(svg);
+  const compY = companyCY - COMPANY_H / 2;
+  svgRect(boxLayer, COMPANY_X, compY, COMPANY_W, COMPANY_H, '#37474f', 10);
+  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY - 16, 'PARAGON',    '#fff', 12, 700);
+  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY,      'PROPERTY',   '#fff', 12, 700);
+  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY + 16, 'MANAGEMENT', '#fff', 10, 400);
 
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', x);
-  rect.setAttribute('y', y);
-  rect.setAttribute('width', w);
-  rect.setAttribute('height', h);
-  rect.setAttribute('fill', fill);
-  rect.setAttribute('rx', 10);
-  rect.setAttribute('stroke', '#263238');
-  rect.setAttribute('stroke-width', 2);
-  g.appendChild(rect);
+  // ── Layer 4: Department boxes ─────────────────────────────────────
+  depts.forEach((dept, i) => {
+    const cy = deptCY(i);
+    const bx = DEPT_X;
+    const by = cy - DEPT_H / 2;
 
-  const lines = text.split('\n');
-  lines.forEach((line, i) => {
-    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', x + w/2);
-    t.setAttribute('y', y + h/2 + (i - lines.length/2 + 0.5) * 18);
-    t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('fill', textColor);
-    t.setAttribute('font-size', '14');
-    t.setAttribute('font-weight', '700');
-    t.textContent = line;
-    g.appendChild(t);
+    const unownedCount = dept.tasks.filter(t => t.owner === 'UNOWNED').length;
+    const boxBg = unownedCount > 0 ? '#fff5f5' : '#ffffff';
+
+    // White box with dept-color left border
+    svgRect(boxLayer, bx, by, DEPT_W, DEPT_H, boxBg, 7, dept.color, 3);
+
+    // Department name (truncated)
+    const MAX = 30;
+    const label = dept.name.length > MAX ? dept.name.slice(0, MAX - 1) + '\u2026' : dept.name;
+    svgText(boxLayer, bx + 14, cy - 9,  label, '#263238', 12, 700, 'start');
+
+    // Stats: "N tasks  ·  M unowned"
+    const statsLabel = `${dept.tasks.length} tasks` +
+      (unownedCount > 0 ? `  \u00B7  ${unownedCount} unowned` : '');
+    const statsColor = unownedCount > 0 ? '#d32f2f' : '#78909c';
+    svgText(boxLayer, bx + 14, cy + 10, statsLabel, statsColor, 11, 400, 'start');
   });
 
-  parent.appendChild(g);
-}
+  // ── Layer 5: Owner circles ────────────────────────────────────────
+  uniqueOwners.forEach((owner) => {
+    const { x, y } = ownerPos[owner];
+    const color = ownerColors[owner]?.hex || '#d32f2f';
+    svgCircle(boxLayer, x, y, OWNER_R, color, '#263238', 2);
 
-function drawTaskBox(parent, x, y, w, h, fill, border, text) {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', x);
-  rect.setAttribute('y', y);
-  rect.setAttribute('width', w);
-  rect.setAttribute('height', h);
-  rect.setAttribute('fill', fill);
-  rect.setAttribute('rx', 5);
-  rect.setAttribute('stroke', border);
-  rect.setAttribute('stroke-width', 2);
-  g.appendChild(rect);
-
-  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  t.setAttribute('x', x + 10);
-  t.setAttribute('y', y + h/2);
-  t.setAttribute('dominant-baseline', 'middle');
-  t.setAttribute('fill', '#263238');
-  t.setAttribute('font-size', '11');
-  t.setAttribute('font-weight', '600');
-  t.textContent = text.length > 42 ? text.substring(0, 39) + '...' : text;
-  g.appendChild(t);
-
-  parent.appendChild(g);
-}
-
-function drawCircle(parent, cx, cy, r, fill, text, textColor) {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  circle.setAttribute('cx', cx);
-  circle.setAttribute('cy', cy);
-  circle.setAttribute('r', r);
-  circle.setAttribute('fill', fill);
-  circle.setAttribute('stroke', '#263238');
-  circle.setAttribute('stroke-width', 2);
-  g.appendChild(circle);
-
-  const parts = text.split(' ');
-  const displayText = parts[0] + (parts[1] ? '\n' + parts[1].charAt(0) + '.' : '');
-  const lines = displayText.split('\n');
-
-  lines.forEach((line, i) => {
-    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', cx);
-    t.setAttribute('y', cy + (i - lines.length/2 + 0.5) * 14);
-    t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('fill', textColor);
-    t.setAttribute('font-size', '13');
-    t.setAttribute('font-weight', '700');
-    t.textContent = line;
-    g.appendChild(t);
+    if (owner === 'UNOWNED') {
+      svgText(boxLayer, x, y - 6,  '\u26A0',  '#fff', 14, 700);
+      svgText(boxLayer, x, y + 10, 'UNOWNED', '#fff', 10, 700);
+    } else {
+      svgText(boxLayer, x, y + 5, owner, '#fff', 13, 700);
+    }
   });
 
-  parent.appendChild(g);
+  // ── Legend (top of canvas) ────────────────────────────────────────
+  svgText(svg, canvasW / 2, 22,
+    'Dept \u2192 Owner connections  \u00B7  Line thickness = task count  \u00B7  Dashed red = unowned',
+    '#90a4ae', 12, 400);
 }
 
-function drawLine(parent, x1, y1, x2, y2, unowned) {
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('x1', x1);
-  line.setAttribute('y1', y1);
-  line.setAttribute('x2', x2);
-  line.setAttribute('y2', y2);
-  line.classList.add('map-connection');
-  if (unowned) {
-    line.classList.add('unowned');
+// ── Lightweight SVG helpers ───────────────────────────────────────────
+
+function svgGroup(parent) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  parent.appendChild(g);
+  return g;
+}
+
+function svgRect(parent, x, y, w, h, fill, rx = 0, stroke = 'none', strokeW = 0) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  el.setAttribute('x', x);  el.setAttribute('y', y);
+  el.setAttribute('width', w); el.setAttribute('height', h);
+  el.setAttribute('fill', fill);
+  el.setAttribute('rx', rx);
+  if (stroke !== 'none') {
+    el.setAttribute('stroke', stroke);
+    el.setAttribute('stroke-width', strokeW);
   }
-  parent.appendChild(line);
+  parent.appendChild(el);
+}
+
+function svgText(parent, x, y, text, fill, fontSize, fontWeight, textAnchor = 'middle') {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  el.setAttribute('x', x); el.setAttribute('y', y);
+  el.setAttribute('text-anchor', textAnchor);
+  el.setAttribute('dominant-baseline', 'middle');
+  el.setAttribute('fill', fill);
+  el.setAttribute('font-size', fontSize);
+  el.setAttribute('font-weight', fontWeight);
+  el.setAttribute('font-family', "Segoe UI, Tahoma, Geneva, Verdana, sans-serif");
+  el.textContent = text;
+  parent.appendChild(el);
+}
+
+function svgCircle(parent, cx, cy, r, fill, stroke, strokeW) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  el.setAttribute('cx', cx); el.setAttribute('cy', cy);
+  el.setAttribute('r', r);
+  el.setAttribute('fill', fill);
+  el.setAttribute('stroke', stroke);
+  el.setAttribute('stroke-width', strokeW);
+  parent.appendChild(el);
+}
+
+function svgLine(parent, x1, y1, x2, y2, stroke, strokeW) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+  el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+  el.setAttribute('stroke', stroke);
+  el.setAttribute('stroke-width', strokeW);
+  parent.appendChild(el);
+}
+
+function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  el.setAttribute('d', d);
+  el.setAttribute('fill', 'none');
+  el.setAttribute('stroke', stroke);
+  el.setAttribute('stroke-width', strokeW);
+  if (dashArray) el.setAttribute('stroke-dasharray', dashArray);
+  if (opacity < 1) el.setAttribute('opacity', opacity);
+  parent.appendChild(el);
 }
 
 // ====================
@@ -380,29 +424,23 @@ function renderStrategicModels() {
   container.innerHTML = strategicModels.map(model => `
     <div class="model-card">
       <h3>${model.title}</h3>
-      <p style="color: #546e7a; font-style: italic; margin-bottom: 15px;">${model.subtitle}</p>
-      <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-        <strong>Best For:</strong> ${model.bestFor}
-      </div>
-      <h4 style="margin-bottom: 10px; color: #263238;">Team Structure:</h4>
+      <p class="model-subtitle">${model.subtitle}</p>
+      <div class="model-best-for"><strong>Best For:</strong> ${model.bestFor}</div>
+      <h4 class="model-structure-heading">Team Structure:</h4>
       <ul>
         ${model.teamStructure.map(item => `<li>${item}</li>`).join('')}
       </ul>
-      <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 3px solid #00897b;">
-          <h5 style="margin-bottom: 8px; color: #00897b;">&#10003; Pros</h5>
-          <ul style="font-size: 13px;">
-            ${model.pros.map(pro => `<li>${pro}</li>`).join('')}
-          </ul>
+      <div class="model-pros-cons">
+        <div class="model-pros">
+          <h5>&#10003; Pros</h5>
+          <ul>${model.pros.map(pro => `<li>${pro}</li>`).join('')}</ul>
         </div>
-        <div style="background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 3px solid #d32f2f;">
-          <h5 style="margin-bottom: 8px; color: #d32f2f;">&#9888; Cons</h5>
-          <ul style="font-size: 13px;">
-            ${model.cons.map(con => `<li>${con}</li>`).join('')}
-          </ul>
+        <div class="model-cons">
+          <h5>&#9888; Cons</h5>
+          <ul>${model.cons.map(con => `<li>${con}</li>`).join('')}</ul>
         </div>
       </div>
-      <p style="margin-top: 15px; font-size: 14px; color: #546e7a;"><strong>Example:</strong> ${model.example}</p>
+      <p class="model-example"><strong>Example:</strong> ${model.example}</p>
     </div>
   `).join('');
 }
@@ -414,11 +452,13 @@ function renderCaseStudies() {
   container.innerHTML = caseStudies.map(study => `
     <div class="case-study">
       <h3>${study.title}</h3>
-      <p style="color: #546e7a; font-size: 14px; margin-bottom: 15px;"><strong>Source:</strong> ${study.source}</p>
+      <p class="case-study-source"><strong>Source:</strong> ${study.source}</p>
       <ul>
         ${study.findings.map(finding => `<li>${finding}</li>`).join('')}
       </ul>
-      <p style="margin-top: 15px;"><a href="${study.link}" target="_blank" rel="noopener noreferrer" style="color: #1976d2; font-weight: 600;">Read Full Case Study &#8594;</a></p>
+      <p class="case-study-link">
+        <a href="${study.link}" target="_blank" rel="noopener noreferrer">Read Full Case Study &#8594;</a>
+      </p>
     </div>
   `).join('');
 }
