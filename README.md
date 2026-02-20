@@ -39,3 +39,81 @@ The Paragon Operations Map gives leadership and the operations team **complete v
 | **Department Leads** | Review their task responsibilities and handoffs |
 
 ---
+
+## Features
+
+The tool is organized into three views, accessible from the top navigation bar.
+
+---
+
+### Tracking View — Task-Level Accountability
+
+The Tracking View is the operational backbone. It lists every department as a collapsible card, with each task displayed alongside its assigned owner.
+
+**What you can do:**
+
+| Action | How |
+|--------|-----|
+| **Rename a task** | Double-click any task name → type the new name → press Enter to save or Escape to cancel |
+| **Reassign an owner** | Click any color-coded owner badge → pick a new team member from the dropdown |
+| **Collapse / expand a department** | Click the department header bar |
+| **Search tasks** | Use the search bar to filter by keyword across all departments in real time |
+| **Filter by person** | Use the owner dropdown to show only tasks belonging to a specific team member |
+| **Spot unowned work** | Unowned tasks are highlighted in red with a pulsing badge — impossible to miss |
+
+All edits update the live data model, so switching to the Map View always reflects the current state.
+
+---
+
+### Map View — Organizational Flow Visualization
+
+The Map View renders a custom SVG flow diagram showing the full **Company → Department → Owner** relationship graph. Line thickness scales with task count, making workload distribution immediately visible.
+
+**Static reading:**
+
+- Each department box shows its name, total task count, and a red warning if any tasks are unowned
+- Each owner circle is color-coded to match their badges in the Tracking View
+- Bezier curves connect departments to owners; thicker = more tasks
+- Dashed red lines indicate connections to unowned work
+
+**Interactive controls:**
+
+| Action | How |
+|--------|-----|
+| **Focus on one person's work** | Click their owner circle *or* their pill in the filter bar — their connections highlight, everything else dims |
+| **Hide an owner's connections entirely** | Shift+click their pill in the filter bar |
+| **See a department's full task list** | Click any department box — a task-list panel slides in from the right, grouped by owner |
+| **Hover for details** | Hover over any department, owner circle, or connection curve for a tooltip with task counts and context |
+| **Reset all filters** | Click the **Reset** button in the filter bar |
+
+This makes it straightforward to answer questions like: *"What does Nathan own across the whole org?"* or *"Which departments involve unowned work?"*
+
+---
+
+### Strategic Models View — Scaling Playbook
+
+The Strategic Models View presents four organizational structures evaluated for their fit as Paragon grows from 150 to 500 units:
+
+| Model | Description |
+|-------|-------------|
+| **Functional Specialization** | Deep expertise by department; clear accountability |
+| **Portfolio Segmentation** | Each PM owns a full unit portfolio end-to-end |
+| **Pod System** | Small cross-functional squads; high flexibility |
+| **Hybrid Core + Flex** ⭐ | Recommended — stable core team with flex support layer |
+
+Each model includes team structure breakdown, pros and cons, and a real-world company example. Six industry case studies are included below, covering centralized leasing, AI automation adoption, virtual team cost savings, and restructuring outcomes.
+
+---
+
+### Live Stats Bar
+
+A persistent stats bar at the bottom of every view shows:
+
+- **Total Tasks** — complete count across all departments
+- **Assigned** — tasks with a named owner
+- **⚠ Unowned** — tasks with no assigned owner (highlighted in red)
+- **Departments** — total department count
+
+These update automatically when ownership is reassigned in the Tracking View.
+
+---
