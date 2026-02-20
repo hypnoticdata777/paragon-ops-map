@@ -117,3 +117,90 @@ A persistent stats bar at the bottom of every view shows:
 These update automatically when ownership is reassigned in the Tracking View.
 
 ---
+
+## Project Structure
+
+```
+paragon-ops-map/
+├── index.html              Main HTML — layout, view containers, navigation
+├── css/
+│   └── style.css           All application styles, component styles, responsive breakpoints
+├── js/
+│   ├── data.js             Organizational data model — departments, tasks, owner colors,
+│   │                       strategic models, case studies
+│   └── app.js              Rendering engine — view management, tracking view, SVG map,
+│                           inline editing, owner picker, map state, tooltips, filters
+├── webpack.common.js       Shared webpack configuration
+├── webpack.config.dev.js   Development server config (hot reload)
+└── webpack.config.prod.js  Production build config
+```
+
+**Key design principle:** All data lives in `data.js` as a plain JavaScript object (`orgData`). All rendering reads from that object. Edits made in the UI (task renames, owner reassignments) mutate the object in memory, which keeps every view in sync without a backend.
+
+---
+
+## Getting Started
+
+**No build step required.** Open `index.html` directly in any modern browser and the tool is fully functional.
+
+For development with live reload:
+
+```bash
+npm install
+npm start          # starts webpack-dev-server at localhost:8080
+npm run build      # produces a production bundle in dist/
+```
+
+---
+
+## Data Model
+
+All departments and tasks are defined in `js/data.js`. To add, remove, or restructure the org:
+
+```js
+// Add a task to an existing department
+orgData.departments
+  .find(d => d.id === 'leasing')
+  .tasks.push({ name: "New task description", owner: "Nathan" });
+
+// Add a new team member — add their color to ownerColors
+const ownerColors = {
+  "NewPerson": { class: "owner-newperson", hex: "#your-hex-color" },
+  // ...
+};
+```
+
+Add a matching CSS class in `style.css`:
+
+```css
+.owner-newperson { background: #your-hex-color; }
+```
+
+---
+
+## Technology Stack
+
+| Layer | Choice | Why |
+|-------|--------|-----|
+| **Structure** | HTML5 | Semantic, no framework overhead |
+| **Styles** | CSS3 (Flexbox, Grid, custom properties) | Responsive without a CSS framework |
+| **Logic** | Vanilla JavaScript ES6 | No bundle size, no dependencies to maintain |
+| **Visualization** | Custom SVG engine | Full control over layout and interactivity |
+| **Build** | Webpack 5 (optional) | Bundling only — not required to run the app |
+
+Zero runtime dependencies. Everything ships as static files.
+
+---
+
+## Browser Compatibility
+
+Tested and working in all modern browsers (Chrome, Firefox, Safari, Edge). The `switchView()` function explicitly passes the clicked element as a parameter rather than relying on `window.event`, which ensures correct behavior in Firefox where that global is not available.
+
+---
+
+## Author
+
+**Carlos Sanchez**
+Operations Manager & Systems Builder — Paragon Property Management
+
+*Built February 2026 to support operational stabilization and planning for the 150 → 500 unit growth phase.*
