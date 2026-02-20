@@ -3,36 +3,31 @@
 // ====================
 let currentView = 'tracking';
 
-// FIX: Accept the clicked tab element explicitly instead of relying on
-// the implicit window.event global (which is undefined in Firefox).
 function switchView(view, tabEl) {
   currentView = view;
 
-  // Hide all views
   document.querySelectorAll('.view-panel').forEach(panel => {
     panel.classList.remove('active');
   });
-
-  // Show selected view
   document.getElementById(`${view}-view`).classList.add('active');
 
-  // Update nav tabs
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.remove('active');
   });
   tabEl.classList.add('active');
 
-  // Show search/filter bar only on the Tracking view; reset it on leave
   const filterBar = document.getElementById('filter-bar');
   if (view === 'tracking') {
     filterBar.style.display = 'flex';
   } else {
     filterBar.style.display = 'none';
-    clearFilter(); // reset so returning to tracking shows everything
+    clearFilter();
   }
 
-  // Render view-specific content
+  closeOwnerPicker();
+
   if (view === 'map') {
+    renderMapControls();
     renderFlowMap();
   } else if (view === 'models') {
     renderStrategicModels();
@@ -51,7 +46,6 @@ function renderTrackingView() {
     const deptDiv = document.createElement('div');
     deptDiv.className = 'department';
     deptDiv.style.borderTop = `4px solid ${dept.color}`;
-    // FIX: store the dept id in a data attribute for reliable lookup
     deptDiv.dataset.id = dept.id;
 
     deptDiv.innerHTML = `
@@ -60,15 +54,21 @@ function renderTrackingView() {
         <span>&#9660;</span>
       </div>
       <div class="department-body">
-        ${dept.tasks.map(task => {
-          // Escape special characters for safe use in data attributes
+        ${dept.tasks.map((task, taskIdx) => {
           const safeName = task.name.replace(/"/g, '&quot;');
+          const isUnowned = task.owner === 'UNOWNED';
           return `
-          <div class="task-item ${task.owner === 'UNOWNED' ? 'unowned' : ''}"
+          <div class="task-item ${isUnowned ? 'unowned' : ''}"
+               data-dept-id="${dept.id}"
+               data-task-idx="${taskIdx}"
                data-owner="${task.owner}"
                data-name="${safeName.toLowerCase()}">
-            <div class="task-name">${task.name}</div>
-            <div class="task-owner ${ownerColors[task.owner]?.class || 'owner-unowned'}">
+            <div class="task-name"
+                 ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
+                 title="Double-click to rename">${task.name}</div>
+            <div class="task-owner ${ownerColors[task.owner]?.class || 'owner-unowned'}"
+                 onclick="showOwnerPicker('${dept.id}', ${taskIdx}, this)"
+                 title="Click to reassign">
               ${task.owner}
             </div>
           </div>`;
@@ -80,12 +80,155 @@ function renderTrackingView() {
   });
 }
 
-// FIX: Use data-id attribute selector instead of brittle textContent/toString matching.
-// This is minification-safe and works regardless of task names.
 function toggleDepartment(deptId) {
   const dept = document.querySelector(`.department[data-id="${deptId}"]`);
-  if (dept) {
-    dept.classList.toggle('expanded');
+  if (dept) dept.classList.toggle('expanded');
+}
+
+// ====================
+// INLINE TASK NAME EDITING
+// ====================
+
+function startTaskEdit(deptId, taskIdx) {
+  // Cancel any currently active edit
+  document.querySelectorAll('.task-name-input').forEach(inp => inp.blur());
+
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+
+  const nameEl = taskEl.querySelector('.task-name');
+  const originalName = dept.tasks[taskIdx].name;
+
+  // Build the input
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'task-name-input';
+  input.value = originalName;
+
+  let saved = false;
+
+  input.addEventListener('blur', () => {
+    if (!saved) {
+      saved = true;
+      _commitTaskName(deptId, taskIdx, input.value, originalName, nameEl, taskEl);
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      saved = true;
+      input.blur();
+    } else if (e.key === 'Escape') {
+      saved = true;
+      nameEl.textContent = originalName;
+      nameEl.ondblclick = () => startTaskEdit(deptId, taskIdx);
+    }
+  });
+
+  nameEl.textContent = '';
+  nameEl.appendChild(input);
+  input.focus();
+  input.select();
+}
+
+function _commitTaskName(deptId, taskIdx, newValue, originalName, nameEl, taskEl) {
+  const trimmed = (newValue || '').trim();
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  if (!trimmed) {
+    // Restore if empty
+    nameEl.textContent = originalName;
+  } else {
+    dept.tasks[taskIdx].name = trimmed;
+    taskEl.dataset.name = trimmed.toLowerCase();
+    nameEl.textContent = trimmed;
+  }
+  nameEl.title = 'Double-click to rename';
+  nameEl.ondblclick = () => startTaskEdit(deptId, taskIdx);
+
+  if (currentView === 'map') renderFlowMap();
+}
+
+// ====================
+// OWNER PICKER
+// ====================
+
+let _ownerPickerCloseHandler = null;
+
+function showOwnerPicker(deptId, taskIdx, badgeEl) {
+  closeOwnerPicker();
+
+  const picker = document.createElement('div');
+  picker.id = 'owner-picker';
+  picker.className = 'owner-picker';
+
+  Object.keys(ownerColors).forEach(owner => {
+    const btn = document.createElement('button');
+    btn.className = `owner-picker-btn ${ownerColors[owner]?.class || 'owner-unowned'}`;
+    btn.textContent = owner;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setTaskOwner(deptId, taskIdx, owner);
+      closeOwnerPicker();
+    });
+    picker.appendChild(btn);
+  });
+
+  document.body.appendChild(picker);
+
+  // Position it fixed, below the badge
+  const rect = badgeEl.getBoundingClientRect();
+  picker.style.top  = (rect.bottom + 4) + 'px';
+  picker.style.left = Math.min(rect.left, window.innerWidth - 160) + 'px';
+
+  _ownerPickerCloseHandler = (e) => {
+    if (!e.target.closest('#owner-picker')) closeOwnerPicker();
+  };
+  // Defer so the current click doesn't immediately close it
+  setTimeout(() => document.addEventListener('click', _ownerPickerCloseHandler), 0);
+}
+
+function closeOwnerPicker() {
+  const picker = document.getElementById('owner-picker');
+  if (picker) picker.remove();
+  if (_ownerPickerCloseHandler) {
+    document.removeEventListener('click', _ownerPickerCloseHandler);
+    _ownerPickerCloseHandler = null;
+  }
+}
+
+function setTaskOwner(deptId, taskIdx, newOwner) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  dept.tasks[taskIdx].owner = newOwner;
+
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    const isUnowned = newOwner === 'UNOWNED';
+    taskEl.dataset.owner = newOwner;
+    taskEl.classList.toggle('unowned', isUnowned);
+
+    const badge = taskEl.querySelector('.task-owner');
+    // Reset all owner classes then apply the new one
+    badge.className = 'task-owner';
+    badge.classList.add(ownerColors[newOwner]?.class || 'owner-unowned');
+    badge.textContent = newOwner;
+    badge.title = 'Click to reassign';
+  }
+
+  updateStats();
+  if (currentView === 'map') {
+    renderMapControls();
+    renderFlowMap();
   }
 }
 
@@ -93,14 +236,11 @@ function toggleDepartment(deptId) {
 // SEARCH & FILTER
 // ====================
 
-// Populate the owner dropdown from the data once on init
 function populateOwnerFilter() {
   const select = document.getElementById('owner-filter');
-  // Collect unique owners in the order they appear, then sort alphabetically
   const owners = [...new Set(
     orgData.departments.flatMap(d => d.tasks.map(t => t.owner))
   )].sort((a, b) => {
-    // Always put UNOWNED at the end
     if (a === 'UNOWNED') return 1;
     if (b === 'UNOWNED') return -1;
     return a.localeCompare(b);
@@ -127,11 +267,11 @@ function applyFilter() {
     let deptVisibleCount = 0;
 
     taskItems.forEach(item => {
-      const name = item.dataset.name;       // already lowercased at render time
+      const name  = item.dataset.name;
       const owner = item.dataset.owner;
 
       const matchesKeyword = !keyword || name.includes(keyword);
-      const matchesOwner = !selectedOwner || owner === selectedOwner;
+      const matchesOwner   = !selectedOwner || owner === selectedOwner;
 
       if (matchesKeyword && matchesOwner) {
         item.style.display = '';
@@ -146,9 +286,7 @@ function applyFilter() {
       deptEl.style.display = 'none';
     } else {
       deptEl.style.display = '';
-      // Auto-expand matched departments so results are visible
       deptEl.classList.add('expanded');
-      // Update the task count shown in the header
       const countSpan = deptEl.querySelector('.dept-task-count');
       if (countSpan) {
         countSpan.textContent = isFiltering
@@ -159,11 +297,9 @@ function applyFilter() {
     }
   });
 
-  // Show/hide the "no results" message
   const noResults = document.getElementById('no-results');
   noResults.style.display = visibleDeptCount === 0 ? 'block' : 'none';
 
-  // Update match count badge
   const countEl = document.getElementById('filter-count');
   if (isFiltering) {
     countEl.textContent = `${visibleTaskTotal} task${visibleTaskTotal !== 1 ? 's' : ''} found`;
@@ -179,17 +315,11 @@ function clearFilter() {
   if (searchInput) searchInput.value = '';
   if (ownerFilter) ownerFilter.value = '';
 
-  // Restore all departments and tasks
   document.querySelectorAll('.department').forEach(deptEl => {
     deptEl.style.display = '';
-    deptEl.querySelectorAll('.task-item').forEach(item => {
-      item.style.display = '';
-    });
-    // Restore original task count in header
+    deptEl.querySelectorAll('.task-item').forEach(item => { item.style.display = ''; });
     const countSpan = deptEl.querySelector('.dept-task-count');
-    if (countSpan) {
-      countSpan.textContent = deptEl.querySelectorAll('.task-item').length;
-    }
+    if (countSpan) countSpan.textContent = deptEl.querySelectorAll('.task-item').length;
   });
 
   const noResults = document.getElementById('no-results');
@@ -200,47 +330,210 @@ function clearFilter() {
 }
 
 // ====================
-// MAP VIEW - Department → Owner relationship map
-// Aggregated 3-column layout: Company → Depts → Owners
-// Bezier curves per dept→owner pair; thickness = task count.
-// No individual task rows — zero overlap guaranteed.
+// MAP STATE
 // ====================
+
+const mapState = {
+  hiddenOwners: new Set(),  // owners whose connections are hidden
+  focusedOwner: null,       // owner whose connections are highlighted (others dimmed)
+  focusedDept:  null,       // department that is currently selected in the side panel
+};
+
+// ====================
+// MAP CONTROLS (owner filter pills)
+// ====================
+
+function renderMapControls() {
+  const container = document.getElementById('map-controls');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const uniqueOwners = [...new Set(
+    orgData.departments.flatMap(d => d.tasks.map(t => t.owner))
+  )];
+
+  const label = document.createElement('span');
+  label.className = 'map-control-label';
+  label.textContent = 'Toggle:';
+  container.appendChild(label);
+
+  uniqueOwners.forEach(owner => {
+    const isHidden   = mapState.hiddenOwners.has(owner);
+    const isFocused  = mapState.focusedOwner === owner;
+    const btn = document.createElement('button');
+    btn.className = 'map-filter-pill' +
+      (isHidden  ? ' map-filter-pill--hidden'  : '') +
+      (isFocused ? ' map-filter-pill--focused' : '');
+    btn.style.setProperty('--pill-color', ownerColors[owner]?.hex || '#d32f2f');
+    btn.textContent = owner === 'UNOWNED' ? '⚠ UNOWNED' : owner;
+    btn.title = isHidden
+      ? `Show ${owner}'s connections`
+      : isFocused
+        ? `Un-focus ${owner}`
+        : `Click to focus ${owner} · Shift+click to hide`;
+
+    btn.addEventListener('click', (e) => {
+      if (e.shiftKey) {
+        // Shift-click: toggle hide
+        if (mapState.hiddenOwners.has(owner)) {
+          mapState.hiddenOwners.delete(owner);
+        } else {
+          mapState.hiddenOwners.add(owner);
+          if (mapState.focusedOwner === owner) mapState.focusedOwner = null;
+        }
+      } else {
+        // Regular click: toggle focus
+        mapState.focusedOwner = (mapState.focusedOwner === owner) ? null : owner;
+        // Un-hide if focusing
+        if (mapState.focusedOwner === owner) mapState.hiddenOwners.delete(owner);
+      }
+      renderMapControls();
+      renderFlowMap();
+    });
+
+    container.appendChild(btn);
+  });
+
+  // Show All / Reset button when anything is active
+  if (mapState.hiddenOwners.size > 0 || mapState.focusedOwner !== null) {
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn btn-secondary map-reset-btn';
+    resetBtn.textContent = 'Reset';
+    resetBtn.addEventListener('click', () => {
+      mapState.hiddenOwners.clear();
+      mapState.focusedOwner = null;
+      renderMapControls();
+      renderFlowMap();
+    });
+    container.appendChild(resetBtn);
+  }
+
+  // Instruction hint
+  const hint = document.createElement('span');
+  hint.style.cssText = 'font-size:11px;color:#90a4ae;margin-left:auto;white-space:nowrap;';
+  hint.textContent = 'Click to focus · Shift+click to hide/show · Click dept box for task list';
+  container.appendChild(hint);
+}
+
+// ====================
+// MAP DEPT PANEL
+// ====================
+
+function showDeptPanel(dept) {
+  mapState.focusedDept = dept.id;
+
+  const panel = document.getElementById('map-dept-panel');
+  if (!panel) return;
+
+  // Group tasks by owner
+  const byOwner = {};
+  dept.tasks.forEach(t => {
+    if (!byOwner[t.owner]) byOwner[t.owner] = [];
+    byOwner[t.owner].push(t.name);
+  });
+
+  const unownedCount = dept.tasks.filter(t => t.owner === 'UNOWNED').length;
+
+  panel.innerHTML = `
+    <div class="map-panel-header" style="border-left: 5px solid ${dept.color}">
+      <strong>${dept.name}</strong>
+      <span class="task-count-badge">${dept.tasks.length} tasks${unownedCount > 0 ? ` · ${unownedCount} ⚠` : ''}</span>
+      <button class="map-panel-close" onclick="closeDeptPanel()" title="Close">&#x2715;</button>
+    </div>
+    <div class="map-panel-body">
+      ${Object.entries(byOwner).map(([owner, tasks]) => `
+        <div class="map-panel-owner-group">
+          <div class="map-panel-owner-badge ${ownerColors[owner]?.class || 'owner-unowned'}">${owner}</div>
+          <ul>
+            ${tasks.map(t => `<li>${t}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  panel.classList.add('active');
+}
+
+function closeDeptPanel() {
+  mapState.focusedDept = null;
+  const panel = document.getElementById('map-dept-panel');
+  if (panel) {
+    panel.classList.remove('active');
+    panel.innerHTML = `
+      <div class="map-panel-placeholder">
+        <span>&#x1F4CB;</span>
+        <p>Click a department box on the map to see its task list here.</p>
+      </div>`;
+  }
+}
+
+// ====================
+// MAP TOOLTIP
+// ====================
+
+function showMapTooltip(html, mouseX, mouseY) {
+  let tip = document.getElementById('map-tooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'map-tooltip';
+    tip.className = 'map-tooltip';
+    document.body.appendChild(tip);
+  }
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+
+  // Position so it doesn't overflow the viewport
+  const tw = tip.offsetWidth || 200;
+  const th = tip.offsetHeight || 60;
+  const x = mouseX + 14;
+  const y = mouseY - 10;
+  tip.style.left = (x + tw > window.innerWidth  ? mouseX - tw - 10 : x) + 'px';
+  tip.style.top  = (y + th > window.innerHeight ? mouseY - th - 10 : y) + 'px';
+}
+
+function hideMapTooltip() {
+  const tip = document.getElementById('map-tooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+// ====================
+// MAP VIEW - Flow map with interactivity
+// ====================
+
 function renderFlowMap() {
   const svg = document.getElementById('flowMap');
   svg.innerHTML = '';
 
   // ── Layout constants ──────────────────────────────────────────────
-  const PADDING_TOP    = 60;   // space for the legend line at the top
+  const PADDING_TOP    = 60;
   const PADDING_BOTTOM = 50;
-  const DEPT_SPACING   = 72;   // px between consecutive dept center lines
-  const DEPT_W         = 248;
-  const DEPT_H         = 56;
+  const DEPT_SPACING   = 72;
+  const DEPT_W         = 260;
+  const DEPT_H         = 58;
   const DEPT_X         = 230;
-  const OWNER_R        = 42;
-  const OWNER_X        = 1230;
-  const COMPANY_W      = 150;
+  const OWNER_R        = 44;
+  const OWNER_X        = 1250;
+  const COMPANY_W      = 155;
   const COMPANY_H      = 110;
   const COMPANY_X      = 28;
 
-  const depts       = orgData.departments;
-  const deptCount   = depts.length;
+  const depts        = orgData.departments;
+  const deptCount    = depts.length;
   const uniqueOwners = [...new Set(depts.flatMap(d => d.tasks.map(t => t.owner)))];
-  const ownerCount  = uniqueOwners.length;
+  const ownerCount   = uniqueOwners.length;
 
   // Canvas dimensions
   const deptsTotalH = (deptCount - 1) * DEPT_SPACING + DEPT_H;
   const canvasH = PADDING_TOP + deptsTotalH + PADDING_BOTTOM;
-  const canvasW = OWNER_X + OWNER_R + 34;
+  const canvasW = OWNER_X + OWNER_R + 40;
 
   svg.setAttribute('width', canvasW);
   svg.setAttribute('height', canvasH);
   svg.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
 
-  // ── Computed Y positions ──────────────────────────────────────────
-  // Dept centers: evenly spaced starting at PADDING_TOP + DEPT_H/2
+  // ── Y positions ───────────────────────────────────────────────────
   const deptCY = (i) => PADDING_TOP + i * DEPT_SPACING + DEPT_H / 2;
-
-  // Owner centers: spread over the same vertical range as the depts
   const topCY    = deptCY(0);
   const bottomCY = deptCY(deptCount - 1);
   const ownerCY  = (i) => {
@@ -253,9 +546,31 @@ function renderFlowMap() {
     ownerPos[owner] = { x: OWNER_X, y: ownerCY(i) };
   });
 
-  const companyCY = (topCY + bottomCY) / 2;  // vertically centered over dept range
+  const companyCY = (topCY + bottomCY) / 2;
 
-  // ── Layer 1: Company → Dept connector lines (drawn first) ─────────
+  // Determine visual state per owner/dept
+  const hasFocused = mapState.focusedOwner !== null;
+
+  function connectionOpacity(owner) {
+    if (mapState.hiddenOwners.has(owner)) return 0;
+    if (hasFocused) return mapState.focusedOwner === owner ? 0.9 : 0.08;
+    return 0.65;
+  }
+
+  function ownerGroupOpacity(owner) {
+    if (mapState.hiddenOwners.has(owner)) return 0.25;
+    if (hasFocused) return mapState.focusedOwner === owner ? 1 : 0.3;
+    return 1;
+  }
+
+  function deptGroupOpacity(dept) {
+    if (!hasFocused) return 1;
+    // Is the focused owner involved in this dept?
+    const ownerPresent = dept.tasks.some(t => t.owner === mapState.focusedOwner);
+    return ownerPresent ? 1 : 0.3;
+  }
+
+  // ── Layer 1: Company → Dept connector lines ───────────────────────
   const compLineLayer = svgGroup(svg);
   depts.forEach((dept, i) => {
     svgLine(compLineLayer,
@@ -265,15 +580,12 @@ function renderFlowMap() {
   });
 
   // ── Layer 2: Dept → Owner bezier curves ──────────────────────────
-  // Each dept draws one curve per unique owner it has tasks for.
-  // Stroke width scales with task count; UNOWNED uses a dashed red line.
   const curveLayer = svgGroup(svg);
 
   depts.forEach((dept, i) => {
     const cy = deptCY(i);
     const x1 = DEPT_X + DEPT_W;
 
-    // Aggregate: tasks per owner for this department
     const ownerCounts = {};
     dept.tasks.forEach(t => {
       ownerCounts[t.owner] = (ownerCounts[t.owner] || 0) + 1;
@@ -283,18 +595,35 @@ function renderFlowMap() {
       const op = ownerPos[owner];
       if (!op) return;
 
+      const opacity = connectionOpacity(owner);
+      if (opacity === 0) return;
+
       const x2   = op.x - OWNER_R;
       const y2   = op.y;
       const midX = x1 + (x2 - x1) * 0.55;
       const color   = ownerColors[owner]?.hex || '#d32f2f';
-      const strokeW = Math.max(1.5, Math.min(count * 0.85, 7));
+      const strokeW = Math.max(2, Math.min(count * 1.0, 8));
       const dash    = owner === 'UNOWNED' ? '6,4' : null;
 
-      svgPath(
+      const path = svgPath(
         curveLayer,
         `M${x1},${cy} C${midX},${cy} ${midX},${y2} ${x2},${y2}`,
-        color, strokeW, dash, 0.6
+        color, strokeW, dash, opacity
       );
+
+      // Thicker invisible hit area for easier hovering
+      const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      hitPath.setAttribute('d', `M${x1},${cy} C${midX},${cy} ${midX},${y2} ${x2},${y2}`);
+      hitPath.setAttribute('fill', 'none');
+      hitPath.setAttribute('stroke', 'transparent');
+      hitPath.setAttribute('stroke-width', '14');
+      hitPath.style.cursor = 'pointer';
+      curveLayer.appendChild(hitPath);
+
+      const tooltipHtml = `<strong>${dept.name} → ${owner}</strong>${count} task${count !== 1 ? 's' : ''}`;
+      hitPath.addEventListener('mouseenter', (e) => showMapTooltip(tooltipHtml, e.clientX, e.clientY));
+      hitPath.addEventListener('mousemove',  (e) => showMapTooltip(tooltipHtml, e.clientX, e.clientY));
+      hitPath.addEventListener('mouseleave', hideMapTooltip);
     });
   });
 
@@ -306,51 +635,115 @@ function renderFlowMap() {
   svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY,      'PROPERTY',   '#fff', 12, 700);
   svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY + 16, 'MANAGEMENT', '#fff', 10, 400);
 
-  // ── Layer 4: Department boxes ─────────────────────────────────────
+  // ── Layer 4: Department boxes (interactive) ───────────────────────
   depts.forEach((dept, i) => {
     const cy = deptCY(i);
     const bx = DEPT_X;
     const by = cy - DEPT_H / 2;
 
     const unownedCount = dept.tasks.filter(t => t.owner === 'UNOWNED').length;
-    const boxBg = unownedCount > 0 ? '#fff5f5' : '#ffffff';
+    const isFocused    = mapState.focusedDept === dept.id;
+    const boxBg        = isFocused ? '#e3f2fd' : (unownedCount > 0 ? '#fff5f5' : '#ffffff');
+    const opacity      = deptGroupOpacity(dept);
 
-    // White box with dept-color left border
-    svgRect(boxLayer, bx, by, DEPT_W, DEPT_H, boxBg, 7, dept.color, 3);
+    const g = svgGroup(boxLayer);
+    g.setAttribute('opacity', opacity);
+    g.style.cursor = 'pointer';
 
-    // Department name (truncated)
-    const MAX = 30;
+    // Shadow rect for focused state
+    if (isFocused) {
+      svgRect(g, bx - 2, by - 2, DEPT_W + 4, DEPT_H + 4, 'none', 9, '#1976d2', 2.5);
+    }
+
+    svgRect(g, bx, by, DEPT_W, DEPT_H, boxBg, 7, dept.color, 3);
+
+    const MAX = 32;
     const label = dept.name.length > MAX ? dept.name.slice(0, MAX - 1) + '\u2026' : dept.name;
-    svgText(boxLayer, bx + 14, cy - 9,  label, '#263238', 12, 700, 'start');
+    svgText(g, bx + 14, cy - 9,  label, '#263238', 12, 700, 'start');
 
-    // Stats: "N tasks  ·  M unowned"
     const statsLabel = `${dept.tasks.length} tasks` +
-      (unownedCount > 0 ? `  \u00B7  ${unownedCount} unowned` : '');
+      (unownedCount > 0 ? `  \u00B7  ${unownedCount} \u26A0 unowned` : '');
     const statsColor = unownedCount > 0 ? '#d32f2f' : '#78909c';
-    svgText(boxLayer, bx + 14, cy + 10, statsLabel, statsColor, 11, 400, 'start');
+    svgText(g, bx + 14, cy + 10, statsLabel, statsColor, 11, 400, 'start');
+
+    // Tooltip
+    const ownerList = [...new Set(dept.tasks.map(t => t.owner))].join(', ');
+    const tipHtml = `<strong>${dept.name}</strong>${dept.tasks.length} tasks · Owners: ${ownerList}`;
+
+    g.addEventListener('mouseenter', (e) => {
+      showMapTooltip(tipHtml, e.clientX, e.clientY);
+      // Glow on hover (only if not already focused)
+      if (!isFocused) g.style.filter = 'drop-shadow(0 0 6px rgba(25,118,210,0.5))';
+    });
+    g.addEventListener('mousemove',  (e) => showMapTooltip(tipHtml, e.clientX, e.clientY));
+    g.addEventListener('mouseleave', () => {
+      hideMapTooltip();
+      g.style.filter = '';
+    });
+    g.addEventListener('click', () => {
+      if (mapState.focusedDept === dept.id) {
+        closeDeptPanel();
+        renderFlowMap();
+      } else {
+        showDeptPanel(dept);
+        renderFlowMap();
+      }
+    });
   });
 
-  // ── Layer 5: Owner circles ────────────────────────────────────────
+  // ── Layer 5: Owner circles (interactive) ─────────────────────────
   uniqueOwners.forEach((owner) => {
     const { x, y } = ownerPos[owner];
-    const color = ownerColors[owner]?.hex || '#d32f2f';
-    svgCircle(boxLayer, x, y, OWNER_R, color, '#263238', 2);
+    const color   = ownerColors[owner]?.hex || '#d32f2f';
+    const opacity = ownerGroupOpacity(owner);
+
+    const g = svgGroup(boxLayer);
+    g.setAttribute('opacity', opacity);
+    g.style.cursor = 'pointer';
+
+    svgCircle(g, x, y, OWNER_R, color, '#263238', 2);
 
     if (owner === 'UNOWNED') {
-      svgText(boxLayer, x, y - 6,  '\u26A0',  '#fff', 14, 700);
-      svgText(boxLayer, x, y + 10, 'UNOWNED', '#fff', 10, 700);
+      svgText(g, x, y - 7,  '\u26A0',  '#fff', 14, 700);
+      svgText(g, x, y + 10, 'UNOWNED', '#fff', 10, 700);
     } else {
-      svgText(boxLayer, x, y + 5, owner, '#fff', 13, 700);
+      svgText(g, x, y + 5, owner, '#fff', 13, 700);
     }
+
+    const taskCount = orgData.departments.reduce(
+      (sum, d) => sum + d.tasks.filter(t => t.owner === owner).length, 0
+    );
+    const deptNames = orgData.departments
+      .filter(d => d.tasks.some(t => t.owner === owner))
+      .map(d => d.name)
+      .join(', ');
+    const ownerTipHtml = `<strong>${owner}</strong>${taskCount} tasks · Depts: ${deptNames || 'none'}`;
+
+    g.addEventListener('mouseenter', (e) => {
+      showMapTooltip(ownerTipHtml, e.clientX, e.clientY);
+      g.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.6))';
+    });
+    g.addEventListener('mousemove',  (e) => showMapTooltip(ownerTipHtml, e.clientX, e.clientY));
+    g.addEventListener('mouseleave', () => {
+      hideMapTooltip();
+      g.style.filter = '';
+    });
+    g.addEventListener('click', () => {
+      // Toggle focus on this owner
+      mapState.focusedOwner = (mapState.focusedOwner === owner) ? null : owner;
+      if (mapState.focusedOwner === owner) mapState.hiddenOwners.delete(owner);
+      renderMapControls();
+      renderFlowMap();
+    });
   });
 
-  // ── Legend (top of canvas) ────────────────────────────────────────
+  // ── Legend ────────────────────────────────────────────────────────
   svgText(svg, canvasW / 2, 22,
-    'Dept \u2192 Owner connections  \u00B7  Line thickness = task count  \u00B7  Dashed red = unowned',
-    '#90a4ae', 12, 400);
+    'Line thickness = task count  \u00B7  Dashed red = unowned  \u00B7  Click circles or dept boxes to interact',
+    '#90a4ae', 11, 400);
 }
 
-// ── Lightweight SVG helpers ───────────────────────────────────────────
+// ── SVG helpers ───────────────────────────────────────────────────────
 
 function svgGroup(parent) {
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -369,6 +762,7 @@ function svgRect(parent, x, y, w, h, fill, rx = 0, stroke = 'none', strokeW = 0)
     el.setAttribute('stroke-width', strokeW);
   }
   parent.appendChild(el);
+  return el;
 }
 
 function svgText(parent, x, y, text, fill, fontSize, fontWeight, textAnchor = 'middle') {
@@ -382,6 +776,7 @@ function svgText(parent, x, y, text, fill, fontSize, fontWeight, textAnchor = 'm
   el.setAttribute('font-family', "Segoe UI, Tahoma, Geneva, Verdana, sans-serif");
   el.textContent = text;
   parent.appendChild(el);
+  return el;
 }
 
 function svgCircle(parent, cx, cy, r, fill, stroke, strokeW) {
@@ -392,6 +787,7 @@ function svgCircle(parent, cx, cy, r, fill, stroke, strokeW) {
   el.setAttribute('stroke', stroke);
   el.setAttribute('stroke-width', strokeW);
   parent.appendChild(el);
+  return el;
 }
 
 function svgLine(parent, x1, y1, x2, y2, stroke, strokeW) {
@@ -401,6 +797,7 @@ function svgLine(parent, x1, y1, x2, y2, stroke, strokeW) {
   el.setAttribute('stroke', stroke);
   el.setAttribute('stroke-width', strokeW);
   parent.appendChild(el);
+  return el;
 }
 
 function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
@@ -412,6 +809,7 @@ function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
   if (dashArray) el.setAttribute('stroke-dasharray', dashArray);
   if (opacity < 1) el.setAttribute('opacity', opacity);
   parent.appendChild(el);
+  return el;
 }
 
 // ====================
@@ -419,7 +817,7 @@ function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
 // ====================
 function renderStrategicModels() {
   const container = document.getElementById('models-container');
-  if (container.innerHTML) return; // Already rendered
+  if (container.innerHTML) return;
 
   container.innerHTML = strategicModels.map(model => `
     <div class="model-card">
@@ -447,7 +845,7 @@ function renderStrategicModels() {
 
 function renderCaseStudies() {
   const container = document.getElementById('case-studies-container');
-  if (container.innerHTML) return; // Already rendered
+  if (container.innerHTML) return;
 
   container.innerHTML = caseStudies.map(study => `
     <div class="case-study">
@@ -464,7 +862,7 @@ function renderCaseStudies() {
 }
 
 // ====================
-// STATS CALCULATION
+// STATS
 // ====================
 function updateStats() {
   let total = 0, assigned = 0, unowned = 0;
@@ -472,17 +870,14 @@ function updateStats() {
   orgData.departments.forEach(dept => {
     dept.tasks.forEach(task => {
       total++;
-      if (task.owner === 'UNOWNED') {
-        unowned++;
-      } else {
-        assigned++;
-      }
+      if (task.owner === 'UNOWNED') unowned++;
+      else assigned++;
     });
   });
 
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-assigned').textContent = assigned;
-  document.getElementById('stat-unowned').textContent = unowned;
+  document.getElementById('stat-total').textContent       = total;
+  document.getElementById('stat-assigned').textContent    = assigned;
+  document.getElementById('stat-unowned').textContent     = unowned;
   document.getElementById('stat-departments').textContent = orgData.departments.length;
 }
 
@@ -494,7 +889,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
   populateOwnerFilter();
 
-  // Expand all departments by default
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
   });

@@ -315,6 +315,315 @@ body {
 .btn-link:hover { color: #0d47a1; }
 
 /* ==========================================================================
+   Inline Task Editing
+   ========================================================================== */
+
+.task-name {
+  cursor: text;
+  transition: background 0.15s;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.task-name:hover {
+  background: #e8f0fe;
+}
+
+.task-name::after {
+  content: ' ✏';
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: #546e7a;
+}
+
+.task-name:hover::after {
+  opacity: 1;
+}
+
+.task-name-input {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  color: #263238;
+  border: 2px solid #1976d2;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #e8f4fd;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+}
+
+/* Owner badge: click to reassign */
+.task-owner {
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.task-owner:hover {
+  filter: brightness(1.15);
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   Owner Picker Dropdown
+   ========================================================================== */
+
+.owner-picker {
+  position: fixed;
+  background: white;
+  border: 2px solid #cfd8dc;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  z-index: 9999;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.owner-picker-btn {
+  border: none;
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.1s, transform 0.1s;
+}
+
+.owner-picker-btn:hover {
+  filter: brightness(1.15);
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Map View Controls
+   ========================================================================== */
+
+.map-controls {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #cfd8dc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-control-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #546e7a;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.map-filter-pill {
+  border: 2px solid var(--pill-color, #546e7a);
+  background: var(--pill-color, #546e7a);
+  color: white;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.map-filter-pill:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.map-filter-pill--hidden {
+  background: transparent;
+  color: var(--pill-color, #546e7a);
+  opacity: 0.6;
+}
+
+.map-filter-pill--hidden:hover {
+  opacity: 1;
+}
+
+.map-filter-pill--focused {
+  outline: 3px solid white;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--pill-color, #546e7a);
+}
+
+.map-reset-btn {
+  margin-left: 8px;
+  font-size: 12px;
+  padding: 5px 14px;
+}
+
+/* ==========================================================================
+   Map Layout (SVG + detail panel side-by-side)
+   ========================================================================== */
+
+.map-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 500px;
+}
+
+.map-scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+}
+
+#flowMap { display: block; }
+
+/* Dept detail panel */
+.map-dept-panel {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease;
+  border-left: 0px solid #cfd8dc;
+  background: #fafafa;
+  flex-shrink: 0;
+  height: 100%;
+  min-height: 500px;
+  font-size: 13px;
+}
+
+.map-dept-panel.active {
+  width: 320px;
+  padding: 0;
+  border-left: 2px solid #cfd8dc;
+}
+
+.map-panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  color: #90a4ae;
+  text-align: center;
+  gap: 12px;
+}
+
+.map-panel-placeholder span { font-size: 40px; }
+.map-panel-placeholder p { font-size: 14px; line-height: 1.5; }
+
+.map-panel-header {
+  padding: 16px 16px 12px 16px;
+  background: white;
+  border-bottom: 2px solid #eceff1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+}
+
+.map-panel-header strong {
+  font-size: 14px;
+  color: #263238;
+  flex: 1;
+}
+
+.map-panel-header .task-count-badge {
+  font-size: 12px;
+  background: #eceff1;
+  color: #546e7a;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.map-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #90a4ae;
+  padding: 0 4px;
+  line-height: 1;
+}
+.map-panel-close:hover { color: #263238; }
+
+.map-panel-body {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+}
+
+.map-panel-owner-group {
+  margin-bottom: 14px;
+}
+
+.map-panel-owner-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 6px;
+}
+
+.map-panel-owner-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.map-panel-owner-group li {
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #37474f;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 3px;
+  background: white;
+  border: 1px solid #eceff1;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.map-panel-owner-group li:hover {
+  background: #e8f4fd;
+  border-color: #90caf9;
+}
+
+/* ==========================================================================
+   Map Tooltip
+   ========================================================================== */
+
+.map-tooltip {
+  position: fixed;
+  background: rgba(38, 50, 56, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 9000;
+  max-width: 240px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: none;
+  line-height: 1.5;
+}
+
+.map-tooltip strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+/* ==========================================================================
    Mobile Responsiveness
    ========================================================================== */
 
@@ -352,6 +661,10 @@ body {
   /* Let task-item wrap owner badge below task name on narrow screens */
   .task-item { flex-wrap: wrap; gap: 8px; }
   .task-owner { margin-left: 0; }
+
+  /* Map panel stacks below the SVG on mobile */
+  .map-layout { flex-direction: column; }
+  .map-dept-panel.active { width: 100%; border-left: none; border-top: 2px solid #cfd8dc; }
 }
 
 @media (max-width: 480px) {

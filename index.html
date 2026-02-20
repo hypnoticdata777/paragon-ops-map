@@ -80,9 +80,19 @@
 
     <!-- MAP VIEW -->
     <div id="map-view" class="view-panel">
-      <!-- Wrapper enables horizontal scroll on mobile without breaking desktop layout -->
-      <div class="map-scroll-wrapper">
-        <svg id="flowMap"></svg>
+      <!-- Owner filter pills + action bar -->
+      <div id="map-controls" class="map-controls"></div>
+      <!-- Two-column layout: SVG map + optional task detail panel -->
+      <div class="map-layout">
+        <div class="map-scroll-wrapper">
+          <svg id="flowMap"></svg>
+        </div>
+        <div id="map-dept-panel" class="map-dept-panel">
+          <div class="map-panel-placeholder">
+            <span>&#x1F4CB;</span>
+            <p>Click a department box on the map to see its task list here.</p>
+          </div>
+        </div>
       </div>
     </div>
 
