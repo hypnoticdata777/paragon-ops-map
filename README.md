@@ -1,104 +1,41 @@
 # Paragon Operations Map
 
-A complete operational visualization and strategic analysis tool built to map, analyze, and scale property management operations.
-
-## Overview
-
-The **Paragon Operations Map** provides a full operational breakdown of a property management company, including:
-
-- 17 departments
-- 350+ operational tasks
-- Ownership visibility per task
-- Unowned task detection (highlighted in red)
-- Strategic scaling models with pros/cons analysis
-- Industry case study insights
-
-Designed to support operational stabilization and scaling from **150 → 500 units**.
+> A live operational intelligence tool for property management — mapping every task, owner, and accountability gap across the entire organization.
 
 ---
 
-## Features
+## What Is It?
 
-### Tracking View
-- Department-based task cards, all expanded by default
-- Color-coded owner badges per task
-- Red highlighting for unowned responsibilities
-- Click any department header to collapse/expand
+The **Paragon Operations Map** is an internal operations management tool built for **Paragon Property Management**. It provides a single source of truth for all operational responsibilities, ownership assignments, and organizational structure as the company scales from **~150 to 300–500 managed units**.
 
-### Map View
-- SVG-generated operational flow map
-- Company → Department → Task → Owner visualization
-- Animated dashed lines for unowned tasks
-- Horizontally scrollable on smaller screens
+The tool answers three critical questions at a glance:
 
-### Strategic Models
-- 4 organizational scaling models (Functional, Portfolio, Pod, Hybrid)
-- Real-world industry case studies
-- Side-by-side pros/cons comparison
+1. **What work exists?** — Every operational task across all 17 departments, documented and organized.
+2. **Who owns it?** — Every task is assigned to a named team member or flagged as UNOWNED.
+3. **Where are the gaps?** — Unowned responsibilities surface automatically, so nothing falls through the cracks.
 
 ---
 
-## Project Structure
+## The Operational Problem It Solves
 
-```
-index.html          - Main UI, layout, and view templates
-css/style.css       - All application styles + mobile media queries
-js/data.js          - Organizational data, strategic models, case studies
-js/app.js           - Rendering logic and visualization engine
-```
+In a growing property management company, operational responsibility spreads across leasing, maintenance, accounting, compliance, tenant relations, and more. Without a structured system:
 
----
+- Tasks go unclaimed and tenants, owners, or vendors fall through the cracks
+- Onboarding new team members is slow because no single document captures "who does what"
+- Leadership can't identify overloaded team members or understaffed departments
+- Scaling decisions (hiring, role creation, process automation) are made without full visibility
 
-## Getting Started
-
-Open `index.html` directly in any browser — no build step required. The app uses plain HTML, CSS, and vanilla JavaScript with no dependencies.
-
-For development with the included webpack setup:
-
-```bash
-npm install
-npm start    # dev server
-npm run build  # production build to dist/
-```
+The Paragon Operations Map gives leadership and the operations team **complete visibility** — across 17 departments, 350+ tasks, and 8 team members — in a single interactive interface.
 
 ---
 
-## Technologies Used
+## Who It's For
 
-- HTML5
-- CSS3 with responsive media queries
-- Vanilla JavaScript (ES6)
-- SVG rendering engine (no external library)
-
-No frameworks — pure logic-driven implementation.
-
----
-
-## Browser Compatibility
-
-Works in all modern browsers. The `switchView()` function explicitly passes the clicked element rather than relying on `window.event`, ensuring correct behavior in Firefox, Safari, and Chrome.
+| Role | How They Use It |
+|------|----------------|
+| **Operations Manager** | Audit task ownership, identify gaps, plan role coverage |
+| **CEO / Leadership** | Evaluate team structure, guide scaling decisions |
+| **New Hires** | Understand their role and how it connects to the rest of the org |
+| **Department Leads** | Review their task responsibilities and handoffs |
 
 ---
-
-## Purpose
-
-This project was created to:
-
-- Identify operational gaps and unowned responsibilities
-- Clarify task ownership across all departments
-- Reduce single points of failure
-- Support leadership decision-making during growth
-- Enable scalable organizational design
-
----
-
-## Author
-
-**Carlos Sanchez**
-Operations Manager & Systems Builder
-
----
-
-## Created
-
-February 2026
