@@ -152,6 +152,7 @@ function _commitTaskName(deptId, taskIdx, newValue, originalName, nameEl, taskEl
   nameEl.title = 'Double-click to rename';
   nameEl.ondblclick = () => startTaskEdit(deptId, taskIdx);
 
+  saveToStorage();
   if (currentView === 'map') renderFlowMap();
 }
 
@@ -226,6 +227,7 @@ function setTaskOwner(deptId, taskIdx, newOwner) {
   }
 
   updateStats();
+  saveToStorage();
   if (currentView === 'map') {
     renderMapControls();
     renderFlowMap();
@@ -882,9 +884,55 @@ function updateStats() {
 }
 
 // ====================
+// PERSISTENCE (localStorage)
+// ====================
+
+const STORAGE_KEY = 'paragon-ops-data-v1';
+
+function saveToStorage() {
+  try {
+    const payload = orgData.departments.map(dept => ({
+      id: dept.id,
+      tasks: dept.tasks.map(t => ({ name: t.name, owner: t.owner }))
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    // localStorage unavailable (private browsing, quota exceeded, etc.)
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    saved.forEach(savedDept => {
+      const dept = orgData.departments.find(d => d.id === savedDept.id);
+      if (!dept) return;
+      savedDept.tasks.forEach((savedTask, idx) => {
+        if (dept.tasks[idx]) {
+          dept.tasks[idx].name  = savedTask.name;
+          dept.tasks[idx].owner = savedTask.owner;
+        }
+      });
+    });
+  } catch (e) {
+    // Ignore corrupt / incompatible saved data
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+function resetStorage() {
+  if (!confirm('Reset all task names and owner assignments to defaults?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ====================
 // INITIALIZATION
 // ====================
 document.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();
   renderTrackingView();
   updateStats();
   populateOwnerFilter();
