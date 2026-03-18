@@ -2,6 +2,8 @@
 
 > A live operational intelligence tool for property management — mapping every task, owner, and accountability gap across the entire organization.
 
+**[▶ Open the App](https://hypnoticdata777.github.io/paragon-ops-map/)** — no install required, runs in the browser.
+
 ---
 
 ## What Is It?
@@ -141,7 +143,9 @@ paragon-ops-map/
 
 ## Getting Started
 
-**No build step required.** Open `index.html` directly in any modern browser and the tool is fully functional.
+**Quickest option:** visit **[hypnoticdata777.github.io/paragon-ops-map](https://hypnoticdata777.github.io/paragon-ops-map/)** — nothing to install.
+
+**Run locally:** open `index.html` directly in any modern browser and the tool is fully functional.
 
 For development with live reload:
 
