@@ -1,33 +1,35 @@
-# Paragon Operations Map
+# PM Ops Map
 
-> A live operational intelligence tool for property management — mapping every task, owner, and accountability gap across the entire organization.
+> An open-source operational intelligence tool for property management companies — map every task, owner, and accountability gap across your entire organization.
 
-**[▶ Open the App](https://hypnoticdata777.github.io/paragon-ops-map/)** — no install required, runs in the browser.
+**[▶ Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/)** — no install required, runs in the browser.
 
 ---
 
 ## What Is It?
 
-The **Paragon Operations Map** is an internal operations management tool built for **Paragon Property Management**. It provides a single source of truth for all operational responsibilities, ownership assignments, and organizational structure as the company scales from **~150 to 300–500 managed units**.
+**PM Ops Map** is a lightweight, self-hosted tool that gives property management companies a single source of truth for all operational responsibilities, ownership assignments, and organizational structure.
 
-The tool answers three critical questions at a glance:
+It comes pre-loaded with 17 common PM departments and 350+ standard tasks — all fully editable to match your company's actual operations. No database, no login, no vendor lock-in.
 
-1. **What work exists?** — Every operational task across all 17 departments, documented and organized.
+The tool answers three questions at a glance:
+
+1. **What work exists?** — Every operational task across all departments, documented and organized.
 2. **Who owns it?** — Every task is assigned to a named team member or flagged as UNOWNED.
 3. **Where are the gaps?** — Unowned responsibilities surface automatically, so nothing falls through the cracks.
 
 ---
 
-## The Operational Problem It Solves
+## The Problem It Solves
 
 In a growing property management company, operational responsibility spreads across leasing, maintenance, accounting, compliance, tenant relations, and more. Without a structured system:
 
 - Tasks go unclaimed and tenants, owners, or vendors fall through the cracks
 - Onboarding new team members is slow because no single document captures "who does what"
 - Leadership can't identify overloaded team members or understaffed departments
-- Scaling decisions (hiring, role creation, process automation) are made without full visibility
+- Scaling decisions — hiring, role creation, process automation — are made without full visibility
 
-The Paragon Operations Map gives leadership and the operations team **complete visibility** — across 17 departments, 350+ tasks, and 8 team members — in a single interactive interface.
+PM Ops Map gives your leadership and operations team **complete visibility** across every department, task, and team member in a single interactive interface.
 
 ---
 
@@ -63,7 +65,7 @@ The Tracking View is the operational backbone. It lists every department as a co
 | **Filter by person** | Use the owner dropdown to show only tasks belonging to a specific team member |
 | **Spot unowned work** | Unowned tasks are highlighted in red with a pulsing badge — impossible to miss |
 
-All edits update the live data model, so switching to the Map View always reflects the current state.
+All edits update the live data model and auto-save to the browser. Switching to the Map View always reflects the current state.
 
 ---
 
@@ -75,7 +77,7 @@ The Map View renders a custom SVG flow diagram showing the full **Company → De
 
 - Each department box shows its name, total task count, and a red warning if any tasks are unowned
 - Each owner circle is color-coded to match their badges in the Tracking View
-- Bezier curves connect departments to owners; thicker = more tasks
+- Bezier curves connect departments to owners — thicker lines mean more tasks
 - Dashed red lines indicate connections to unowned work
 
 **Interactive controls:**
@@ -88,22 +90,20 @@ The Map View renders a custom SVG flow diagram showing the full **Company → De
 | **Hover for details** | Hover over any department, owner circle, or connection curve for a tooltip with task counts and context |
 | **Reset all filters** | Click the **Reset** button in the filter bar |
 
-This makes it straightforward to answer questions like: *"What does Nathan own across the whole org?"* or *"Which departments involve unowned work?"*
-
 ---
 
 ### Strategic Models View — Scaling Playbook
 
-The Strategic Models View presents four organizational structures evaluated for their fit as Paragon grows from 150 to 500 units:
+The Strategic Models View presents four organizational structures for property management companies, evaluated for fit as you grow:
 
 | Model | Description |
 |-------|-------------|
 | **Functional Specialization** | Deep expertise by department; clear accountability |
 | **Portfolio Segmentation** | Each PM owns a full unit portfolio end-to-end |
 | **Pod System** | Small cross-functional squads; high flexibility |
-| **Hybrid Core + Flex** ⭐ | Recommended — stable core team with flex support layer |
+| **Hybrid Core + Flex** ⭐ | Stable core team with a flex support layer |
 
-Each model includes team structure breakdown, pros and cons, and a real-world company example. Six industry case studies are included below, covering centralized leasing, AI automation adoption, virtual team cost savings, and restructuring outcomes.
+Each model includes a team structure breakdown, pros and cons, and a real-world company example. Six industry case studies cover centralized leasing, AI automation adoption, virtual team cost savings, and restructuring outcomes.
 
 ---
 
@@ -120,64 +120,90 @@ These update automatically when ownership is reassigned in the Tracking View.
 
 ---
 
-## Project Structure
+## Adapting It to Your Company
 
-```
-paragon-ops-map/
-├── index.html              Main HTML — layout, view containers, navigation
-├── css/
-│   └── style.css           All application styles, component styles, responsive breakpoints
-├── js/
-│   ├── data.js             Organizational data model — departments, tasks, owner colors,
-│   │                       strategic models, case studies
-│   └── app.js              Rendering engine — view management, tracking view, SVG map,
-│                           inline editing, owner picker, map state, tooltips, filters
-├── webpack.common.js       Shared webpack configuration
-├── webpack.config.dev.js   Development server config (hot reload)
-└── webpack.config.prod.js  Production build config
-```
+All departments, tasks, and team members are defined in `js/data.js` as plain JavaScript objects. No build step required — just edit the file and reload.
 
-**Key design principle:** All data lives in `data.js` as a plain JavaScript object (`orgData`). All rendering reads from that object. Edits made in the UI (task renames, owner reassignments) mutate the object in memory, which keeps every view in sync without a backend.
+### Rename or replace team members
 
----
+In `js/data.js`, update the `ownerColors` object:
 
-## Getting Started
-
-**Quickest option:** visit **[hypnoticdata777.github.io/paragon-ops-map](https://hypnoticdata777.github.io/paragon-ops-map/)** — nothing to install.
-
-**Run locally:** open `index.html` directly in any modern browser and the tool is fully functional.
-
-For development with live reload:
-
-```bash
-npm install
-npm start          # starts webpack-dev-server at localhost:8080
-npm run build      # produces a production bundle in dist/
+```js
+const ownerColors = {
+  "Alex":    { class: "owner-alex",    hex: "#ff6f00" },
+  "Jordan":  { class: "owner-jordan",  hex: "#1976d2" },
+  "UNOWNED": { class: "owner-unowned", hex: "#d32f2f" },
+  // add as many as you need
+};
 ```
 
----
+Add a matching CSS class in `css/style.css`:
 
-## Data Model
+```css
+.owner-alex   { background: #ff6f00; }
+.owner-jordan { background: #1976d2; }
+```
 
-All departments and tasks are defined in `js/data.js`. To add, remove, or restructure the org:
+### Add or remove tasks
 
 ```js
 // Add a task to an existing department
 orgData.departments
   .find(d => d.id === 'leasing')
-  .tasks.push({ name: "New task description", owner: "Nathan" });
-
-// Add a new team member — add their color to ownerColors
-const ownerColors = {
-  "NewPerson": { class: "owner-newperson", hex: "#your-hex-color" },
-  // ...
-};
+  .tasks.push({ name: "Follow up on application", owner: "Alex" });
 ```
 
-Add a matching CSS class in `style.css`:
+### Add a new department
 
-```css
-.owner-newperson { background: #your-hex-color; }
+```js
+orgData.departments.push({
+  id:    "hr",
+  name:  "Human Resources",
+  color: "#5e35b1",
+  tasks: [
+    { name: "Post job listings",     owner: "Jordan" },
+    { name: "Run onboarding process", owner: "UNOWNED" },
+  ]
+});
+```
+
+### Update the company name
+
+In `index.html`, update the header and hero text. In `js/app.js`, update the company label rendered in the SVG map (`PARAGON`, `PROPERTY`, `MANAGEMENT`).
+
+---
+
+## Project Structure
+
+```
+pm-ops-map/
+├── index.html              Main HTML — layout, view containers, navigation
+├── css/
+│   └── style.css           All application styles, responsive breakpoints
+├── js/
+│   ├── data.js             Data model — departments, tasks, owners, strategic content
+│   └── app.js              Rendering engine — views, SVG map, editing, filters, persistence
+├── webpack.common.js       Shared webpack configuration
+├── webpack.config.dev.js   Development server config (hot reload)
+└── webpack.config.prod.js  Production build config
+```
+
+**Key design principle:** All data lives in `data.js` as a plain JavaScript object. All rendering reads from that object. Edits made in the UI mutate the in-memory object, keeping every view in sync without a backend.
+
+---
+
+## Getting Started
+
+**Quickest option:** fork the repo, edit `js/data.js` with your team and tasks, and deploy to GitHub Pages for free.
+
+**Run locally:** open `index.html` directly in any modern browser — fully functional with no server needed.
+
+**Development with live reload:**
+
+```bash
+npm install
+npm start          # webpack-dev-server at localhost:8080
+npm run build      # production bundle → dist/
 ```
 
 ---
@@ -190,6 +216,7 @@ Add a matching CSS class in `style.css`:
 | **Styles** | CSS3 (Flexbox, Grid, custom properties) | Responsive without a CSS framework |
 | **Logic** | Vanilla JavaScript ES6 | No bundle size, no dependencies to maintain |
 | **Visualization** | Custom SVG engine | Full control over layout and interactivity |
+| **Persistence** | localStorage | Edits survive page refresh, no backend needed |
 | **Build** | Webpack 5 (optional) | Bundling only — not required to run the app |
 
 Zero runtime dependencies. Everything ships as static files.
@@ -198,13 +225,16 @@ Zero runtime dependencies. Everything ships as static files.
 
 ## Browser Compatibility
 
-Tested and working in all modern browsers (Chrome, Firefox, Safari, Edge). The `switchView()` function explicitly passes the clicked element as a parameter rather than relying on `window.event`, which ensures correct behavior in Firefox where that global is not available.
+Works in all modern browsers (Chrome, Firefox, Safari, Edge). The `switchView()` function explicitly passes the clicked element as a parameter rather than relying on `window.event`, which ensures correct behavior in Firefox.
 
 ---
 
-## Author
+## Contributing
 
-**Carlos Sanchez**
-Operations Manager & Systems Builder — Paragon Property Management
+Pull requests are welcome. If you adapt this for your company and build something useful — a new department template, a data import/export feature, a different visualization — consider opening a PR so other PMCs can benefit.
 
-*Built February 2026 to support operational stabilization and planning for the 150 → 500 unit growth phase.*
+---
+
+## License
+
+MIT — free to use, adapt, and deploy for any property management company.

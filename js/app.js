@@ -884,6 +884,27 @@ function updateStats() {
 }
 
 // ====================
+// SAVE TOAST
+// ====================
+
+let _toastTimer = null;
+
+function showSaveToast(isError = false) {
+  const toast = document.getElementById('save-toast');
+  if (!toast) return;
+  clearTimeout(_toastTimer);
+
+  toast.textContent = isError ? '⚠ Save failed' : '✓ Saved';
+  toast.className = 'save-toast' + (isError ? ' save-toast--error' : '');
+
+  // Force reflow so re-triggering the animation works
+  void toast.offsetWidth;
+  toast.classList.add('visible');
+
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
+}
+
+// ====================
 // PERSISTENCE (localStorage)
 // ====================
 
@@ -896,8 +917,10 @@ function saveToStorage() {
       tasks: dept.tasks.map(t => ({ name: t.name, owner: t.owner }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    showSaveToast();
   } catch (e) {
     // localStorage unavailable (private browsing, quota exceeded, etc.)
+    showSaveToast(true);
   }
 }
 
