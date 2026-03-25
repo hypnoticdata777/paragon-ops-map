@@ -169,7 +169,7 @@ orgData.departments.push({
 
 ### Update the company name
 
-In `index.html`, update the header and hero text. In `js/app.js`, update the company label rendered in the SVG map (`PARAGON`, `PROPERTY`, `MANAGEMENT`).
+On first load, the app shows an onboarding modal asking for your company name. Enter it once — it's saved to `localStorage` and automatically shown in the page header and the SVG map box. It persists across page refreshes and can be changed by clearing `localStorage` (key: `pm-ops-company-name`) and reloading.
 
 ---
 
