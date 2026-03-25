@@ -1,9 +1,9 @@
 // ====================
-// COMPLETE PARAGON DATA - ALL 17 DEPARTMENTS, 351+ TASKS
+// PM OPS MAP - ALL 17 DEPARTMENTS, 351+ TASKS
 // ====================
 
 const orgData = {
-  company: "Paragon Property Management",
+  company: "Your Company",
   departments: [
     {
       id: "leasing",
@@ -235,7 +235,7 @@ const orgData = {
       color: "#689f38",
       tasks: [
         { name: "Prevent utility shutoff", owner: "UNOWNED" },
-        { name: "Switch utilities into Paragon name at vacancy", owner: "UNOWNED" },
+        { name: "Switch utilities into company name at vacancy", owner: "UNOWNED" },
         { name: "Switch utilities out at move-in", owner: "UNOWNED" },
         { name: "Track utility bills", owner: "UNOWNED" },
         { name: "Coordinate with Accounting department", owner: "UNOWNED" },
@@ -477,7 +477,7 @@ const strategicModels = [
   },
   {
     title: "MODEL 4: Hybrid Core + Flex",
-    subtitle: "(Scalability-Focused Model) ⭐ RECOMMENDED FOR PARAGON",
+    subtitle: "(Scalability-Focused Model) ⭐ RECOMMENDED FOR GROWING COMPANIES",
     bestFor: "Growing companies preparing for rapid scale (150 → 500 units)",
     teamStructure: [
       "Core Team (6 FTE): CEO, Ops Manager, Lead Maintenance, Lead Leasing, Accounting, Owner Relations",

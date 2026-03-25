@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Paragon Operations Map</title>
-  <meta name="description" content="Comprehensive operational analysis and strategic planning tool for Paragon Property Management.">
+  <title>PM Ops Map</title>
+  <meta name="description" content="Map your property management company's tasks, ownership, and accountability across every department.">
 
   <link rel="stylesheet" href="css/style.css">
 
@@ -17,13 +17,8 @@
 <div class="container">
   <div class="header">
     <div>
-      <h1>Paragon Operations Map</h1>
+      <h1>PM Ops Map</h1>
       <p>Comprehensive Operational Analysis &amp; Strategic Planning</p>
-    </div>
-    <div class="header-meta">
-      <p><strong>Created:</strong> February 2026</p>
-      <p><strong>Manager:</strong> Carlos Sanchez</p>
-      <p><strong>Target Date:</strong> March 31, 2026</p>
     </div>
   </div>
 
@@ -69,8 +64,7 @@
     <!-- TRACKING VIEW -->
     <div id="tracking-view" class="view-panel active">
       <div class="tracking-hero">
-        <h2>PARAGON PROPERTY MANAGEMENT</h2>
-        <p>~150 Units | Scaling to 300-500</p>
+        <h2 id="company-heading">YOUR COMPANY</h2>
       </div>
       <div class="departments" id="departments"></div>
       <div id="no-results" class="no-results" style="display:none">
@@ -117,6 +111,17 @@
 
 <!-- FIX: paths updated from bare filenames to js/ subdirectory,
      matching the actual file locations and making webpack entry consistent. -->
+<!-- Onboarding modal: shown on first visit to capture company name -->
+<div id="onboarding-modal" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+  <div class="onboarding-card">
+    <div class="onboarding-logo">PM Ops Map</div>
+    <h2 id="onboarding-title" class="onboarding-title">Welcome!</h2>
+    <p class="onboarding-subtitle">Map your team's tasks and ownership across every department. Let's start by setting up your company.</p>
+    <label for="company-input" class="onboarding-label">What's your company name?</label>
+    <input id="company-input" type="text" class="onboarding-input" placeholder="e.g. Sunrise Property Management" maxlength="60" autocomplete="off">
+    <button class="onboarding-btn" onclick="submitCompanyName()">Get Started &rarr;</button>
+  </div>
+</div>
 <div id="save-toast" class="save-toast"></div>
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>

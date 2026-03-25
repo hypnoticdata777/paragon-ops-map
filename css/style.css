@@ -18,7 +18,7 @@ textarea { resize: vertical; }
 .hidden, [hidden] { display: none !important; }
 
 /* ==========================================================================
-   Paragon Operations Map - Application Styles
+   PM Ops Map - Application Styles
    ========================================================================== */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -714,6 +714,116 @@ body {
 
 .save-toast--error {
   background: #c62828;
+}
+
+/* ==========================================================================
+   Onboarding modal
+   ========================================================================== */
+
+.onboarding-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(38, 50, 56, 0.88);
+  z-index: 20000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.onboarding-overlay.visible {
+  display: flex;
+}
+
+.onboarding-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 44px 40px 40px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: onboardingIn 0.25s ease;
+}
+
+@keyframes onboardingIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.onboarding-logo {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1976d2;
+  margin-bottom: 4px;
+}
+
+.onboarding-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #263238;
+  margin: 0;
+}
+
+.onboarding-subtitle {
+  font-size: 14px;
+  color: #607d8b;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.onboarding-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #37474f;
+}
+
+.onboarding-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #cfd8dc;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #263238;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.onboarding-input:focus {
+  border-color: #1976d2;
+}
+
+.onboarding-input.shake {
+  animation: inputShake 0.35s ease;
+  border-color: #d32f2f;
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  60%       { transform: translateX(6px); }
+  80%       { transform: translateX(-3px); }
+}
+
+.onboarding-btn {
+  margin-top: 4px;
+  padding: 13px 20px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.onboarding-btn:hover {
+  background: #1565c0;
 }
 
 /* ==========================================================================
