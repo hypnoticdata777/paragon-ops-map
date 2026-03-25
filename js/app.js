@@ -633,9 +633,7 @@ function renderFlowMap() {
   const boxLayer = svgGroup(svg);
   const compY = companyCY - COMPANY_H / 2;
   svgRect(boxLayer, COMPANY_X, compY, COMPANY_W, COMPANY_H, '#37474f', 10);
-  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY - 16, 'EXAMPLE',    '#fff', 12, 700);
-  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY,      'PROPERTY',   '#fff', 12, 700);
-  svgText(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY + 16, 'MANAGEMENT', '#fff', 10, 400);
+  drawCompanyLabel(boxLayer, COMPANY_X + COMPANY_W / 2, companyCY);
 
   // ── Layer 4: Department boxes (interactive) ───────────────────────
   depts.forEach((dept, i) => {
@@ -908,7 +906,8 @@ function showSaveToast(isError = false) {
 // PERSISTENCE (localStorage)
 // ====================
 
-const STORAGE_KEY = 'paragon-ops-data-v1';
+const STORAGE_KEY      = 'pm-ops-data-v1';
+const COMPANY_KEY      = 'pm-ops-company-name';
 
 function saveToStorage() {
   try {
@@ -952,6 +951,73 @@ function resetStorage() {
 }
 
 // ====================
+// COMPANY NAME
+// ====================
+
+function getCompanyName() {
+  return localStorage.getItem(COMPANY_KEY) || 'Your Company';
+}
+
+// Render the company name into the SVG box, wrapping words across up to 3 lines.
+function drawCompanyLabel(layer, cx, cy) {
+  const name  = getCompanyName().toUpperCase();
+  const words = name.trim().split(/\s+/);
+
+  let lines;
+  if (words.length <= 3) {
+    lines = words;
+  } else {
+    // Chunk into 3 roughly-equal groups
+    const size = Math.ceil(words.length / 3);
+    lines = [
+      words.slice(0, size).join(' '),
+      words.slice(size, size * 2).join(' '),
+      words.slice(size * 2).join(' '),
+    ].filter(Boolean);
+  }
+
+  const lineH  = 16;
+  const startY = cy - ((lines.length - 1) / 2) * lineH;
+  lines.forEach((line, i) => {
+    const isLast   = i === lines.length - 1 && lines.length > 1;
+    svgText(layer, cx, startY + i * lineH, line, '#fff', isLast ? 10 : 12, isLast ? 400 : 700);
+  });
+}
+
+function applyCompanyName(name) {
+  const heading = document.getElementById('company-heading');
+  if (heading) heading.textContent = name.toUpperCase();
+  // SVG map re-reads getCompanyName() on next render — no extra action needed.
+}
+
+// ====================
+// ONBOARDING MODAL
+// ====================
+
+function showOnboardingModal() {
+  const modal = document.getElementById('onboarding-modal');
+  modal.classList.add('visible');
+  const input = document.getElementById('company-input');
+  setTimeout(() => input.focus(), 50);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitCompanyName();
+  });
+}
+
+function submitCompanyName() {
+  const input = document.getElementById('company-input');
+  const name  = input.value.trim();
+  if (!name) {
+    input.classList.add('shake');
+    setTimeout(() => input.classList.remove('shake'), 400);
+    return;
+  }
+  try { localStorage.setItem(COMPANY_KEY, name); } catch (_) { /* ignore */ }
+  applyCompanyName(name);
+  document.getElementById('onboarding-modal').classList.remove('visible');
+}
+
+// ====================
 // INITIALIZATION
 // ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -963,4 +1029,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
   });
+
+  const savedName = localStorage.getItem(COMPANY_KEY);
+  if (savedName) {
+    applyCompanyName(savedName);
+  } else {
+    showOnboardingModal();
+  }
 });
