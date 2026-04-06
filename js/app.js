@@ -1,31 +1,50 @@
 // ====================
 // VIEW MANAGEMENT
 // ====================
+
+// Like a TV remote's input button — remembers which channel you're on right now.
 let currentView = 'tracking';
 
+// The bouncer at the club: only ONE room can be "active" at a time.
+// When you call this, every other room gets kicked out of the VIP list
+// and the one you asked for gets the wristband.
 function switchView(view, tabEl) {
+  // Update our mental note of "where are we right now?"
   currentView = view;
 
+  // Walk up to every view panel and rip off its "active" sticker —
+  // like flipping all the light switches off before turning the right one on.
   document.querySelectorAll('.view-panel').forEach(panel => {
     panel.classList.remove('active');
   });
+  // Now flip ON just the panel the user asked for.
   document.getElementById(`${view}-view`).classList.add('active');
 
+  // Same drill for the nav tabs — un-highlight them all first...
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.remove('active');
   });
+  // ...then highlight the tab the user actually clicked.
   tabEl.classList.add('active');
 
+  // The filter bar is like a toolbar that only makes sense in the tracking room.
+  // If we're going back to tracking, roll out the welcome mat (display: flex).
+  // If we're going anywhere else, fold it up and clear any leftover search dust.
   const filterBar = document.getElementById('filter-bar');
   if (view === 'tracking') {
     filterBar.style.display = 'flex';
   } else {
     filterBar.style.display = 'none';
-    clearFilter();
+    clearFilter(); // Wipe the whiteboard clean so old searches don't haunt us.
   }
 
+  // If someone left the owner-picker dropdown open, slam it shut —
+  // like closing a menu before switching apps.
   closeOwnerPicker();
 
+  // Each view has its own "setup crew". Kick off the right one.
+  // Map view needs its controls and the flow diagram drawn from scratch.
+  // Models view needs the strategic cards and case studies rendered.
   if (view === 'map') {
     renderMapControls();
     renderFlowMap();
@@ -38,16 +57,28 @@ function switchView(view, tabEl) {
 // ====================
 // TRACKING VIEW
 // ====================
+
+// This is the painter: it wipes the canvas blank and redraws every department
+// card from the data, like refreshing a bulletin board by tearing everything
+// down and re-pinning it in order.
 function renderTrackingView() {
+  // Grab the container div — the empty corkboard we're about to fill.
   const container = document.getElementById('departments');
+  // Nuke whatever HTML was there before. Clean slate.
   container.innerHTML = '';
 
+  // Loop through every department in our data — like going shelf by shelf
+  // in a filing room.
   orgData.departments.forEach(dept => {
+    // Build a fresh card (div) for this department.
     const deptDiv = document.createElement('div');
     deptDiv.className = 'department';
+    // Slap a colored stripe on top — the department's unique "team jersey" color.
     deptDiv.style.borderTop = `4px solid ${dept.color}`;
+    // Tag the card with the dept's ID so we can find it again later by name.
     deptDiv.dataset.id = dept.id;
 
+    // Stamp the card's interior HTML all at once — header + every task row.
     deptDiv.innerHTML = `
       <div class="department-header" style="background: ${dept.color}" onclick="toggleDepartment('${dept.id}')">
         <span>${dept.name} (<span class="dept-task-count">${dept.tasks.length}</span> tasks)</span>
@@ -55,7 +86,10 @@ function renderTrackingView() {
       </div>
       <div class="department-body">
         ${dept.tasks.map((task, taskIdx) => {
+          // Escape any quotes in the task name so they don't break the HTML attribute.
+          // Like putting a "handle with care" label on a fragile package.
           const safeName = task.name.replace(/"/g, '&quot;');
+          // Flag tasks with no owner — the orphan tasks that need adoption.
           const isUnowned = task.owner === 'UNOWNED';
           return `
           <div class="task-item ${isUnowned ? 'unowned' : ''}"
@@ -76,10 +110,13 @@ function renderTrackingView() {
       </div>
     `;
 
+    // Stick the finished card onto the corkboard.
     container.appendChild(deptDiv);
   });
 }
 
+// Accordion toggle — like pulling on a window blind.
+// If it's up, it comes down; if it's down, it rolls back up.
 function toggleDepartment(deptId) {
   const dept = document.querySelector(`.department[data-id="${deptId}"]`);
   if (dept) dept.classList.toggle('expanded');
@@ -89,29 +126,40 @@ function toggleDepartment(deptId) {
 // INLINE TASK NAME EDITING
 // ====================
 
+// Turns a task label into a live text field when you double-click it —
+// like scratching out a sticky note and writing a new one in its place.
 function startTaskEdit(deptId, taskIdx) {
-  // Cancel any currently active edit
+  // If another task is already being edited, force it to save first.
+  // You can't have two sticky notes half-scratched at the same time.
   document.querySelectorAll('.task-name-input').forEach(inp => inp.blur());
 
+  // Look up the department in our data model.
   const dept = orgData.departments.find(d => d.id === deptId);
-  if (!dept) return;
+  if (!dept) return; // Department doesn't exist — bail out, nothing to edit.
 
+  // Find the actual DOM element for this specific task row.
   const taskEl = document.querySelector(
     `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
   );
-  if (!taskEl) return;
+  if (!taskEl) return; // Can't find the row on screen — bail.
 
+  // Grab the name label element and save a backup of its current text —
+  // like photographing the original sticky note before erasing it.
   const nameEl = taskEl.querySelector('.task-name');
   const originalName = dept.tasks[taskIdx].name;
 
-  // Build the input
+  // Create a real <input> box to replace the label.
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'task-name-input';
-  input.value = originalName;
+  input.value = originalName; // Pre-fill it with the existing text.
 
+  // Guard flag so we don't accidentally save twice
+  // (blur fires right after Enter, which would double-commit).
   let saved = false;
 
+  // When the input loses focus (user clicks away), auto-save —
+  // like a word processor that saves when you click somewhere else.
   input.addEventListener('blur', () => {
     if (!saved) {
       saved = true;
@@ -119,40 +167,53 @@ function startTaskEdit(deptId, taskIdx) {
     }
   });
 
+  // Keyboard shortcuts: Enter = save, Escape = cancel like nothing happened.
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       saved = true;
-      input.blur();
+      input.blur(); // Triggers the blur handler above to do the actual save.
     } else if (e.key === 'Escape') {
       saved = true;
+      // Restore the original text — like hitting Ctrl+Z before closing.
       nameEl.textContent = originalName;
       nameEl.ondblclick = () => startTaskEdit(deptId, taskIdx);
     }
   });
 
+  // Swap the label text out and drop the input box in its place.
   nameEl.textContent = '';
   nameEl.appendChild(input);
-  input.focus();
-  input.select();
+  input.focus();    // Auto-focus so the user can start typing immediately.
+  input.select();  // Pre-select all text so one keystroke replaces it entirely.
 }
 
+// The notary: officially records the new task name into both the data model
+// and the visible DOM, then syncs everything downstream.
 function _commitTaskName(deptId, taskIdx, newValue, originalName, nameEl, taskEl) {
+  // Strip leading/trailing whitespace — nobody wants "  Fix bug   " as a task name.
   const trimmed = (newValue || '').trim();
   const dept = orgData.departments.find(d => d.id === deptId);
   if (!dept) return;
 
   if (!trimmed) {
-    // Restore if empty
+    // If they deleted everything and submitted blank, restore the original.
+    // Like refusing to notarize a blank contract.
     nameEl.textContent = originalName;
   } else {
+    // Commit the new name to the data model (the source of truth).
     dept.tasks[taskIdx].name = trimmed;
+    // Also update the hidden data attribute used for search/filtering.
     taskEl.dataset.name = trimmed.toLowerCase();
+    // Update what the user sees on screen.
     nameEl.textContent = trimmed;
   }
+  // Restore the double-click-to-edit hint tooltip.
   nameEl.title = 'Double-click to rename';
   nameEl.ondblclick = () => startTaskEdit(deptId, taskIdx);
 
+  // Persist to localStorage so changes survive a page refresh.
   saveToStorage();
+  // If the map view is open, redraw it so it reflects the new name.
   if (currentView === 'map') renderFlowMap();
 }
 
@@ -160,74 +221,101 @@ function _commitTaskName(deptId, taskIdx, newValue, originalName, nameEl, taskEl
 // OWNER PICKER
 // ====================
 
+// Holds a reference to the "click anywhere to close" listener so we can remove it later.
+// Like keeping the receipt so you can return the item.
 let _ownerPickerCloseHandler = null;
 
+// Pops up a little dropdown menu of owner names when you click an owner badge —
+// like a context menu appearing right under your cursor.
 function showOwnerPicker(deptId, taskIdx, badgeEl) {
+  // Close any already-open picker before opening a new one —
+  // only one dropdown allowed at a time, like a one-at-a-time turnstile.
   closeOwnerPicker();
 
+  // Build the dropdown container div.
   const picker = document.createElement('div');
   picker.id = 'owner-picker';
   picker.className = 'owner-picker';
 
+  // For each known owner, create a color-coded button in the dropdown.
+  // Like printing a name tag for every person in the roster.
   Object.keys(ownerColors).forEach(owner => {
     const btn = document.createElement('button');
     btn.className = `owner-picker-btn ${ownerColors[owner]?.class || 'owner-unowned'}`;
     btn.textContent = owner;
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setTaskOwner(deptId, taskIdx, owner);
-      closeOwnerPicker();
+      e.stopPropagation(); // Don't let this click bubble up and accidentally close the picker.
+      setTaskOwner(deptId, taskIdx, owner); // Reassign the task.
+      closeOwnerPicker();                   // Close the menu after selecting.
     });
     picker.appendChild(btn);
   });
 
+  // Attach the dropdown to the page body (not inside the task card)
+  // so it floats freely on top of everything else.
   document.body.appendChild(picker);
 
-  // Position it fixed, below the badge
+  // Figure out exactly where on screen the badge is and position the dropdown
+  // just below it — like a tooltip that knows where to hover.
   const rect = badgeEl.getBoundingClientRect();
   picker.style.top  = (rect.bottom + 4) + 'px';
+  // Clamp to the left so it doesn't fly off the right edge of the screen.
   picker.style.left = Math.min(rect.left, window.innerWidth - 160) + 'px';
 
+  // Register a "click outside = close" handler on the entire document.
   _ownerPickerCloseHandler = (e) => {
     if (!e.target.closest('#owner-picker')) closeOwnerPicker();
   };
-  // Defer so the current click doesn't immediately close it
+  // The setTimeout defers attaching the listener by one event loop tick —
+  // without it, the very click that opened the picker would immediately close it.
   setTimeout(() => document.addEventListener('click', _ownerPickerCloseHandler), 0);
 }
 
+// Removes the dropdown from the DOM and cleans up the global click listener —
+// like folding up a pop-up tent and storing it back in the bag.
 function closeOwnerPicker() {
   const picker = document.getElementById('owner-picker');
-  if (picker) picker.remove();
+  if (picker) picker.remove(); // Tear it out of the page entirely.
   if (_ownerPickerCloseHandler) {
+    // Stop listening for outside clicks — we don't need the watchdog anymore.
     document.removeEventListener('click', _ownerPickerCloseHandler);
-    _ownerPickerCloseHandler = null;
+    _ownerPickerCloseHandler = null; // Clear the receipt; item returned.
   }
 }
 
+// Reassigns a task to a new owner, then updates the data, the DOM badge,
+// the stats panel, and storage — the whole chain of custody.
 function setTaskOwner(deptId, taskIdx, newOwner) {
+  // Find the department in data — the filing cabinet drawer.
   const dept = orgData.departments.find(d => d.id === deptId);
   if (!dept) return;
 
+  // Update the data model first — this is the source of truth.
   dept.tasks[taskIdx].owner = newOwner;
 
+  // Now find the matching DOM row to update what the user sees.
   const taskEl = document.querySelector(
     `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
   );
   if (taskEl) {
     const isUnowned = newOwner === 'UNOWNED';
+    // Update the hidden data attribute (used by filtering) to the new owner.
     taskEl.dataset.owner = newOwner;
+    // Toggle the "unowned" warning highlight on or off.
     taskEl.classList.toggle('unowned', isUnowned);
 
     const badge = taskEl.querySelector('.task-owner');
-    // Reset all owner classes then apply the new one
+    // Strip ALL existing color classes off the badge before adding the new one —
+    // like peeling off an old sticker before applying a fresh one.
     badge.className = 'task-owner';
     badge.classList.add(ownerColors[newOwner]?.class || 'owner-unowned');
     badge.textContent = newOwner;
     badge.title = 'Click to reassign';
   }
 
-  updateStats();
-  saveToStorage();
+  updateStats();   // Recalculate the summary numbers shown in the header.
+  saveToStorage(); // Persist so the change survives a refresh.
+  // If the map view is visible, redraw its controls and diagram to reflect the change.
   if (currentView === 'map') {
     renderMapControls();
     renderFlowMap();
@@ -238,57 +326,80 @@ function setTaskOwner(deptId, taskIdx, newOwner) {
 // SEARCH & FILTER
 // ====================
 
+// Scans all tasks to collect every unique owner name, then populates the
+// filter dropdown — like reading every name tag in the room and making a guest list.
 function populateOwnerFilter() {
   const select = document.getElementById('owner-filter');
+  // Flatten all tasks from all departments into one big list of owner names,
+  // deduplicate with Set (no duplicate guests on the list),
+  // then sort alphabetically — but always push UNOWNED to the very bottom
+  // like seating the awkward relative at the far end of the table.
   const owners = [...new Set(
     orgData.departments.flatMap(d => d.tasks.map(t => t.owner))
   )].sort((a, b) => {
-    if (a === 'UNOWNED') return 1;
-    if (b === 'UNOWNED') return -1;
-    return a.localeCompare(b);
+    if (a === 'UNOWNED') return 1;  // UNOWNED sinks to the bottom.
+    if (b === 'UNOWNED') return -1; // Everything else floats above it.
+    return a.localeCompare(b);      // Alphabetical for everyone else.
   });
 
+  // For each owner, create an <option> element and drop it into the <select>.
   owners.forEach(owner => {
     const opt = document.createElement('option');
     opt.value = owner;
+    // Give UNOWNED a warning emoji label so it stands out like a caution sign.
     opt.textContent = owner === 'UNOWNED' ? '⚠️ UNOWNED' : owner;
     select.appendChild(opt);
   });
 }
 
+// The search engine: reads the keyword and owner filter, then shows/hides
+// task rows and entire department cards like a bouncer checking a list.
 function applyFilter() {
+  // Read the search box and lowercase it — case-insensitive matching.
   const keyword = document.getElementById('search-input').value.toLowerCase().trim();
+  // Read the owner dropdown selection (empty string = "show all").
   const selectedOwner = document.getElementById('owner-filter').value;
+  // Are we actually filtering anything, or is everything wide open?
   const isFiltering = keyword !== '' || selectedOwner !== '';
 
+  // Running tallies so we can detect "no results" at the end.
   let visibleTaskTotal = 0;
   let visibleDeptCount = 0;
 
+  // Walk through every department card on screen.
   document.querySelectorAll('.department').forEach(deptEl => {
     const taskItems = deptEl.querySelectorAll('.task-item');
-    let deptVisibleCount = 0;
+    let deptVisibleCount = 0; // How many tasks in this dept survived the filter?
 
+    // Check each task row against both filters — like a bouncer with TWO criteria.
     taskItems.forEach(item => {
-      const name  = item.dataset.name;
-      const owner = item.dataset.owner;
+      const name  = item.dataset.name;  // Pre-lowercased name stored in the DOM.
+      const owner = item.dataset.owner; // Owner name stored in the DOM.
 
+      // Pass if: keyword is blank OR name contains the keyword.
       const matchesKeyword = !keyword || name.includes(keyword);
+      // Pass if: no owner filter selected OR this task's owner matches.
       const matchesOwner   = !selectedOwner || owner === selectedOwner;
 
       if (matchesKeyword && matchesOwner) {
-        item.style.display = '';
+        item.style.display = ''; // Show it — it's on the list.
         deptVisibleCount++;
         visibleTaskTotal++;
       } else {
-        item.style.display = 'none';
+        item.style.display = 'none'; // Hide it — bounced.
       }
     });
 
+    // If every task in a department was hidden, hide the whole department card too —
+    // like removing an empty shelf from the display.
     if (deptVisibleCount === 0) {
       deptEl.style.display = 'none';
     } else {
       deptEl.style.display = '';
+      // Auto-expand the department so filtered results are visible right away.
       deptEl.classList.add('expanded');
+      // Update the task count badge to show "visible / total" while filtering,
+      // or just "total" when no filter is active.
       const countSpan = deptEl.querySelector('.dept-task-count');
       if (countSpan) {
         countSpan.textContent = isFiltering
