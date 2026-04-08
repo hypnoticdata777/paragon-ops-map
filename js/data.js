@@ -600,3 +600,5 @@ const ownerColors = {
   "Kevin": { class: "owner-kevin", hex: "#5e35b1" },
   "UNOWNED": { class: "owner-unowned", hex: "#d32f2f" }
 };
+
+if (typeof module !== 'undefined') { module.exports = { orgData, ownerColors }; }
