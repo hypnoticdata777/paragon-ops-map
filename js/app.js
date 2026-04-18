@@ -330,6 +330,8 @@ function setTaskOwner(deptId, taskIdx, newOwner) {
 // filter dropdown — like reading every name tag in the room and making a guest list.
 function populateOwnerFilter() {
   const select = document.getElementById('owner-filter');
+  // Clear existing options except the first "All Owners" placeholder
+  while (select.options.length > 1) select.remove(1);
   // Flatten all tasks from all departments into one big list of owner names,
   // deduplicate with Set (no duplicate guests on the list),
   // then sort alphabetically — but always push UNOWNED to the very bottom
@@ -1059,6 +1061,96 @@ function resetStorage() {
   if (!confirm('Reset all task names and owner assignments to defaults?')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
+}
+
+// ====================
+// EXPORT / IMPORT
+// ====================
+
+function exportJSON() {
+  const payload = {
+    company: getCompanyName(),
+    exported: new Date().toISOString(),
+    departments: orgData.departments.map(dept => ({
+      id: dept.id,
+      name: dept.name,
+      tasks: dept.tasks.map(t => ({ name: t.name, owner: t.owner }))
+    }))
+  };
+  _downloadBlob(
+    JSON.stringify(payload, null, 2),
+    'application/json',
+    `pm-ops-${_fileSlug()}.json`
+  );
+}
+
+function exportCSV() {
+  const rows = [['Department', 'Task', 'Owner']];
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      rows.push([dept.name, task.name, task.owner]);
+    });
+  });
+  const csv = rows.map(r =>
+    r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+  ).join('\r\n');
+  _downloadBlob(csv, 'text/csv', `pm-ops-${_fileSlug()}.csv`);
+}
+
+function importJSON(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.departments)) throw new Error('Missing departments');
+
+      data.departments.forEach(savedDept => {
+        const dept = orgData.departments.find(d => d.id === savedDept.id);
+        if (!dept) return;
+        if (!Array.isArray(savedDept.tasks)) return;
+        savedDept.tasks.forEach((savedTask, idx) => {
+          if (dept.tasks[idx] && savedTask.name && savedTask.owner) {
+            dept.tasks[idx].name  = savedTask.name;
+            dept.tasks[idx].owner = savedTask.owner;
+          }
+        });
+      });
+
+      if (data.company) {
+        try { localStorage.setItem(COMPANY_KEY, data.company); } catch (_) {}
+        applyCompanyName(data.company);
+      }
+
+      saveToStorage();
+      renderTrackingView();
+      updateStats();
+      document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
+      populateOwnerFilter();
+    } catch (e) {
+      alert('Import failed: invalid or incompatible file.');
+    } finally {
+      inputEl.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function _fileSlug() {
+  return getCompanyName().replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-|-$/g, '');
+}
+
+function _downloadBlob(content, mimeType, filename) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ====================
