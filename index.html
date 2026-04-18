@@ -105,7 +105,15 @@
     <div class="stat-card"><div class="stat-label">Assigned</div><div class="stat-value" id="stat-assigned">0</div></div>
     <div class="stat-card danger"><div class="stat-label">&#9888; Unowned</div><div class="stat-value" id="stat-unowned">0</div></div>
     <div class="stat-card"><div class="stat-label">Departments</div><div class="stat-value" id="stat-departments">0</div></div>
-    <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
+    <div class="stats-actions">
+      <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
+      <button class="btn btn-export" onclick="exportJSON()" title="Export config as JSON to share or back up">&#8595; Export JSON</button>
+      <button class="btn btn-export" onclick="exportCSV()" title="Export task list as CSV for spreadsheets">&#8595; Export CSV</button>
+      <label class="btn btn-import" title="Import a previously exported JSON config">
+        &#8593; Import JSON
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importJSON(this)">
+      </label>
+    </div>
   </div>
 </div>
 
