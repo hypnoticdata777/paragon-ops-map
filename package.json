@@ -1,6 +1,6 @@
 {
   "name": "pm-ops-map",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A visual task ownership map for property management companies",
   "private": true,
   "scripts": {
