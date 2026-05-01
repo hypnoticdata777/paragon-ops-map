@@ -49,9 +49,6 @@ function switchView(view, tabEl) {
   if (view === 'map') {
     renderMapControls();
     renderFlowMap();
-  } else if (view === 'models') {
-    renderStrategicModels();
-    renderCaseStudies();
   } else if (view === 'team') {
     renderTeamView();
   }
@@ -977,55 +974,6 @@ function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
   if (opacity < 1) el.setAttribute('opacity', opacity);
   parent.appendChild(el);
   return el;
-}
-
-// ====================
-// STRATEGIC MODELS VIEW
-// ====================
-function renderStrategicModels() {
-  const container = document.getElementById('models-container');
-  if (container.innerHTML) return;
-
-  container.innerHTML = strategicModels.map(model => `
-    <div class="model-card">
-      <h3>${model.title}</h3>
-      <p class="model-subtitle">${model.subtitle}</p>
-      <div class="model-best-for"><strong>Best For:</strong> ${model.bestFor}</div>
-      <h4 class="model-structure-heading">Team Structure:</h4>
-      <ul>
-        ${model.teamStructure.map(item => `<li>${item}</li>`).join('')}
-      </ul>
-      <div class="model-pros-cons">
-        <div class="model-pros">
-          <h5>&#10003; Pros</h5>
-          <ul>${model.pros.map(pro => `<li>${pro}</li>`).join('')}</ul>
-        </div>
-        <div class="model-cons">
-          <h5>&#9888; Cons</h5>
-          <ul>${model.cons.map(con => `<li>${con}</li>`).join('')}</ul>
-        </div>
-      </div>
-      <p class="model-example"><strong>Example:</strong> ${model.example}</p>
-    </div>
-  `).join('');
-}
-
-function renderCaseStudies() {
-  const container = document.getElementById('case-studies-container');
-  if (container.innerHTML) return;
-
-  container.innerHTML = caseStudies.map(study => `
-    <div class="case-study">
-      <h3>${study.title}</h3>
-      <p class="case-study-source"><strong>Source:</strong> ${study.source}</p>
-      <ul>
-        ${study.findings.map(finding => `<li>${finding}</li>`).join('')}
-      </ul>
-      <p class="case-study-link">
-        <a href="${study.link}" target="_blank" rel="noopener noreferrer">Read Full Case Study &#8594;</a>
-      </p>
-    </div>
-  `).join('');
 }
 
 // ====================

@@ -58,10 +58,10 @@ It answers five questions at a glance:
 
 | Role | How They Use It |
 |------|----------------|
-| **Operations Manager** | Audit ownership, find gaps, plan role coverage |
-| **CEO / Leadership** | Evaluate team structure, guide scaling decisions |
-| **New Hires** | Understand their role and how it connects to the org |
-| **Department Leads** | Review responsibilities and handoffs |
+| **Operations Manager** | Audit ownership, spot gaps, run auto-assign to fill them |
+| **CEO / Leadership** | See workload distribution and who is overloaded at a glance |
+| **Department Leads** | Review responsibilities, track status, flag blockers |
+| **New Hires** | Understand their role and how it connects to the rest of the org |
 
 ---
 
@@ -167,21 +167,6 @@ A custom SVG diagram showing **Company → Departments → Owners**. Line thickn
 | See a department's tasks | Click any department box — panel slides in |
 | Hover for counts | Tooltip on any department, owner, or connection line |
 | Reset filters | Click Reset in the filter bar |
-
----
-
-### Strategic Models View — Scaling Playbook
-
-Four organizational models for property management companies:
-
-| Model | Best For |
-|-------|----------|
-| Functional Specialization | Deep expertise by department |
-| Portfolio Segmentation | Each PM owns a full unit portfolio end-to-end |
-| Pod System | Cross-functional squads, high flexibility |
-| **Hybrid Core + Flex** ⭐ | Growing companies (150 → 500+ units) |
-
-Includes pros/cons and a real-world company example for each model. Six industry case studies covering AI adoption, centralized leasing, virtual teams, and restructuring outcomes.
 
 ---
 
