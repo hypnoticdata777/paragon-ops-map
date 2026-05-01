@@ -201,45 +201,6 @@ body {
 .tracking-hero h2 { font-size: 28px; }
 .tracking-hero p  { margin-top: 10px; opacity: 0.9; }
 
-/* Shared section heading used in models view */
-.section-heading { margin-bottom: 30px; color: #263238; }
-.section-heading--spaced { margin-top: 40px; }
-
-/* Strategic Models page styling */
-.models-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 40px; }
-.model-card {
-  background: white;
-  border: 2px solid #cfd8dc;
-  border-radius: 12px;
-  padding: 25px;
-  transition: all 0.3s;
-}
-.model-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
-.model-card h3 { color: #00897b; margin-bottom: 15px; }
-.model-card ul { list-style: none; padding: 0; }
-.model-card li { padding: 6px 0; padding-left: 20px; position: relative; }
-.model-card li:before { content: "→"; position: absolute; left: 0; color: #00897b; }
-
-/* Model card inner elements (moved from inline styles) */
-.model-subtitle       { color: #546e7a; font-style: italic; margin-bottom: 15px; }
-.model-best-for       { background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-.model-structure-heading { margin-bottom: 10px; color: #263238; }
-.model-pros-cons      { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.model-pros           { background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 3px solid #00897b; }
-.model-pros h5        { margin-bottom: 8px; color: #00897b; }
-.model-cons           { background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 3px solid #d32f2f; }
-.model-cons h5        { margin-bottom: 8px; color: #d32f2f; }
-.model-pros ul,
-.model-cons ul        { font-size: 13px; }
-.model-example        { margin-top: 15px; font-size: 14px; color: #546e7a; }
-
-/* Case study inner elements (moved from inline styles) */
-.case-study { background: white; border: 2px solid #cfd8dc; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
-.case-study h3 { color: #1976d2; margin-bottom: 10px; }
-.case-study ul { margin: 15px 0; }
-.case-study-source    { color: #546e7a; font-size: 14px; margin-bottom: 15px; }
-.case-study-link      { margin-top: 15px; }
-.case-study-link a    { color: #1976d2; font-weight: 600; }
 
 /* ==========================================================================
    Search & Filter Bar
@@ -661,10 +622,6 @@ body {
 
   /* Stack department cards to single column */
   .departments { grid-template-columns: 1fr; gap: 20px; }
-
-  /* Stack model cards to single column */
-  .models-grid { grid-template-columns: 1fr; }
-  .model-pros-cons { grid-template-columns: 1fr; }
 
   .stats { padding: 15px; gap: 12px; }
 

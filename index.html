@@ -27,7 +27,6 @@
          avoiding reliance on window.event which is undefined in Firefox. -->
     <div class="nav-tab active" onclick="switchView('tracking', this)">&#128202; Tracking View</div>
     <div class="nav-tab" onclick="switchView('map', this)">&#128506; Map View</div>
-    <div class="nav-tab" onclick="switchView('models', this)">&#127919; Strategic Models</div>
     <!-- ★ BEACON: tab-beacon is the pulsing red dot shown when UNOWNED tasks exist.
          JS toggles its `hidden` attribute so it appears/disappears automatically. -->
     <div class="nav-tab" id="team-tab" onclick="switchView('team', this)">
@@ -120,15 +119,6 @@
          with the live teamData registry. -->
     <div id="team-view" class="view-panel">
       <div id="team-view-inner"></div>
-    </div>
-
-    <!-- STRATEGIC MODELS VIEW -->
-    <div id="models-view" class="view-panel">
-      <h2 class="section-heading">&#127919; Strategic Execution Models for Scaling</h2>
-      <div class="models-grid" id="models-container"></div>
-
-      <h2 class="section-heading section-heading--spaced">&#128218; Industry Case Studies</h2>
-      <div id="case-studies-container"></div>
     </div>
   </div>
 
