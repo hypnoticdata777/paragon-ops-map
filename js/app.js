@@ -45,12 +45,15 @@ function switchView(view, tabEl) {
   // Each view has its own "setup crew". Kick off the right one.
   // Map view needs its controls and the flow diagram drawn from scratch.
   // Models view needs the strategic cards and case studies rendered.
+  // Team view renders the employee roster, affinity editor, and workload chart.
   if (view === 'map') {
     renderMapControls();
     renderFlowMap();
   } else if (view === 'models') {
     renderStrategicModels();
     renderCaseStudies();
+  } else if (view === 'team') {
+    renderTeamView();
   }
 }
 
@@ -100,7 +103,11 @@ function renderTrackingView() {
             <div class="task-name"
                  ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
                  title="Double-click to rename">${task.name}</div>
-            <div class="task-owner ${ownerColors[task.owner]?.class || 'owner-unowned'}"
+            <!-- Inline background color instead of a hardcoded CSS class so
+                 dynamically-added employees get their chosen color automatically.
+                 UNOWNED keeps its CSS class for the pulse animation. -->
+            <div class="task-owner${task.owner === 'UNOWNED' ? ' owner-unowned' : ''}"
+                 style="${task.owner !== 'UNOWNED' ? `background:${getEmployeeHex(task.owner)}` : ''}"
                  onclick="showOwnerPicker('${dept.id}', ${taskIdx}, this)"
                  title="Click to reassign">
               ${task.owner}
@@ -237,11 +244,15 @@ function showOwnerPicker(deptId, taskIdx, badgeEl) {
   picker.id = 'owner-picker';
   picker.className = 'owner-picker';
 
-  // For each known owner, create a color-coded button in the dropdown.
-  // Like printing a name tag for every person in the roster.
-  Object.keys(ownerColors).forEach(owner => {
+  // Build the picker list from the live team roster so newly-added employees
+  // appear immediately. UNOWNED is appended last as a "clear assignment" option.
+  const allOwners = [...getEmployeeNames(), 'UNOWNED'];
+  allOwners.forEach(owner => {
     const btn = document.createElement('button');
-    btn.className = `owner-picker-btn ${ownerColors[owner]?.class || 'owner-unowned'}`;
+    // UNOWNED keeps its CSS class for the pulsing animation; everyone else gets
+    // an inline background so their chosen hex color shows correctly.
+    btn.className = 'owner-picker-btn' + (owner === 'UNOWNED' ? ' owner-unowned' : '');
+    if (owner !== 'UNOWNED') btn.style.background = getEmployeeHex(owner);
     btn.textContent = owner;
     btn.addEventListener('click', (e) => {
       e.stopPropagation(); // Don't let this click bubble up and accidentally close the picker.
@@ -305,10 +316,11 @@ function setTaskOwner(deptId, taskIdx, newOwner) {
     taskEl.classList.toggle('unowned', isUnowned);
 
     const badge = taskEl.querySelector('.task-owner');
-    // Strip ALL existing color classes off the badge before adding the new one —
-    // like peeling off an old sticker before applying a fresh one.
-    badge.className = 'task-owner';
-    badge.classList.add(ownerColors[newOwner]?.class || 'owner-unowned');
+    // Strip ALL existing color classes, then apply the new color via inline style
+    // so dynamically-added employees get their chosen hex color automatically.
+    // UNOWNED keeps its CSS class for the pulse animation.
+    badge.className = 'task-owner' + (newOwner === 'UNOWNED' ? ' owner-unowned' : '');
+    badge.style.background = newOwner !== 'UNOWNED' ? getEmployeeHex(newOwner) : '';
     badge.textContent = newOwner;
     badge.title = 'Click to reassign';
   }
@@ -479,7 +491,8 @@ function renderMapControls() {
     btn.className = 'map-filter-pill' +
       (isHidden  ? ' map-filter-pill--hidden'  : '') +
       (isFocused ? ' map-filter-pill--focused' : '');
-    btn.style.setProperty('--pill-color', ownerColors[owner]?.hex || '#d32f2f');
+    // getEmployeeHex covers both hardcoded and dynamically-added employees
+    btn.style.setProperty('--pill-color', getEmployeeHex(owner));
     btn.textContent = owner === 'UNOWNED' ? '⚠ UNOWNED' : owner;
     btn.title = isHidden
       ? `Show ${owner}'s connections`
@@ -558,7 +571,8 @@ function showDeptPanel(dept) {
     <div class="map-panel-body">
       ${Object.entries(byOwner).map(([owner, tasks]) => `
         <div class="map-panel-owner-group">
-          <div class="map-panel-owner-badge ${ownerColors[owner]?.class || 'owner-unowned'}">${owner}</div>
+          <div class="map-panel-owner-badge${owner === 'UNOWNED' ? ' owner-unowned' : ''}"
+               style="${owner !== 'UNOWNED' ? `background:${getEmployeeHex(owner)}` : ''}">${owner}</div>
           <ul>
             ${tasks.map(t => `<li>${t}</li>`).join('')}
           </ul>
@@ -992,6 +1006,10 @@ function updateStats() {
   document.getElementById('stat-assigned').textContent    = assigned;
   document.getElementById('stat-unowned').textContent     = unowned;
   document.getElementById('stat-departments').textContent = orgData.departments.length;
+
+  // Keep every beacon in sync whenever task counts change (after any assignment,
+  // auto-assign run, import, or reset).
+  updateBeacons();
 }
 
 // ====================
@@ -1224,10 +1242,15 @@ function submitCompanyName() {
 // INITIALIZATION
 // ====================
 document.addEventListener('DOMContentLoaded', () => {
+  // ★ BEACON: loadTeamData MUST run before loadFromStorage + renderTrackingView
+  // so that getEmployeeHex() has a populated registry when it's first called.
+  loadTeamData();
+
   loadFromStorage();
   renderTrackingView();
-  updateStats();
+  updateStats();          // Also calls updateBeacons() internally
   populateOwnerFilter();
+  renderLegend();         // Build the dynamic legend from teamData
 
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
@@ -1240,3 +1263,565 @@ document.addEventListener('DOMContentLoaded', () => {
     showOnboardingModal();
   }
 });
+
+// ============================================================
+// ★ BEACON: TEAM DATA — Dynamic Employee Registry
+// ============================================================
+// teamData is the live runtime registry of all employees.
+// It lives in its own localStorage key (TEAM_KEY) separate from task assignments,
+// so you can reset tasks without wiping your team roster.
+//
+// Structure:
+//   { employees: [ { name, hex, affinities: [deptId, ...] } ] }
+//
+// On first load it's seeded from the hardcoded ownerColors + defaultAffinities
+// (both defined in data.js). After that, managers edit it in the Team Manager view.
+// ============================================================
+
+const TEAM_KEY = 'pm-ops-team-v1';
+
+// Preset hex colors a manager can pick when adding a new employee.
+// Every color here is dark enough to contrast against white badge text.
+const COLOR_PALETTE = [
+  '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab',
+  '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047',
+  '#7cb342', '#fb8c00', '#f4511e', '#ff6f00', '#1976d2',
+  '#c62828', '#263238', '#6d4c41', '#546e7a', '#00695c'
+];
+
+// Runtime registry — starts empty, populated by loadTeamData() at DOMContentLoaded.
+// Declared with `let` so it can be replaced wholesale on import/reset.
+let teamData = { employees: [] };
+
+// Tracks which color swatch is currently selected in the Add Employee form.
+let _selectedColor = COLOR_PALETTE[0];
+
+// ── Seed default employees ────────────────────────────────────────────────────
+// Called only on first-ever load (when TEAM_KEY doesn't exist in localStorage).
+// Converts the static ownerColors object (data.js) into the dynamic teamData format,
+// merging in the defaultAffinities map so the auto-assign engine has a head start.
+function seedDefaultTeam() {
+  teamData.employees = Object.entries(ownerColors)
+    .filter(([name]) => name !== 'UNOWNED') // UNOWNED is a state, not a real person
+    .map(([name, info]) => ({
+      name,
+      hex: info.hex,
+      // Seed from compiled defaults; empty array if the employee isn't listed there
+      affinities: defaultAffinities[name] ? [...defaultAffinities[name]] : []
+    }));
+}
+
+function saveTeamData() {
+  try {
+    localStorage.setItem(TEAM_KEY, JSON.stringify(teamData));
+  } catch (e) {
+    // localStorage unavailable (private browsing, quota exceeded) — fail silently
+  }
+}
+
+function loadTeamData() {
+  try {
+    const raw = localStorage.getItem(TEAM_KEY);
+    if (!raw) {
+      // First visit — build team from the hardcoded defaults in data.js
+      seedDefaultTeam();
+      saveTeamData();
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.employees)) {
+      teamData = parsed;
+    } else {
+      // Corrupted data — fall back to defaults
+      seedDefaultTeam();
+    }
+  } catch (e) {
+    seedDefaultTeam();
+  }
+}
+
+// ── Employee helper functions ─────────────────────────────────────────────────
+
+// Returns the hex color for any owner name.
+// Checks the live teamData roster first so newly-added employees always
+// get their chosen color; falls back to the static ownerColors map, then
+// to a neutral gray if the name is completely unknown.
+function getEmployeeHex(name) {
+  if (name === 'UNOWNED') return '#d32f2f';
+  const emp = teamData.employees.find(e => e.name === name);
+  if (emp) return emp.hex;
+  return ownerColors[name]?.hex || '#607d8b'; // gray for unknown names
+}
+
+// Returns an array of all employee names in the current roster (excludes UNOWNED).
+function getEmployeeNames() {
+  return teamData.employees.map(e => e.name);
+}
+
+// Scans all departments and tallies how many tasks each employee currently owns.
+// Returns a Map so callers can do O(1) lookups: { employeeName → taskCount }.
+// The auto-assign engine calls this before each run so it can balance load in
+// real time as it assigns tasks one by one.
+function buildWorkloadMap() {
+  const counts = new Map();
+  // Pre-populate so every employee appears even if they own zero tasks
+  getEmployeeNames().forEach(name => counts.set(name, 0));
+
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      if (task.owner !== 'UNOWNED') {
+        counts.set(task.owner, (counts.get(task.owner) || 0) + 1);
+      }
+    });
+  });
+  return counts;
+}
+
+// Returns the total number of UNOWNED tasks across all departments.
+// Used by the beacon updater and the auto-assign button badge.
+function countUnowned() {
+  return orgData.departments.reduce(
+    (sum, dept) => sum + dept.tasks.filter(t => t.owner === 'UNOWNED').length,
+    0
+  );
+}
+
+// ============================================================
+// ★ BEACON UPDATER
+// ============================================================
+// Keeps every beacon in sync with the current UNOWNED count.
+// Called after any action that changes task assignments:
+//   setTaskOwner → updateStats → updateBeacons
+//   runAutoAssign → updateBeacons (direct)
+//   removeEmployee → updateBeacons (direct)
+//   commitAddEmployee → updateBeacons (direct)
+// ============================================================
+function updateBeacons() {
+  const count = countUnowned();
+
+  // ★ Nav-tab beacon — the pulsing red dot on the Team Manager tab.
+  // Visible = "you have UNOWNED tasks to deal with", hidden = "all clear".
+  const tabBeacon = document.getElementById('tab-beacon');
+  if (tabBeacon) tabBeacon.hidden = (count === 0);
+
+  // ★ Auto-assign button badge — the red count inside the button itself.
+  // Disappears entirely when count reaches zero so the button looks "calm".
+  const badge = document.getElementById('auto-assign-badge');
+  if (badge) {
+    badge.textContent  = count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+
+  // Disable the auto-assign button when there's nothing left to assign,
+  // and update its tooltip to reflect the current state.
+  const btn = document.getElementById('auto-assign-btn');
+  if (btn) {
+    btn.disabled = (count === 0);
+    btn.title = count > 0
+      ? `Auto-assign ${count} unowned task${count !== 1 ? 's' : ''} based on department affinities`
+      : 'All tasks are assigned — nothing to auto-assign!';
+  }
+}
+
+// ============================================================
+// ★ AUTO-ASSIGN ENGINE
+// ============================================================
+// Distributes every UNOWNED task to an employee based on two rules:
+//
+//   Rule 1 — Affinity match:
+//     Prefer employees whose affinity tags include the task's department.
+//     This routes "Maintenance Coordination" tasks to Nathan/Patrick, not Carlos.
+//
+//   Rule 2 — Workload balance:
+//     Among the matching employees, always pick whoever has the fewest tasks
+//     RIGHT NOW (updated live as we assign). This prevents one person getting
+//     a pile while others stay empty.
+//
+//   Fallback: if nobody has an affinity for the department, the engine
+//   falls back to globally least-loaded — so no task is ever left UNOWNED.
+// ============================================================
+function runAutoAssign() {
+  const unownedCount = countUnowned();
+
+  if (unownedCount === 0) {
+    // Nothing to do — show the success toast as feedback
+    showAutoAssignToast(0);
+    return;
+  }
+
+  if (teamData.employees.length === 0) {
+    alert('No employees in your team roster.\nAdd at least one employee in the Team Manager tab first.');
+    return;
+  }
+
+  // Live workload map — updated incrementally so each assignment within
+  // this run is immediately visible to the next iteration.
+  // This is what prevents a single person from getting ALL the tasks.
+  const workload = buildWorkloadMap();
+  let assignedCount = 0;
+
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach((task) => {
+      if (task.owner !== 'UNOWNED') return; // Already assigned — skip
+
+      // Step 1: Find employees whose affinity tags include this department
+      const affinityMatches = teamData.employees.filter(emp =>
+        emp.affinities.includes(dept.id)
+      );
+
+      // Step 2: Build the candidate pool.
+      // If nobody has a matching affinity we use the entire team as a fallback
+      // rather than leaving the task UNOWNED.
+      const candidates = affinityMatches.length > 0
+        ? affinityMatches
+        : [...teamData.employees];
+
+      // Step 3: Sort candidates by current task count (ascending) so the
+      // least-loaded employee is always at index 0.
+      candidates.sort((a, b) =>
+        (workload.get(a.name) || 0) - (workload.get(b.name) || 0)
+      );
+
+      const winner = candidates[0];
+      if (!winner) return; // Safety net — cannot happen if employees array is non-empty
+
+      // Step 4: Commit the assignment to the data model
+      task.owner = winner.name;
+
+      // Step 5: Increment the winner's count in our live workload map
+      // so the NEXT task in this loop sees the updated load.
+      workload.set(winner.name, (workload.get(winner.name) || 0) + 1);
+      assignedCount++;
+    });
+  });
+
+  // Persist and re-render every UI surface that shows task ownership
+  saveToStorage();
+  renderTrackingView();
+  updateStats();            // Also calls updateBeacons() internally
+  populateOwnerFilter();
+  renderLegend();
+
+  if (currentView === 'map') {
+    renderMapControls();
+    renderFlowMap();
+  }
+  if (currentView === 'team') {
+    renderTeamView(); // Refresh the workload chart to reflect new assignments
+  }
+
+  showAutoAssignToast(assignedCount);
+}
+
+// Shows a green success toast confirming how many tasks were just auto-assigned.
+function showAutoAssignToast(count) {
+  const toast = document.getElementById('save-toast');
+  if (!toast) return;
+  clearTimeout(_toastTimer);
+
+  toast.textContent = count > 0
+    ? `⚡ ${count} task${count !== 1 ? 's' : ''} auto-assigned!`
+    : '✓ All tasks already assigned';
+
+  toast.className = 'save-toast save-toast--success';
+  void toast.offsetWidth; // Force reflow so the animation restarts cleanly
+  toast.classList.add('visible');
+
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+// ============================================================
+// ★ TEAM MANAGER VIEW
+// ============================================================
+// Renders the full Team Manager panel: header with alert, employee roster
+// (left column), and workload dashboard bar chart (right column).
+// Called every time the Team Manager tab is opened or team data changes.
+// ============================================================
+function renderTeamView() {
+  const container = document.getElementById('team-view-inner');
+  if (!container) return;
+
+  const workload = buildWorkloadMap();
+  // maxTasks prevents division-by-zero and sets the 100% bar width reference point
+  const maxTasks = Math.max(...[...workload.values()], 1);
+  const unowned  = countUnowned();
+
+  container.innerHTML = `
+    <!-- ★ BEACON: Team header shows a red alert when UNOWNED tasks exist,
+         or a green "all clear" badge when everything is assigned. -->
+    <div class="team-header">
+      <div>
+        <h2 class="team-heading">&#128101; Team Manager</h2>
+        <p class="team-subheading">Add employees, set department affinities, then hit Auto-Assign to map tasks automatically.</p>
+      </div>
+      ${unowned > 0 ? `
+        <div class="team-unowned-alert">
+          <span class="beacon-dot"></span>
+          <strong>${unowned} unowned task${unowned !== 1 ? 's' : ''}</strong> need assignment
+          <button class="btn-auto-assign-inline" onclick="runAutoAssign()">&#9889; Auto-Assign Now</button>
+        </div>
+      ` : `
+        <div class="team-all-assigned">&#10003; All tasks are assigned!</div>
+      `}
+    </div>
+
+    <!-- Two-column layout: [Employee Roster] | [Workload Dashboard] -->
+    <div class="team-layout">
+
+      <!-- LEFT COLUMN: Roster + Add Employee form -->
+      <div class="team-roster-panel">
+        <h3 class="team-panel-heading">Employee Roster</h3>
+
+        <!-- Add Employee form — dashed border to signal "editable area" -->
+        <div class="add-employee-form">
+          <input
+            type="text"
+            id="new-emp-name"
+            class="add-emp-input"
+            placeholder="Employee name..."
+            maxlength="30"
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') commitAddEmployee()"
+          >
+          <!-- Color palette — click a swatch to set the employee's badge color -->
+          <div class="color-palette" id="color-palette">
+            ${COLOR_PALETTE.map((hex, i) => `
+              <button
+                class="color-swatch${i === 0 ? ' selected' : ''}"
+                style="background:${hex}"
+                data-color="${hex}"
+                title="${hex}"
+                onclick="selectPaletteColor(this)"
+              ></button>
+            `).join('')}
+          </div>
+          <button class="btn-add-employee" onclick="commitAddEmployee()">+ Add Employee</button>
+        </div>
+
+        <!-- Employee cards — one per roster member -->
+        <div class="employee-list">
+          ${teamData.employees.map(emp =>
+            buildEmployeeCard(emp, orgData.departments, workload, maxTasks)
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Workload Dashboard -->
+      <div class="workload-panel">
+        <h3 class="team-panel-heading">Workload Dashboard</h3>
+        <p class="workload-desc">
+          Bar width = task share relative to the most-loaded employee.
+          Auto-assign always picks the least-loaded eligible candidate.
+          <!-- ★ BEACON: Overloaded employees (≥35% above average) get a ⚠ warning. -->
+        </p>
+        <div class="workload-chart">
+          ${buildWorkloadBars(workload, maxTasks)}
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  // After rendering, reset the selected color to the first swatch so
+  // the `_selectedColor` state and the visual selection are in sync.
+  _selectedColor = COLOR_PALETTE[0];
+}
+
+// ── buildEmployeeCard ─────────────────────────────────────────────────────────
+// Returns the HTML string for one employee card.
+// Kept as a separate function so it can be re-used if we ever need
+// to refresh a single card without rebuilding the whole view.
+function buildEmployeeCard(emp, depts, workload, maxTasks) {
+  const taskCount = workload.get(emp.name) || 0;
+  const pct       = maxTasks > 0 ? Math.round((taskCount / maxTasks) * 100) : 0;
+
+  return `
+    <div class="employee-card" data-emp="${emp.name}">
+      <!-- Header row: color dot | name | task count | mini-bar | Remove button -->
+      <div class="employee-card-header">
+        <span class="emp-color-dot" style="background:${emp.hex}"></span>
+        <span class="emp-name">${emp.name}</span>
+        <span class="emp-task-count" style="color:${emp.hex}">${taskCount} task${taskCount !== 1 ? 's' : ''}</span>
+        <!-- Mini workload bar — same data as the dashboard, just much smaller -->
+        <div class="emp-mini-bar-track">
+          <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${emp.hex}"></div>
+        </div>
+        <button class="emp-remove-btn" onclick="removeEmployee('${emp.name}')" title="Remove ${emp.name}">&#x2715;</button>
+      </div>
+
+      <!-- Affinity tags: one toggle button per department.
+           Filled = has affinity (auto-assign will route matching tasks here).
+           Outline only = no affinity (tasks won't be preferentially routed here). -->
+      <div class="affinity-tags">
+        <span class="affinity-label">Affinities:</span>
+        ${depts.map(dept => {
+          const active = emp.affinities.includes(dept.id);
+          return `
+            <button
+              class="affinity-tag${active ? ' active' : ''}"
+              style="${active
+                ? `background:${dept.color};border-color:${dept.color}`
+                : `border-color:${dept.color};color:${dept.color}`}"
+              onclick="toggleAffinity('${emp.name}','${dept.id}')"
+              title="${active ? 'Remove' : 'Add'} affinity: ${dept.name}"
+            >${dept.name}</button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── buildWorkloadBars ─────────────────────────────────────────────────────────
+// Returns HTML for the horizontal bar chart in the Workload Dashboard.
+// Rows are sorted by task count descending (most loaded at top).
+// Overloaded employees (≥35% above the team average AND more than 5 tasks)
+// get a ★ BEACON warning indicator — the red ⚠ icon and a tinted background.
+function buildWorkloadBars(workload, maxTasks) {
+  const sorted = [...workload.entries()].sort((a, b) => b[1] - a[1]);
+
+  // Compute the team average so we can flag outliers
+  const total = [...workload.values()].reduce((a, b) => a + b, 0);
+  const avg   = workload.size > 0 ? total / workload.size : 0;
+
+  return sorted.map(([name, count]) => {
+    const pct        = maxTasks > 0 ? Math.round((count / maxTasks) * 100) : 0;
+    const hex        = getEmployeeHex(name);
+    // ★ BEACON: only flag as overloaded when meaningfully above average
+    const overloaded = count > avg * 1.35 && count > 5;
+
+    return `
+      <div class="workload-bar-row${overloaded ? ' overloaded' : ''}">
+        <div class="workload-name-cell">
+          <span class="wl-dot" style="background:${hex}"></span>
+          <span class="wl-name">${name}</span>
+          ${overloaded
+            ? '<span class="wl-beacon" title="Significantly above team average — consider re-balancing">&#9888;</span>'
+            : ''}
+        </div>
+        <div class="workload-bar-track">
+          <div class="workload-bar-fill" style="width:${Math.max(pct, 2)}%;background:${hex}"></div>
+        </div>
+        <span class="workload-count">${count}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// EMPLOYEE CRUD — Add, Remove, Toggle Affinity
+// ============================================================
+
+// Highlights the clicked palette swatch and records the chosen color.
+// Called by the onclick on each .color-swatch button.
+function selectPaletteColor(swatchEl) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  swatchEl.classList.add('selected');
+  _selectedColor = swatchEl.dataset.color;
+}
+
+// Reads the name input + currently selected palette color, validates,
+// then adds the employee to the live roster.
+function commitAddEmployee() {
+  const input = document.getElementById('new-emp-name');
+  const name  = (input?.value || '').trim();
+
+  if (!name) {
+    // Reuse the existing shake animation (defined in CSS for onboarding-input)
+    // as a lightweight "you forgot to fill this in" signal.
+    input?.classList.add('shake');
+    setTimeout(() => input?.classList.remove('shake'), 400);
+    return;
+  }
+
+  // Prevent duplicates — case-insensitive so "nathan" can't shadow "Nathan"
+  const duplicate = teamData.employees.some(
+    e => e.name.toLowerCase() === name.toLowerCase()
+  );
+  if (duplicate) {
+    alert(`"${name}" is already in the roster.`);
+    return;
+  }
+
+  teamData.employees.push({
+    name,
+    hex: _selectedColor,
+    affinities: [] // New employees start with no affinities — manager sets them via the tags
+  });
+
+  saveTeamData();
+  renderTeamView();       // Re-render the team view to show the new card
+  renderLegend();         // Add them to the color legend in the controls bar
+  populateOwnerFilter();  // Add them to the "Filter by owner" dropdown
+  updateBeacons();
+}
+
+// Removes an employee from the roster.
+// Tasks previously assigned to them revert to UNOWNED so nothing silently
+// disappears — the manager will see the unowned count go up and can re-assign.
+function removeEmployee(name) {
+  if (!confirm(`Remove "${name}" from the roster?\n\nTheir tasks will be marked UNOWNED.`)) return;
+
+  // Revert all tasks owned by this employee back to UNOWNED
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      if (task.owner === name) task.owner = 'UNOWNED';
+    });
+  });
+
+  teamData.employees = teamData.employees.filter(e => e.name !== name);
+
+  saveTeamData();
+  saveToStorage();       // Persist the reverted task assignments
+  renderTeamView();
+  renderTrackingView();  // Refresh the tracking view so removed owner badges update
+  updateStats();         // Recalculates unowned count → updateBeacons()
+  renderLegend();
+  populateOwnerFilter();
+
+  if (currentView === 'map') {
+    renderMapControls();
+    renderFlowMap();
+  }
+}
+
+// Toggles a department affinity on or off for a given employee.
+// This is what the colored department buttons in each employee card do.
+// The change persists immediately so the auto-assign engine picks it up next run.
+function toggleAffinity(empName, deptId) {
+  const emp = teamData.employees.find(e => e.name === empName);
+  if (!emp) return;
+
+  const idx = emp.affinities.indexOf(deptId);
+  if (idx === -1) {
+    emp.affinities.push(deptId);   // Add the affinity
+  } else {
+    emp.affinities.splice(idx, 1); // Remove the affinity
+  }
+
+  saveTeamData();
+  // Re-render the team view to reflect the tag toggle visually
+  renderTeamView();
+}
+
+// ============================================================
+// DYNAMIC LEGEND
+// ============================================================
+// Replaces the old hardcoded legend HTML with a version built from
+// the live teamData roster so new employees appear automatically.
+function renderLegend() {
+  const legend = document.getElementById('owner-legend');
+  if (!legend) return;
+
+  legend.innerHTML = teamData.employees.map(emp => `
+    <div class="legend-item">
+      <div class="legend-color" style="background:${emp.hex}"></div>
+      <span>${emp.name}</span>
+    </div>
+  `).join('') + `
+    <div class="legend-item">
+      <div class="legend-color" style="background:#d32f2f"></div>
+      <span>&#9888;&#65039; UNOWNED</span>
+    </div>
+  `;
+}
