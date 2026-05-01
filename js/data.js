@@ -588,6 +588,26 @@ const caseStudies = [
   }
 ];
 
+// ====================
+// DEFAULT AFFINITIES
+// ====================
+// Maps each employee name to the department IDs they're naturally responsible for.
+// The auto-assign engine uses this to route UNOWNED tasks to the right person.
+//
+// Think of this as a skills matrix: TeamMember4 "knows" maintenance, TeamMember6 "knows" leasing, etc.
+// On first load, teamData is seeded from this map. After that, managers can edit
+// affinities per-employee in the Team Manager view and changes are saved to localStorage.
+const defaultAffinities = {
+  "TeamMember4":  ["maintenance", "vendors", "unit-turns", "utilities", "owner-relations", "owner-onboarding"],
+  "TeamMember7": ["maintenance", "unit-turns"],
+  "TeamMember5":  ["accounting", "vendors", "owner-onboarding", "delinquency"],
+  "TeamMember6": ["leasing", "applications", "move-ins", "move-outs", "unit-turns"],
+  "TeamMember3":   ["tenant-comms", "delinquency", "move-outs", "owner-relations", "owner-onboarding"],
+  "TeamMember2":   ["move-ins", "move-outs", "field-services", "unit-turns", "owner-onboarding"],
+  "TeamMember1":   ["delinquency", "compliance", "owner-relations"],
+  "Carlos":  ["delinquency", "owner-onboarding", "reporting", "systems"]
+};
+
 // Owner color mapping for UI
 const ownerColors = {
   "TeamMember4": { class: "owner-teammember4", hex: "#ff6f00" },
@@ -601,4 +621,4 @@ const ownerColors = {
   "UNOWNED": { class: "owner-unowned", hex: "#d32f2f" }
 };
 
-if (typeof module !== 'undefined') { module.exports = { orgData, ownerColors }; }
+if (typeof module !== 'undefined') { module.exports = { orgData, ownerColors, defaultAffinities }; }
