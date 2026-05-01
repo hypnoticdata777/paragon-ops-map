@@ -1361,3 +1361,159 @@ body {
 
 /* Left roster panel — min-width: 0 prevents it from blowing out the grid */
 .team-roster-panel { min-width: 0; }
+
+/* ==========================================================================
+   DEPARTMENT HEADER — Progress Bar + Completion Counts
+   A thin white bar at the bottom of every colored dept header shows how many
+   tasks are Done. The % complete text in the header is a quick health metric.
+   ========================================================================== */
+
+/* The header flex layout needs to stack vertically so the progress bar
+   can live at the bottom edge without disturbing the text row. */
+.department-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* The text row inside the header (name + chevron) — same as before, just explicit */
+.dept-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px 10px 25px; /* top padding, horizontal padding, less bottom padding */
+  width: 100%;
+}
+
+/* Done/blocked count badges shown inline after the task count */
+.dept-done-count    { color: rgba(255,255,255,0.95); font-weight: 700; }
+.dept-blocked-count { color: #ffcdd2; font-weight: 700; } /* lighter red on colored bg */
+
+/* The track is the semi-transparent "empty" portion of the progress bar */
+.dept-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.22);
+}
+
+/* The fill animates when tasks transition to Done */
+.dept-progress-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.85);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0%;
+}
+
+/* ==========================================================================
+   TASK ITEM — Split into task-left and task-right halves
+   task-left:  [priority dot] [task name]
+   task-right: [status pill]  [owner badge]
+   ========================================================================== */
+
+/* Override the existing justify-content so task-left takes all available space */
+.task-item {
+  align-items: center; /* keep vertical centering */
+}
+
+/* Left half — priority dot + task name, stretches to fill remaining space */
+.task-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0; /* allows task name to truncate instead of blowing out the row */
+}
+
+/* Right half — status pill + owner badge, fixed width, no wrapping */
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   PRIORITY DOT
+   A small colored circle on the left of each task name.
+   High = red, Medium = amber, Low = green.
+   Click to cycle: High → Medium → Low → High.
+   ========================================================================== */
+
+.priority-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid rgba(0,0,0,0.12); /* subtle ring so it's visible on white bg */
+  transition: transform 0.15s ease;
+}
+
+.priority-dot:hover { transform: scale(1.4); }
+
+.priority-high   { background: #d32f2f; border-color: #b71c1c; }
+.priority-medium { background: #ff8f00; border-color: #e65100; }
+.priority-low    { background: #43a047; border-color: #2e7d32; }
+
+/* ==========================================================================
+   STATUS PILL
+   A small clickable badge on the right of each task row.
+   Click to cycle: To Do → In Progress → Blocked → Done → To Do.
+   ========================================================================== */
+
+.status-pill {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 2px solid transparent;
+  transition: filter 0.15s, transform 0.1s;
+  user-select: none; /* prevents accidental text selection on rapid clicks */
+}
+
+.status-pill:hover {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+}
+
+/* To Do — neutral gray, the default resting state */
+.status-todo        { background: #eceff1; color: #546e7a; border-color: #b0bec5; }
+
+/* In Progress — blue, actively being worked on */
+.status-in-progress { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+
+/* Blocked — red, something is stopping this task */
+.status-blocked     { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+
+/* Done — green, task is complete */
+.status-done        { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+
+/* ==========================================================================
+   DONE TASK — Visual de-emphasis
+   Tasks marked Done are dimmed and the name gets a strikethrough so the
+   manager can see at a glance what's still active vs. wrapped up.
+   ========================================================================== */
+
+.task-item.task-done {
+  opacity: 0.52;
+}
+
+/* Bring it back to full opacity on hover so it's still readable if needed */
+.task-item.task-done:hover {
+  opacity: 1;
+}
+
+.task-item.task-done .task-name {
+  text-decoration: line-through;
+  color: #78909c;
+}
+
+/* ==========================================================================
+   STAT CARDS — color-coded for the new status counters
+   ========================================================================== */
+
+.stat-card.done     .stat-value { color: #2e7d32; }
+.stat-card.progress .stat-value { color: #1565c0; }
+.stat-card.blocked  .stat-value { color: #c62828; }
