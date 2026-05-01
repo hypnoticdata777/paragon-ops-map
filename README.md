@@ -44,12 +44,13 @@ xdg-open index.html    # Linux
 
 PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 350+ standard tasks** — all fully editable to match your company.
 
-It answers four questions at a glance:
+It answers five questions at a glance:
 
 1. **What work exists?** — Every task across every department, organized and documented
 2. **Who owns it?** — Every task assigned to a named team member or flagged UNOWNED
 3. **Where are the gaps?** — Unowned tasks surface automatically, highlighted in red
-4. **Who is overloaded?** — The workload dashboard shows task distribution across your team and flags imbalances instantly
+4. **Who is overloaded?** — The workload dashboard shows task distribution and flags imbalances
+5. **What's the current state?** — Every task carries a live status and priority so you can see what's in flight, blocked, or done without a separate project tool
 
 ---
 
@@ -108,15 +109,49 @@ Small pulsing indicators that surface issues without requiring you to go looking
 
 ### Tracking View — Task-Level Accountability
 
-Every department displayed as a collapsible card. Every task shows its assigned owner color-coded.
+Every department displayed as a collapsible card. Each task row shows its priority, name, status, and owner — all editable with a single click.
+
+#### Task interactions
 
 | Action | How |
 |--------|-----|
 | Rename a task | Double-click the task name → type → Enter to save |
 | Reassign an owner | Click the owner badge → pick from dropdown |
-| Spot gaps instantly | Unowned tasks pulse red — impossible to miss |
-| Search tasks | Filter by keyword across all departments in real time |
-| Filter by person | Show only one team member's tasks |
+| Change status | Click the status pill — cycles through the four states |
+| Change priority | Click the colored dot — cycles through the three levels |
+| Spot unowned tasks | Red pulsing badge — impossible to miss |
+
+#### Status lifecycle
+
+| Status | Meaning |
+|--------|---------|
+| **To Do** | Not started yet — the default |
+| **In Progress** | Actively being worked on |
+| **⚠ Blocked** | Something is stopping this task |
+| **✓ Done** | Complete — row dims and shows strikethrough |
+
+#### Priority levels
+
+| Priority | Indicator | When to use |
+|----------|-----------|-------------|
+| 🔴 **High** | Red dot | Time-sensitive or business-critical |
+| 🟡 **Medium** | Amber dot | Normal operational work |
+| 🟢 **Low** | Green dot | Nice-to-have or background tasks |
+
+#### Department headers
+
+Each department header shows a **thin white progress bar** (% of tasks Done) and inline counts for done and blocked tasks. Both update live as you click — no page reload needed.
+
+#### Filters
+
+| Filter | Options |
+|--------|---------|
+| Keyword search | Full-text across all task names |
+| Owner | Show one team member's tasks only |
+| Status | To Do / In Progress / Blocked / Done |
+| Priority | High / Medium / Low |
+
+All four filters compose together. The Clear button resets all of them at once.
 
 All edits auto-save to the browser. No data leaves your machine.
 
@@ -152,12 +187,20 @@ Includes pros/cons and a real-world company example for each model. Six industry
 
 ### Live Stats Bar
 
-Persistent across all views:
-- Total tasks / Assigned / Unowned
-- Department count
-- Export to JSON or CSV
-- Import a previously saved config
-- Reset to defaults
+Persistent across all views, updates whenever any task changes:
+
+| Stat | What it shows |
+|------|--------------|
+| Total Tasks | All tasks across all departments |
+| ✓ Done | Tasks marked Done |
+| ⏳ In Progress | Tasks actively being worked |
+| ⚠ Blocked | Tasks that are stuck |
+| ⚠ Unowned | Tasks with no assigned owner |
+| Departments | Total department count |
+
+Also contains: Export to JSON or CSV · Import a saved config · Reset to defaults
+
+> **Export note:** JSON and CSV exports include `status` and `priority` columns alongside `name` and `owner`. Old exports without those fields import cleanly — they default to `To Do` / `Medium` on load.
 
 ---
 
