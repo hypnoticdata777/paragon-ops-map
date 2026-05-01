@@ -884,3 +884,480 @@ body {
   .department-body { display: block !important; }
   .stats { border-top: 1px solid #ccc; }
 }
+
+/* ==========================================================================
+   ★ BEACON — Nav Tab Dot
+   A small pulsing red dot that appears on the Team Manager tab whenever
+   UNOWNED tasks exist. It's the "you have notifications" badge equivalent —
+   draws the manager's eye to where action is needed without being annoying.
+   ========================================================================== */
+
+/* The tab needs relative positioning so the beacon sits in its top-right corner */
+.nav-tab { position: relative; }
+
+/* The beacon dot itself — inline in the tab text flow */
+.tab-beacon {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: #d32f2f;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 6px;
+  /* Gentle scale pulse so it's noticed but not distracting */
+  animation: beaconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes beaconPulse {
+  0%, 100% { transform: scale(1);    opacity: 1;   }
+  50%       { transform: scale(1.45); opacity: 0.55; }
+}
+
+/* ==========================================================================
+   ★ BEACON — Auto-Assign Button + Badge
+   The main action button for the auto-assign engine. Lives in the filter bar
+   so it's always visible on the Tracking view.
+   ========================================================================== */
+
+.btn-auto-assign {
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #00897b 0%, #00695c 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-auto-assign:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 137, 123, 0.45);
+}
+
+.btn-auto-assign:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ★ BEACON: Red count badge inside the auto-assign button.
+   Shows the number of UNOWNED tasks — goes from red → hidden when all assigned. */
+.auto-assign-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: #d32f2f;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  /* Sync with the tab beacon so both indicate the same alert */
+  animation: beaconPulse 1.5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Save Toast — success variant (green, shown after auto-assign completes)
+   ========================================================================== */
+
+.save-toast--success {
+  background: #2e7d32;
+}
+
+/* ==========================================================================
+   ★ TEAM MANAGER VIEW — Hero Banner
+   Mirrors the .tracking-hero style for visual consistency across views.
+   ========================================================================== */
+
+.team-header {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: white;
+  padding: 24px 30px;
+  border-radius: 15px;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.team-heading    { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.team-subheading { font-size: 14px; opacity: 0.8; }
+
+/* ★ BEACON: Red alert box shown when UNOWNED count > 0.
+   Sits in the team header so it's the first thing a manager sees. */
+.team-unowned-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(211, 47, 47, 0.18);
+  border: 1px solid rgba(211, 47, 47, 0.45);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+/* ★ BEACON: The pulsing dot inside the alert — same animation as .tab-beacon */
+.beacon-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: #ef5350;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: beaconPulse 1.5s ease-in-out infinite;
+}
+
+/* Green success badge when every task is assigned */
+.team-all-assigned {
+  background: rgba(46, 125, 50, 0.22);
+  border: 1px solid rgba(46, 125, 50, 0.45);
+  color: #a5d6a7;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Inline "Auto-Assign Now" button that lives inside the red alert */
+.btn-auto-assign-inline {
+  padding: 7px 14px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-auto-assign-inline:hover { background: #b71c1c; }
+
+/* ==========================================================================
+   TEAM MANAGER VIEW — Two-Column Layout
+   Left: Employee Roster + Add Form  |  Right: Workload Dashboard
+   ========================================================================== */
+
+.team-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Collapse to single column on narrower screens */
+@media (max-width: 900px) {
+  .team-layout { grid-template-columns: 1fr; }
+}
+
+/* Section sub-heading used in both columns */
+.team-panel-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #263238;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eceff1;
+}
+
+/* ==========================================================================
+   ADD EMPLOYEE FORM
+   The dashed-border card at the top of the roster panel.
+   ========================================================================== */
+
+.add-employee-form {
+  background: #f5f7fa;
+  border: 2px dashed #cfd8dc;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-emp-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #b0bec5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-emp-input:focus { border-color: #546e7a; }
+
+/* Color swatch grid — a row of colored squares to pick a badge color from */
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.color-swatch:hover { transform: scale(1.15); }
+
+/* The currently selected swatch gets a white ring + dark outer ring */
+.color-swatch.selected {
+  border-color: white;
+  box-shadow: 0 0 0 3px #263238;
+  transform: scale(1.1);
+}
+
+.btn-add-employee {
+  padding: 10px 18px;
+  background: #546e7a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-add-employee:hover { background: #455a64; }
+
+/* ==========================================================================
+   EMPLOYEE CARDS
+   Each card shows: name, task count, mini workload bar, affinity tags, X button
+   ========================================================================== */
+
+.employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.employee-card {
+  background: white;
+  border: 2px solid #eceff1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: box-shadow 0.2s;
+}
+
+.employee-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+/* Top row of the card: dot | name | task count | mini-bar | X */
+.employee-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.emp-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.emp-name {
+  font-weight: 700;
+  color: #263238;
+  font-size: 15px;
+  flex: 1;
+}
+
+.emp-task-count {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Mini bar — a compact version of the workload chart inside the card header */
+.emp-mini-bar-track {
+  flex: 1;
+  height: 6px;
+  background: #eceff1;
+  border-radius: 3px;
+  overflow: hidden;
+  max-width: 80px;
+}
+
+.emp-mini-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.emp-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #b0bec5;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.emp-remove-btn:hover { color: #d32f2f; }
+
+/* ==========================================================================
+   AFFINITY TAGS
+   Small colored toggle buttons under each employee — one per department.
+   Click to add/remove the affinity. Active = solid fill; inactive = outline only.
+   The auto-assign engine reads these to route UNOWNED tasks to the right person.
+   ========================================================================== */
+
+.affinity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.affinity-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #90a4ae;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+/* Each tag is a small pill button whose color matches its department */
+.affinity-tag {
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid;
+  background: transparent;
+  transition: all 0.15s;
+}
+
+/* Active (has affinity): filled solid with white text */
+.affinity-tag.active { color: white; }
+
+.affinity-tag:not(.active):hover { opacity: 0.7; }
+
+/* ==========================================================================
+   WORKLOAD DASHBOARD — Horizontal Bar Chart
+   One row per employee sorted by task count descending.
+   Wider bar = more tasks. Overloaded rows get a red tint as a ★ BEACON.
+   ========================================================================== */
+
+.workload-panel {
+  background: white;
+  border: 2px solid #eceff1;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.workload-desc {
+  font-size: 13px;
+  color: #78909c;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.workload-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Three-column grid: [name cell] [bar] [count] */
+.workload-bar-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 38px;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ★ BEACON: Overloaded employees (>35% above average) get a red tint warning */
+.workload-bar-row.overloaded {
+  background: #fff3f3;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: -6px -8px;
+}
+
+/* Left cell: colored dot + name + optional warning icon */
+.workload-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wl-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #37474f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ★ BEACON: Warning icon on overloaded rows */
+.wl-beacon {
+  font-size: 14px;
+  color: #d32f2f;
+  flex-shrink: 0;
+}
+
+/* The gray track behind the fill bar */
+.workload-bar-track {
+  height: 14px;
+  background: #eceff1;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+/* The colored fill — width set by JS as % of the employee with most tasks */
+.workload-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  min-width: 2%;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.workload-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #546e7a;
+  text-align: right;
+}
+
+/* Left roster panel — min-width: 0 prevents it from blowing out the grid */
+.team-roster-panel { min-width: 0; }

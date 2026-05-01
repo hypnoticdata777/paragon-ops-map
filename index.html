@@ -28,6 +28,12 @@
     <div class="nav-tab active" onclick="switchView('tracking', this)">&#128202; Tracking View</div>
     <div class="nav-tab" onclick="switchView('map', this)">&#128506; Map View</div>
     <div class="nav-tab" onclick="switchView('models', this)">&#127919; Strategic Models</div>
+    <!-- ★ BEACON: tab-beacon is the pulsing red dot shown when UNOWNED tasks exist.
+         JS toggles its `hidden` attribute so it appears/disappears automatically. -->
+    <div class="nav-tab" id="team-tab" onclick="switchView('team', this)">
+      &#128101; Team Manager
+      <span class="tab-beacon" id="tab-beacon" hidden></span>
+    </div>
   </div>
 
   <div class="controls" id="controls">
@@ -45,19 +51,22 @@
         <option value="">All Owners</option>
       </select>
       <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+      <!-- ★ BEACON: Auto-assign button. The badge inside shows the live UNOWNED count.
+           JS keeps this disabled when count = 0 so managers always know the state. -->
+      <button
+        class="btn btn-auto-assign"
+        id="auto-assign-btn"
+        onclick="runAutoAssign()"
+        title="Auto-assign UNOWNED tasks to team members based on their department affinities"
+        disabled
+      >
+        &#9889; Auto-Assign
+        <span class="auto-assign-badge" id="auto-assign-badge" style="display:none">0</span>
+      </button>
       <span id="filter-count" class="filter-count" aria-live="polite"></span>
     </div>
-    <div class="legend">
-      <div class="legend-item"><div class="legend-color" style="background:#ff6f00"></div><span>TeamMember4</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#1976d2"></div><span>TeamMember7</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#00897b"></div><span>TeamMember5</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#6a1b9a"></div><span>TeamMember6</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#00695c"></div><span>TeamMember3</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#5e35b1"></div><span>TeamMember2</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#263238"></div><span>TeamMember1</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#c62828"></div><span>Carlos</span></div>
-      <div class="legend-item"><div class="legend-color" style="background:#d32f2f"></div><span>&#9888;&#65039; UNOWNED</span></div>
-    </div>
+    <!-- Legend is rendered dynamically by renderLegend() so new employees appear here automatically -->
+    <div class="legend" id="owner-legend"></div>
   </div>
 
   <div class="content">
@@ -88,6 +97,14 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- TEAM MANAGER VIEW
+         Inner content rendered entirely by renderTeamView() in app.js so
+         the employee list, affinity tags, and workload bars stay in sync
+         with the live teamData registry. -->
+    <div id="team-view" class="view-panel">
+      <div id="team-view-inner"></div>
     </div>
 
     <!-- STRATEGIC MODELS VIEW -->
