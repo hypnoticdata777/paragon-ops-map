@@ -44,11 +44,12 @@ xdg-open index.html    # Linux
 
 PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 350+ standard tasks** — all fully editable to match your company.
 
-It answers three questions at a glance:
+It answers four questions at a glance:
 
 1. **What work exists?** — Every task across every department, organized and documented
 2. **Who owns it?** — Every task assigned to a named team member or flagged UNOWNED
 3. **Where are the gaps?** — Unowned tasks surface automatically, highlighted in red
+4. **Who is overloaded?** — The workload dashboard shows task distribution across your team and flags imbalances instantly
 
 ---
 
@@ -64,6 +65,46 @@ It answers three questions at a glance:
 ---
 
 ## Features
+
+### Team Manager — Auto-Assignment Engine
+
+The **Team Manager tab** (👥) is the core of the tool. It lets you manage your employee roster and map tasks to the right people automatically — no manual click-by-click assignment required.
+
+#### Employee Roster
+
+Add employees by name and pick their badge color from the palette. Each employee card shows:
+- Their current task count and a mini workload bar
+- **Department affinity tags** — one per department, click to toggle on/off
+
+Affinities tell the auto-assign engine which departments this person is responsible for. Toggle them on for the departments each person covers; leave them off for departments they don't touch.
+
+#### ⚡ Auto-Assign Button
+
+Click **Auto-Assign** in the filter bar (or the button inside Team Manager) to instantly distribute every UNOWNED task using two rules:
+
+| Rule | Logic |
+|------|-------|
+| **Affinity match** | Prefer employees tagged for that department — routes Maintenance tasks to your maintenance coordinator, not accounting |
+| **Workload balance** | Among matching employees, always pick the one with the fewest tasks right now (updated live so no one person gets stacked) |
+
+If no employee has an affinity for a department, the engine falls back to the globally least-loaded person — so no task is ever left UNOWNED after a run.
+
+#### Workload Dashboard
+
+A horizontal bar chart sorted by task count. Employees carrying significantly more than the team average are flagged with a ⚠ beacon so you can spot imbalances before someone burns out.
+
+#### Beacons
+
+Small pulsing indicators that surface issues without requiring you to go looking:
+
+| Beacon | Location | Meaning |
+|--------|----------|---------|
+| 🔴 Dot | Team Manager tab | UNOWNED tasks exist |
+| 🔴 Badge | Auto-Assign button | Live count of UNOWNED tasks |
+| ⚠ Icon | Workload Dashboard row | Employee is ≥35% above team average |
+| 🔴 Banner | Top of Team Manager | Same UNOWNED count, with a one-click fix |
+
+---
 
 ### Tracking View — Task-Level Accountability
 
@@ -122,26 +163,13 @@ Persistent across all views:
 
 ## Customizing It for Your Company
 
-All data lives in `js/data.js` as plain JavaScript objects. Edit it directly — no build step needed.
+### Add or remove team members
 
-### Replace team member names
+Use the **Team Manager tab** — no code editing required. Type a name, pick a badge color, click **+ Add Employee**. To remove someone, click the ✕ on their card (their tasks revert to UNOWNED automatically so nothing is silently orphaned).
 
-In `js/data.js`, update `ownerColors`:
+To set up auto-assignment for a new employee, click their department affinity tags to mark which areas they cover, then run **⚡ Auto-Assign**.
 
-```js
-const ownerColors = {
-  "Alex":    { class: "owner-alex",    hex: "#ff6f00" },
-  "Jordan":  { class: "owner-jordan",  hex: "#1976d2" },
-  "UNOWNED": { class: "owner-unowned", hex: "#d32f2f" },
-};
-```
-
-Add a matching CSS class in `css/style.css`:
-
-```css
-.owner-alex   { background: #ff6f00; }
-.owner-jordan { background: #1976d2; }
-```
+> **Note:** `js/data.js` still contains the hardcoded `ownerColors` and `defaultAffinities` objects. These are only used to seed the roster on first load. After that, all employee management happens through the UI and is saved to `localStorage` under the key `pm-ops-team-v1`.
 
 ### Add a task to an existing department
 
