@@ -81,36 +81,71 @@ function renderTrackingView() {
     // Tag the card with the dept's ID so we can find it again later by name.
     deptDiv.dataset.id = dept.id;
 
+    // Pre-compute dept-level progress so the header can show it immediately.
+    const doneCount    = dept.tasks.filter(t => (t.status || 'todo') === 'done').length;
+    const blockedCount = dept.tasks.filter(t => (t.status || 'todo') === 'blocked').length;
+    const progressPct  = dept.tasks.length > 0
+      ? Math.round((doneCount / dept.tasks.length) * 100) : 0;
+
     // Stamp the card's interior HTML all at once — header + every task row.
     deptDiv.innerHTML = `
       <div class="department-header" style="background: ${dept.color}" onclick="toggleDepartment('${dept.id}')">
-        <span>${dept.name} (<span class="dept-task-count">${dept.tasks.length}</span> tasks)</span>
-        <span>&#9660;</span>
+        <!-- Text row: dept name + task count + done/blocked badges + chevron -->
+        <div class="dept-header-top">
+          <span>
+            ${dept.name}
+            (<span class="dept-task-count">${dept.tasks.length}</span> tasks
+            <span class="dept-completion">${buildDeptCompletionText(doneCount, blockedCount)}</span>)
+          </span>
+          <span>&#9660;</span>
+        </div>
+        <!-- Thin white progress bar at the bottom of the header.
+             Width = percentage of tasks marked Done. Animates on status change. -->
+        <div class="dept-progress-track" title="${progressPct}% of tasks done">
+          <div class="dept-progress-fill" style="width:${progressPct}%"></div>
+        </div>
       </div>
       <div class="department-body">
         ${dept.tasks.map((task, taskIdx) => {
-          // Escape any quotes in the task name so they don't break the HTML attribute.
-          // Like putting a "handle with care" label on a fragile package.
-          const safeName = task.name.replace(/"/g, '&quot;');
-          // Flag tasks with no owner — the orphan tasks that need adoption.
+          // Escape quotes so they don't break data-name HTML attribute.
+          const safeName  = task.name.replace(/"/g, '&quot;');
           const isUnowned = task.owner === 'UNOWNED';
+          // Default to 'todo' / 'medium' for tasks that pre-date this feature.
+          const status    = task.status   || 'todo';
+          const priority  = task.priority || 'medium';
+          const isDone    = status === 'done';
           return `
-          <div class="task-item ${isUnowned ? 'unowned' : ''}"
+          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''}"
                data-dept-id="${dept.id}"
                data-task-idx="${taskIdx}"
                data-owner="${task.owner}"
-               data-name="${safeName.toLowerCase()}">
-            <div class="task-name"
-                 ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
-                 title="Double-click to rename">${task.name}</div>
-            <!-- Inline background color instead of a hardcoded CSS class so
-                 dynamically-added employees get their chosen color automatically.
-                 UNOWNED keeps its CSS class for the pulse animation. -->
-            <div class="task-owner${task.owner === 'UNOWNED' ? ' owner-unowned' : ''}"
-                 style="${task.owner !== 'UNOWNED' ? `background:${getEmployeeHex(task.owner)}` : ''}"
-                 onclick="showOwnerPicker('${dept.id}', ${taskIdx}, this)"
-                 title="Click to reassign">
-              ${task.owner}
+               data-name="${safeName.toLowerCase()}"
+               data-status="${status}"
+               data-priority="${priority}">
+            <!-- Left half: priority dot (click to cycle) + editable task name -->
+            <div class="task-left">
+              <span class="priority-dot priority-${priority}"
+                    onclick="cycleTaskPriority('${dept.id}', ${taskIdx})"
+                    title="Priority: ${PRIORITY_LABELS[priority]} — click to change"></span>
+              <div class="task-name"
+                   ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
+                   title="Double-click to rename">${task.name}</div>
+            </div>
+            <!-- Right half: status pill (click to cycle) + owner badge -->
+            <div class="task-right">
+              <span class="status-pill status-${status}"
+                    onclick="cycleTaskStatus('${dept.id}', ${taskIdx})"
+                    title="Status: ${STATUS_LABELS[status]} — click to change">
+                ${STATUS_LABELS[status]}
+              </span>
+              <!-- Inline background so dynamically-added employees get their color.
+                   UNOWNED keeps its CSS class for the pulsing animation. -->
+              <div class="task-owner${isUnowned ? ' owner-unowned' : ''}"
+                   style="${!isUnowned ? `background:${getEmployeeHex(task.owner)}` : ''}"
+                   onclick="showOwnerPicker('${dept.id}', ${taskIdx}, this)"
+                   title="Click to reassign">
+                ${task.owner}
+              </div>
             </div>
           </div>`;
         }).join('')}
@@ -366,15 +401,14 @@ function populateOwnerFilter() {
   });
 }
 
-// The search engine: reads the keyword and owner filter, then shows/hides
-// task rows and entire department cards like a bouncer checking a list.
+// The search engine: reads keyword, owner, status, and priority filters, then
+// shows/hides task rows and entire department cards like a bouncer with a checklist.
 function applyFilter() {
-  // Read the search box and lowercase it — case-insensitive matching.
-  const keyword = document.getElementById('search-input').value.toLowerCase().trim();
-  // Read the owner dropdown selection (empty string = "show all").
-  const selectedOwner = document.getElementById('owner-filter').value;
-  // Are we actually filtering anything, or is everything wide open?
-  const isFiltering = keyword !== '' || selectedOwner !== '';
+  const keyword         = document.getElementById('search-input').value.toLowerCase().trim();
+  const selectedOwner   = document.getElementById('owner-filter').value;
+  const selectedStatus  = document.getElementById('status-filter')?.value  || '';
+  const selectedPriority= document.getElementById('priority-filter')?.value || '';
+  const isFiltering = keyword !== '' || selectedOwner !== '' || selectedStatus !== '' || selectedPriority !== '';
 
   // Running tallies so we can detect "no results" at the end.
   let visibleTaskTotal = 0;
@@ -385,17 +419,19 @@ function applyFilter() {
     const taskItems = deptEl.querySelectorAll('.task-item');
     let deptVisibleCount = 0; // How many tasks in this dept survived the filter?
 
-    // Check each task row against both filters — like a bouncer with TWO criteria.
+    // Check each task row against all four active filters.
     taskItems.forEach(item => {
-      const name  = item.dataset.name;  // Pre-lowercased name stored in the DOM.
-      const owner = item.dataset.owner; // Owner name stored in the DOM.
+      const name     = item.dataset.name;
+      const owner    = item.dataset.owner;
+      const status   = item.dataset.status   || 'todo';
+      const priority = item.dataset.priority || 'medium';
 
-      // Pass if: keyword is blank OR name contains the keyword.
-      const matchesKeyword = !keyword || name.includes(keyword);
-      // Pass if: no owner filter selected OR this task's owner matches.
-      const matchesOwner   = !selectedOwner || owner === selectedOwner;
+      const matchesKeyword  = !keyword          || name.includes(keyword);
+      const matchesOwner    = !selectedOwner    || owner    === selectedOwner;
+      const matchesStatus   = !selectedStatus   || status   === selectedStatus;
+      const matchesPriority = !selectedPriority || priority === selectedPriority;
 
-      if (matchesKeyword && matchesOwner) {
+      if (matchesKeyword && matchesOwner && matchesStatus && matchesPriority) {
         item.style.display = ''; // Show it — it's on the list.
         deptVisibleCount++;
         visibleTaskTotal++;
@@ -437,10 +473,14 @@ function applyFilter() {
 }
 
 function clearFilter() {
-  const searchInput = document.getElementById('search-input');
-  const ownerFilter = document.getElementById('owner-filter');
-  if (searchInput) searchInput.value = '';
-  if (ownerFilter) ownerFilter.value = '';
+  const searchInput    = document.getElementById('search-input');
+  const ownerFilter    = document.getElementById('owner-filter');
+  const statusFilter   = document.getElementById('status-filter');
+  const priorityFilter = document.getElementById('priority-filter');
+  if (searchInput)    searchInput.value    = '';
+  if (ownerFilter)    ownerFilter.value    = '';
+  if (statusFilter)   statusFilter.value   = '';
+  if (priorityFilter) priorityFilter.value = '';
 
   document.querySelectorAll('.department').forEach(deptEl => {
     deptEl.style.display = '';
@@ -992,17 +1032,25 @@ function renderCaseStudies() {
 // STATS
 // ====================
 function updateStats() {
-  let total = 0, assigned = 0, unowned = 0;
+  let total = 0, assigned = 0, unowned = 0, done = 0, inProgress = 0, blocked = 0;
 
   orgData.departments.forEach(dept => {
     dept.tasks.forEach(task => {
       total++;
       if (task.owner === 'UNOWNED') unowned++;
       else assigned++;
+      // Status counters — default to 'todo' for pre-feature tasks
+      const s = task.status || 'todo';
+      if (s === 'done')        done++;
+      else if (s === 'in-progress') inProgress++;
+      else if (s === 'blocked')     blocked++;
     });
   });
 
   document.getElementById('stat-total').textContent       = total;
+  document.getElementById('stat-done').textContent        = done;
+  document.getElementById('stat-in-progress').textContent = inProgress;
+  document.getElementById('stat-blocked').textContent     = blocked;
   document.getElementById('stat-assigned').textContent    = assigned;
   document.getElementById('stat-unowned').textContent     = unowned;
   document.getElementById('stat-departments').textContent = orgData.departments.length;
@@ -1044,7 +1092,15 @@ function saveToStorage() {
   try {
     const payload = orgData.departments.map(dept => ({
       id: dept.id,
-      tasks: dept.tasks.map(t => ({ name: t.name, owner: t.owner }))
+      // Include status and priority so they survive a page refresh.
+      // Default values ('todo', 'medium') are written explicitly so exported
+      // files can be re-imported into older versions without crashing.
+      tasks: dept.tasks.map(t => ({
+        name:     t.name,
+        owner:    t.owner,
+        status:   t.status   || 'todo',
+        priority: t.priority || 'medium'
+      }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     showSaveToast();
@@ -1066,6 +1122,10 @@ function loadFromStorage() {
         if (dept.tasks[idx]) {
           dept.tasks[idx].name  = savedTask.name;
           dept.tasks[idx].owner = savedTask.owner;
+          // status and priority are optional so older saves load cleanly —
+          // they'll just default to 'todo' / 'medium' during rendering.
+          if (savedTask.status)   dept.tasks[idx].status   = savedTask.status;
+          if (savedTask.priority) dept.tasks[idx].priority = savedTask.priority;
         }
       });
     });
@@ -1092,7 +1152,12 @@ function exportJSON() {
     departments: orgData.departments.map(dept => ({
       id: dept.id,
       name: dept.name,
-      tasks: dept.tasks.map(t => ({ name: t.name, owner: t.owner }))
+      tasks: dept.tasks.map(t => ({
+        name:     t.name,
+        owner:    t.owner,
+        status:   t.status   || 'todo',
+        priority: t.priority || 'medium'
+      }))
     }))
   };
   _downloadBlob(
@@ -1103,10 +1168,16 @@ function exportJSON() {
 }
 
 function exportCSV() {
-  const rows = [['Department', 'Task', 'Owner']];
+  const rows = [['Department', 'Task', 'Owner', 'Status', 'Priority']];
   orgData.departments.forEach(dept => {
     dept.tasks.forEach(task => {
-      rows.push([dept.name, task.name, task.owner]);
+      rows.push([
+        dept.name,
+        task.name,
+        task.owner,
+        task.status   || 'todo',
+        task.priority || 'medium'
+      ]);
     });
   });
   const csv = rows.map(r =>
@@ -1132,6 +1203,8 @@ function importJSON(inputEl) {
           if (dept.tasks[idx] && savedTask.name && savedTask.owner) {
             dept.tasks[idx].name  = savedTask.name;
             dept.tasks[idx].owner = savedTask.owner;
+            if (savedTask.status)   dept.tasks[idx].status   = savedTask.status;
+            if (savedTask.priority) dept.tasks[idx].priority = savedTask.priority;
           }
         });
       });
@@ -1209,6 +1282,139 @@ function applyCompanyName(name) {
   const heading = document.getElementById('company-heading');
   if (heading) heading.textContent = name.toUpperCase();
   // SVG map re-reads getCompanyName() on next render — no extra action needed.
+}
+
+// ============================================================
+// TASK STATUS & PRIORITY — Constants, Helpers, and Cycle Logic
+// ============================================================
+// All status/priority functionality is grouped here so it's easy to find.
+// renderTrackingView() reads STATUS_LABELS and PRIORITY_LABELS at render time.
+// cycleTaskStatus / cycleTaskPriority are called by the pill/dot onclick handlers.
+// ============================================================
+
+// Human-readable labels for each status value.
+// The HTML uses these so the status pill always shows the right text.
+const STATUS_LABELS = {
+  'todo':        'To Do',
+  'in-progress': 'In Progress',
+  'blocked':     '⚠ Blocked',
+  'done':        '✓ Done'
+};
+
+// Labels for the priority dot tooltip.
+const PRIORITY_LABELS = {
+  'high':   'High',
+  'medium': 'Medium',
+  'low':    'Low'
+};
+
+// Click-to-cycle orders — each click advances one step, wrapping around.
+// Status cycle follows the natural task lifecycle: start → work → stuck → done.
+const STATUS_CYCLE   = ['todo', 'in-progress', 'blocked', 'done'];
+const PRIORITY_CYCLE = ['high', 'medium', 'low'];
+
+// ── buildDeptCompletionText ───────────────────────────────────────────────────
+// Returns the inline HTML that shows done and blocked counts in the dept header.
+// Called by renderTrackingView and updateDeptProgress.
+// Returns an empty string when both counts are zero so the header stays clean.
+function buildDeptCompletionText(doneCount, blockedCount) {
+  const parts = [];
+  if (doneCount   > 0) parts.push(`· <span class="dept-done-count">✓ ${doneCount} done</span>`);
+  if (blockedCount > 0) parts.push(`· <span class="dept-blocked-count">⚠ ${blockedCount} blocked</span>`);
+  return parts.join(' ');
+}
+
+// ── cycleTaskStatus ───────────────────────────────────────────────────────────
+// Advances a task's status one step in the cycle and updates the DOM surgically
+// (no full re-render needed — only the changed task row and dept header update).
+function cycleTaskStatus(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const task    = dept.tasks[taskIdx];
+  const current = task.status || 'todo';
+  // Advance to next step, wrapping back to 'todo' after 'done'
+  task.status   = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
+
+  // ── Surgical DOM update — only touch what changed ──────────────────────────
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    const newStatus = task.status;
+    // Keep data-status in sync so the filter can read it without a re-render
+    taskEl.dataset.status = newStatus;
+    // Toggle the done-dimming class
+    taskEl.classList.toggle('task-done', newStatus === 'done');
+
+    // Update the status pill: new class + new label text
+    const pill = taskEl.querySelector('.status-pill');
+    if (pill) {
+      pill.className = `status-pill status-${newStatus}`;
+      pill.textContent = STATUS_LABELS[newStatus];
+      pill.title = `Status: ${STATUS_LABELS[newStatus]} — click to change`;
+    }
+  }
+
+  // Update the department header progress bar + done/blocked counts
+  updateDeptProgress(deptId);
+
+  saveToStorage(); // Persist immediately — no debounce needed for single-click ops
+  updateStats();   // Refresh the global Done / In Progress / Blocked stat cards
+}
+
+// ── cycleTaskPriority ─────────────────────────────────────────────────────────
+// Advances a task's priority one step (High → Medium → Low → High) and updates
+// only the priority dot — a minimal, surgical DOM change.
+function cycleTaskPriority(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+
+  const task    = dept.tasks[taskIdx];
+  const current = task.priority || 'medium';
+  task.priority = PRIORITY_CYCLE[(PRIORITY_CYCLE.indexOf(current) + 1) % PRIORITY_CYCLE.length];
+
+  // Update data attribute so the filter reads the new value immediately
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    taskEl.dataset.priority = task.priority;
+    const dot = taskEl.querySelector('.priority-dot');
+    if (dot) {
+      // Swap the priority color class — remove old, add new
+      PRIORITY_CYCLE.forEach(p => dot.classList.remove(`priority-${p}`));
+      dot.classList.add(`priority-${task.priority}`);
+      dot.title = `Priority: ${PRIORITY_LABELS[task.priority]} — click to change`;
+    }
+  }
+
+  saveToStorage();
+}
+
+// ── updateDeptProgress ────────────────────────────────────────────────────────
+// Refreshes only the department header's progress bar and done/blocked counts
+// after a status change — avoids re-rendering the entire department card.
+function updateDeptProgress(deptId) {
+  const dept   = orgData.departments.find(d => d.id === deptId);
+  const deptEl = document.querySelector(`.department[data-id="${deptId}"]`);
+  if (!dept || !deptEl) return;
+
+  const total    = dept.tasks.length;
+  const done     = dept.tasks.filter(t => (t.status || 'todo') === 'done').length;
+  const blocked  = dept.tasks.filter(t => (t.status || 'todo') === 'blocked').length;
+  const pct      = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Animate the progress bar fill to the new percentage
+  const fill = deptEl.querySelector('.dept-progress-fill');
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.closest('.dept-progress-track').title = `${pct}% of tasks done`;
+  }
+
+  // Update the done/blocked text counts inline
+  const completionEl = deptEl.querySelector('.dept-completion');
+  if (completionEl) completionEl.innerHTML = buildDeptCompletionText(done, blocked);
 }
 
 // ====================
