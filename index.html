@@ -50,6 +50,21 @@
       <select id="owner-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by owner">
         <option value="">All Owners</option>
       </select>
+      <!-- Status filter — show only tasks in a given lifecycle state -->
+      <select id="status-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by status">
+        <option value="">All Statuses</option>
+        <option value="todo">To Do</option>
+        <option value="in-progress">In Progress</option>
+        <option value="blocked">⚠ Blocked</option>
+        <option value="done">✓ Done</option>
+      </select>
+      <!-- Priority filter — surface high-priority tasks quickly -->
+      <select id="priority-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by priority">
+        <option value="">All Priorities</option>
+        <option value="high">🔴 High</option>
+        <option value="medium">🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
       <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
       <!-- ★ BEACON: Auto-assign button. The badge inside shows the live UNOWNED count.
            JS keeps this disabled when count = 0 so managers always know the state. -->
@@ -119,7 +134,9 @@
 
   <div class="stats">
     <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="stat-total">0</div></div>
-    <div class="stat-card"><div class="stat-label">Assigned</div><div class="stat-value" id="stat-assigned">0</div></div>
+    <div class="stat-card done"><div class="stat-label">&#10003; Done</div><div class="stat-value" id="stat-done">0</div></div>
+    <div class="stat-card progress"><div class="stat-label">&#8987; In Progress</div><div class="stat-value" id="stat-in-progress">0</div></div>
+    <div class="stat-card blocked"><div class="stat-label">&#9888; Blocked</div><div class="stat-value" id="stat-blocked">0</div></div>
     <div class="stat-card danger"><div class="stat-label">&#9888; Unowned</div><div class="stat-value" id="stat-unowned">0</div></div>
     <div class="stat-card"><div class="stat-label">Departments</div><div class="stat-value" id="stat-departments">0</div></div>
     <div class="stats-actions">
