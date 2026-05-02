@@ -1,4 +1,11 @@
 // ====================
+// CONFIG — populated from config.json at startup via fetch()
+// ====================
+// Declared here as module-level lets so every function in this file can
+// reference them after initApp() populates them from the fetched JSON.
+let orgData, defaultAffinities, ownerColors;
+
+// ====================
 // VIEW MANAGEMENT
 // ====================
 
@@ -1395,7 +1402,8 @@ function submitCompanyName() {
 // ====================
 // INITIALIZATION
 // ====================
-document.addEventListener('DOMContentLoaded', () => {
+
+function initApp() {
   // ★ BEACON: loadTeamData MUST run before loadFromStorage + renderTrackingView
   // so that getEmployeeHex() has a populated registry when it's first called.
   loadTeamData();
@@ -1416,6 +1424,26 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     showOnboardingModal();
   }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('config.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`config.json fetch failed: ${r.status}`);
+      return r.json();
+    })
+    .then(config => {
+      orgData           = config.orgData;
+      defaultAffinities = config.defaultAffinities;
+      ownerColors       = config.ownerColors;
+      initApp();
+    })
+    .catch(err => {
+      console.error('PM Ops Map: could not load config.json —', err);
+      document.getElementById('departments').innerHTML =
+        '<p style="padding:2rem;color:#d32f2f">⚠ Could not load config.json. ' +
+        'Make sure you are serving this app over HTTP (e.g. <code>npm start</code>).</p>';
+    });
 });
 
 // ============================================================
