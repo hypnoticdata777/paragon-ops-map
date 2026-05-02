@@ -1486,6 +1486,8 @@ body {
   padding: 1.25rem 1.5rem 1rem;
   margin-bottom: 1.75rem;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  max-height: 800px; /* required so the dismiss collapse transition has a start value */
+  overflow: hidden;
 }
 
 .guide-header {
