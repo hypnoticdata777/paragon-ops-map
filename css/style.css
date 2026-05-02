@@ -158,7 +158,7 @@ body {
 }
 
 /* Owner colors */
-.owner-teammember4 { background: #ff6f00; }
+.owner-teammember4 { background: #e65100; }
 .owner-teammember7 { background: #1976d2; }
 .owner-teammember5 { background: #00897b; }
 .owner-teammember6 { background: #6a1b9a; }
@@ -1474,3 +1474,125 @@ body {
 .stat-card.done     .stat-value { color: #2e7d32; }
 .stat-card.progress .stat-value { color: #1565c0; }
 .stat-card.blocked  .stat-value { color: #c62828; }
+
+/* ==========================================================================
+   WELCOME GUIDE — dismissible first-run onboarding strip
+   ========================================================================== */
+
+.welcome-guide {
+  background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%);
+  border: 1px solid #b3d4f5;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem 1rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  max-height: 800px; /* required so the dismiss collapse transition has a start value */
+  overflow: hidden;
+}
+
+.guide-header {
+  margin-bottom: 1rem;
+}
+
+.guide-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a237e;
+  letter-spacing: 0.01em;
+}
+
+.guide-steps {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 180px;
+  padding: 0 1rem;
+}
+
+.guide-step:first-child {
+  padding-left: 0;
+}
+
+.guide-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1976d2;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.guide-step-body strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #0d47a1;
+  margin-bottom: 0.25rem;
+}
+
+.guide-step-body span {
+  font-size: 0.78rem;
+  color: #455a64;
+  line-height: 1.5;
+}
+
+.guide-step-body code {
+  background: rgba(25,118,210,0.1);
+  color: #1565c0;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.guide-divider {
+  width: 1px;
+  background: #b3d4f5;
+  align-self: stretch;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.guide-dismiss {
+  display: block;
+  margin-left: auto;
+  background: none;
+  border: 1px solid #90a4ae;
+  color: #607d8b;
+  border-radius: 6px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.guide-dismiss:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #37474f;
+}
+
+@media (max-width: 768px) {
+  .guide-steps {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .guide-step {
+    padding: 0;
+  }
+  .guide-divider {
+    display: none;
+  }
+}

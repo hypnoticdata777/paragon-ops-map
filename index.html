@@ -89,6 +89,49 @@
       <div class="tracking-hero">
         <h2 id="company-heading">YOUR COMPANY</h2>
       </div>
+
+      <!-- Welcome guide: shown once to new users, dismissed to localStorage.
+           hidden attribute is toggled by initWelcomeGuide() in app.js. -->
+      <div id="welcome-guide" class="welcome-guide" hidden>
+        <div class="guide-header">
+          <span class="guide-title">&#x1F44B; Welcome to PM Ops Map &mdash; here&rsquo;s how to get started</span>
+        </div>
+        <div class="guide-steps">
+          <div class="guide-step">
+            <div class="guide-step-num">1</div>
+            <div class="guide-step-body">
+              <strong>Assign your team</strong>
+              <span>Click any red <em>UNOWNED</em> badge on a task and pick a team member from the dropdown.</span>
+            </div>
+          </div>
+          <div class="guide-divider"></div>
+          <div class="guide-step">
+            <div class="guide-step-num">2</div>
+            <div class="guide-step-body">
+              <strong>Auto-fill the gaps</strong>
+              <span>Hit <strong>&#9889; Auto-Assign</strong> in the toolbar to instantly route every unowned task using your team&rsquo;s skill affinities.</span>
+            </div>
+          </div>
+          <div class="guide-divider"></div>
+          <div class="guide-step">
+            <div class="guide-step-num">3</div>
+            <div class="guide-step-body">
+              <strong>See the big picture</strong>
+              <span>Open <strong>&#128506; Map View</strong> to visualize every department, owner, and task as a live flow diagram.</span>
+            </div>
+          </div>
+          <div class="guide-divider"></div>
+          <div class="guide-step">
+            <div class="guide-step-num">4</div>
+            <div class="guide-step-body">
+              <strong>Customize your config</strong>
+              <span>Edit <code>config.json</code> to add your own departments, tasks, and team &mdash; no coding required.</span>
+            </div>
+          </div>
+        </div>
+        <button class="guide-dismiss" onclick="dismissWelcomeGuide()">Got it &mdash; hide this &#10005;</button>
+      </div>
+
       <div class="departments" id="departments"></div>
       <div id="no-results" class="no-results" style="display:none">
         No tasks match your search. <button class="btn-link" onclick="clearFilter()">Clear filters</button>
@@ -124,6 +167,7 @@
 
   <div class="stats">
     <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="stat-total">0</div></div>
+    <div class="stat-card"><div class="stat-label">&#10003; Assigned</div><div class="stat-value" id="stat-assigned">0</div></div>
     <div class="stat-card done"><div class="stat-label">&#10003; Done</div><div class="stat-value" id="stat-done">0</div></div>
     <div class="stat-card progress"><div class="stat-label">&#8987; In Progress</div><div class="stat-value" id="stat-in-progress">0</div></div>
     <div class="stat-card blocked"><div class="stat-label">&#9888; Blocked</div><div class="stat-value" id="stat-blocked">0</div></div>
@@ -155,7 +199,6 @@
   </div>
 </div>
 <div id="save-toast" class="save-toast"></div>
-<script src="js/data.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

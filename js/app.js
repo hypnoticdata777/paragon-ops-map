@@ -1,4 +1,11 @@
 // ====================
+// CONFIG — populated from config.json at startup via fetch()
+// ====================
+// Declared here as module-level lets so every function in this file can
+// reference them after initApp() populates them from the fetched JSON.
+let orgData, defaultAffinities, ownerColors;
+
+// ====================
 // VIEW MANAGEMENT
 // ====================
 
@@ -1395,7 +1402,8 @@ function submitCompanyName() {
 // ====================
 // INITIALIZATION
 // ====================
-document.addEventListener('DOMContentLoaded', () => {
+
+function initApp() {
   // ★ BEACON: loadTeamData MUST run before loadFromStorage + renderTrackingView
   // so that getEmployeeHex() has a populated registry when it's first called.
   loadTeamData();
@@ -1405,6 +1413,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();          // Also calls updateBeacons() internally
   populateOwnerFilter();
   renderLegend();         // Build the dynamic legend from teamData
+  initWelcomeGuide();     // Show first-run guide unless already dismissed
 
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
@@ -1416,6 +1425,54 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     showOnboardingModal();
   }
+}
+
+// ====================
+// WELCOME GUIDE
+// ====================
+
+const GUIDE_KEY = 'pm-ops-guide-dismissed';
+
+function initWelcomeGuide() {
+  const guide = document.getElementById('welcome-guide');
+  if (!guide) return;
+  // Show only if the user hasn't dismissed it before
+  if (!localStorage.getItem(GUIDE_KEY)) {
+    guide.hidden = false;
+  }
+}
+
+function dismissWelcomeGuide() {
+  const guide = document.getElementById('welcome-guide');
+  if (!guide) return;
+  guide.style.transition = 'opacity 0.35s ease, max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease';
+  guide.style.opacity    = '0';
+  guide.style.maxHeight  = '0';
+  guide.style.margin     = '0';
+  guide.style.padding    = '0';
+  guide.style.overflow   = 'hidden';
+  setTimeout(() => { guide.hidden = true; }, 420);
+  try { localStorage.setItem(GUIDE_KEY, '1'); } catch (_) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('config.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`config.json fetch failed: ${r.status}`);
+      return r.json();
+    })
+    .then(config => {
+      orgData           = config.orgData;
+      defaultAffinities = config.defaultAffinities;
+      ownerColors       = config.ownerColors;
+      initApp();
+    })
+    .catch(err => {
+      console.error('PM Ops Map: could not load config.json —', err);
+      document.getElementById('departments').innerHTML =
+        '<p style="padding:2rem;color:#d32f2f">⚠ Could not load config.json. ' +
+        'Make sure you are serving this app over HTTP (e.g. <code>npm start</code>).</p>';
+    });
 });
 
 // ============================================================
