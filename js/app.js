@@ -1413,6 +1413,7 @@ function initApp() {
   updateStats();          // Also calls updateBeacons() internally
   populateOwnerFilter();
   renderLegend();         // Build the dynamic legend from teamData
+  initWelcomeGuide();     // Show first-run guide unless already dismissed
 
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
@@ -1424,6 +1425,34 @@ function initApp() {
   } else {
     showOnboardingModal();
   }
+}
+
+// ====================
+// WELCOME GUIDE
+// ====================
+
+const GUIDE_KEY = 'pm-ops-guide-dismissed';
+
+function initWelcomeGuide() {
+  const guide = document.getElementById('welcome-guide');
+  if (!guide) return;
+  // Show only if the user hasn't dismissed it before
+  if (!localStorage.getItem(GUIDE_KEY)) {
+    guide.hidden = false;
+  }
+}
+
+function dismissWelcomeGuide() {
+  const guide = document.getElementById('welcome-guide');
+  if (!guide) return;
+  guide.style.transition = 'opacity 0.35s ease, max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease';
+  guide.style.opacity    = '0';
+  guide.style.maxHeight  = '0';
+  guide.style.margin     = '0';
+  guide.style.padding    = '0';
+  guide.style.overflow   = 'hidden';
+  setTimeout(() => { guide.hidden = true; }, 420);
+  try { localStorage.setItem(GUIDE_KEY, '1'); } catch (_) {}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
