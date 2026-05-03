@@ -58,6 +58,8 @@ function switchView(view, tabEl) {
     renderFlowMap();
   } else if (view === 'team') {
     renderTeamView();
+  } else if (view === 'workorders') {
+    renderWorkOrdersView();
   }
 }
 
@@ -1413,6 +1415,7 @@ function initApp() {
   // ★ BEACON: loadTeamData MUST run before loadFromStorage + renderTrackingView
   // so that getEmployeeHex() has a populated registry when it's first called.
   loadTeamData();
+  loadWorkOrders();
 
   loadFromStorage();
   renderTrackingView();
@@ -1644,6 +1647,9 @@ function updateBeacons() {
       ? `Auto-assign ${count} unowned task${count !== 1 ? 's' : ''} based on department affinities`
       : 'All tasks are assigned — nothing to auto-assign!';
   }
+
+  // Work Orders tab beacon — lights up when open WOs are unassigned
+  updateWorkOrderBeacon();
 }
 
 // ============================================================
@@ -2045,4 +2051,269 @@ function renderLegend() {
       <span>&#9888;&#65039; UNOWNED</span>
     </div>
   `;
+}
+
+// ============================================================
+// ★ WORK ORDERS MODULE
+// ============================================================
+// A kanban-style maintenance work order board.
+//
+// Pipeline: Submitted → Scheduled → In Progress → Completed
+//
+// Each work order stores: property, unit, issue title, notes,
+// priority, status, assignee (from team roster), vendor name,
+// estimated cost, and timestamps.
+//
+// Data lives in its own localStorage key (WORKORDERS_KEY) so it
+// is independent of task assignments and team data.
+// ============================================================
+
+const WORKORDERS_KEY = 'pm-ops-workorders-v1';
+
+let workOrders = [];
+
+const WO_STATUS_CYCLE  = ['submitted', 'scheduled', 'in-progress', 'completed'];
+const WO_STATUS_LABELS = {
+  'submitted':   'Submitted',
+  'scheduled':   'Scheduled',
+  'in-progress': 'In Progress',
+  'completed':   '✓ Completed',
+};
+const WO_STATUS_COLORS = {
+  'submitted':   '#ef6c00',
+  'scheduled':   '#1976d2',
+  'in-progress': '#7b1fa2',
+  'completed':   '#2e7d32',
+};
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+
+function loadWorkOrders() {
+  try {
+    const raw = localStorage.getItem(WORKORDERS_KEY);
+    if (raw) workOrders = JSON.parse(raw) || [];
+  } catch (e) {
+    workOrders = [];
+  }
+}
+
+function saveWorkOrders() {
+  try {
+    localStorage.setItem(WORKORDERS_KEY, JSON.stringify(workOrders));
+  } catch (e) { /* localStorage unavailable */ }
+}
+
+// ── HTML helper — escape user-supplied strings before innerHTML insertion ─────
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatWODate(isoStr) {
+  try {
+    return new Date(isoStr).toLocaleDateString('en-US',
+      { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (e) { return ''; }
+}
+
+// ── Beacon ────────────────────────────────────────────────────────────────────
+
+function updateWorkOrderBeacon() {
+  const unassignedOpen = workOrders.filter(
+    w => w.assignee === 'UNASSIGNED' && w.status !== 'completed'
+  ).length;
+  const beacon = document.getElementById('wo-tab-beacon');
+  if (beacon) beacon.hidden = (unassignedOpen === 0);
+}
+
+// ── Card builder ──────────────────────────────────────────────────────────────
+
+function buildWorkOrderCard(wo) {
+  const isUnassigned = wo.assignee === 'UNASSIGNED';
+  const statusIdx    = WO_STATUS_CYCLE.indexOf(wo.status);
+  const canAdvance   = statusIdx < WO_STATUS_CYCLE.length - 1;
+  const nextLabel    = canAdvance ? WO_STATUS_LABELS[WO_STATUS_CYCLE[statusIdx + 1]] : '';
+  const assigneeBg   = isUnassigned ? '#d32f2f' : getEmployeeHex(wo.assignee);
+
+  return `
+    <div class="wo-card priority-border-${wo.priority}">
+      <div class="wo-card-top">
+        <div class="wo-card-location">
+          <span class="wo-property">${escapeHtml(wo.property)}</span>
+          ${wo.unit ? `<span class="wo-unit">Unit ${escapeHtml(wo.unit)}</span>` : ''}
+        </div>
+        <span class="priority-dot priority-${wo.priority}"
+              title="Priority: ${PRIORITY_LABELS[wo.priority]}"></span>
+      </div>
+      <div class="wo-card-title">${escapeHtml(wo.title)}</div>
+      ${wo.notes  ? `<div class="wo-card-notes">${escapeHtml(wo.notes)}</div>` : ''}
+      ${wo.vendor ? `<div class="wo-vendor-label">&#128295; <strong>${escapeHtml(wo.vendor)}</strong></div>` : ''}
+      <div class="wo-card-footer">
+        <span class="wo-assignee-badge${isUnassigned ? ' owner-unowned' : ''}"
+              style="${isUnassigned ? '' : `background:${assigneeBg}`}">
+          ${isUnassigned ? '&#9888; Unassigned' : escapeHtml(wo.assignee)}
+        </span>
+        ${wo.cost > 0 ? `<span class="wo-cost">$${Number(wo.cost).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : ''}
+        <div class="wo-card-actions">
+          ${canAdvance
+            ? `<button class="wo-advance-btn"
+                       onclick="advanceWorkOrder('${wo.id}')"
+                       title="Advance to ${nextLabel}">&#8594; ${nextLabel}</button>`
+            : ''}
+          <button class="wo-delete-btn"
+                  onclick="deleteWorkOrder('${wo.id}')"
+                  title="Delete work order">&#x2715;</button>
+        </div>
+      </div>
+      <div class="wo-card-date">${formatWODate(wo.createdAt)}</div>
+    </div>`;
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+
+function renderWorkOrdersView() {
+  const inner = document.getElementById('workorders-view-inner');
+  if (!inner) return;
+
+  const openCount       = workOrders.filter(w => w.status !== 'completed').length;
+  const unassignedCount = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+  const completedCount  = workOrders.filter(w => w.status === 'completed').length;
+
+  inner.innerHTML = `
+    <div class="wo-toolbar">
+      <div class="wo-toolbar-left">
+        <h2 class="wo-heading">&#128295; Work Orders</h2>
+        <div class="wo-stats-pills">
+          <span class="wo-stat-pill wo-stat-open">${openCount} open</span>
+          ${unassignedCount > 0
+            ? `<span class="wo-stat-pill wo-stat-warn">${unassignedCount} unassigned</span>`
+            : ''}
+          <span class="wo-stat-pill wo-stat-done">${completedCount} completed</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="showNewWorkOrderModal()">+ New Work Order</button>
+    </div>
+
+    <div class="wo-board">
+      ${WO_STATUS_CYCLE.map(status => {
+        const cards = workOrders.filter(w => w.status === status);
+        return `
+          <div class="wo-column">
+            <div class="wo-col-header" style="border-top-color:${WO_STATUS_COLORS[status]}">
+              <span class="wo-col-title">${WO_STATUS_LABELS[status]}</span>
+              <span class="wo-col-count">${cards.length}</span>
+            </div>
+            <div class="wo-col-body">
+              ${cards.length === 0
+                ? '<div class="wo-col-empty">No work orders</div>'
+                : cards.map(wo => buildWorkOrderCard(wo)).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Modal — open / close / submit ─────────────────────────────────────────────
+
+function showNewWorkOrderModal() {
+  const modal = document.getElementById('wo-modal');
+  if (!modal) return;
+
+  // Populate assignee dropdown with current roster
+  const sel = document.getElementById('wo-assignee');
+  sel.innerHTML = '<option value="UNASSIGNED">&#8212; Unassigned &#8212;</option>';
+  getEmployeeNames().forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = name;
+    sel.appendChild(opt);
+  });
+
+  // Clear all fields
+  ['wo-property','wo-unit','wo-title','wo-notes','wo-vendor','wo-cost'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('wo-priority').value = 'medium';
+  document.getElementById('wo-assignee').value = 'UNASSIGNED';
+
+  modal.classList.add('visible');
+  setTimeout(() => document.getElementById('wo-property').focus(), 50);
+}
+
+function closeWorkOrderModal() {
+  const modal = document.getElementById('wo-modal');
+  if (modal) modal.classList.remove('visible');
+}
+
+function commitNewWorkOrder() {
+  const property = document.getElementById('wo-property').value.trim();
+  const title    = document.getElementById('wo-title').value.trim();
+
+  // Shake the first empty required field and bail
+  if (!property) {
+    const el = document.getElementById('wo-property');
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 400);
+    el.focus();
+    return;
+  }
+  if (!title) {
+    const el = document.getElementById('wo-title');
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 400);
+    el.focus();
+    return;
+  }
+
+  const rawCost = parseFloat(document.getElementById('wo-cost').value);
+  const wo = {
+    id:         `wo-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    property,
+    unit:       document.getElementById('wo-unit').value.trim(),
+    title,
+    notes:      document.getElementById('wo-notes').value.trim(),
+    priority:   document.getElementById('wo-priority').value,
+    status:     'submitted',
+    assignee:   document.getElementById('wo-assignee').value,
+    vendor:     document.getElementById('wo-vendor').value.trim(),
+    cost:       isNaN(rawCost) ? 0 : rawCost,
+    createdAt:  new Date().toISOString(),
+    updatedAt:  new Date().toISOString(),
+  };
+
+  workOrders.push(wo);
+  saveWorkOrders();
+  closeWorkOrderModal();
+  renderWorkOrdersView();
+  updateWorkOrderBeacon();
+}
+
+// ── CRUD helpers ──────────────────────────────────────────────────────────────
+
+// Advances a work order one step along the pipeline.
+function advanceWorkOrder(id) {
+  const wo = workOrders.find(w => w.id === id);
+  if (!wo) return;
+  const idx = WO_STATUS_CYCLE.indexOf(wo.status);
+  if (idx < WO_STATUS_CYCLE.length - 1) {
+    wo.status    = WO_STATUS_CYCLE[idx + 1];
+    wo.updatedAt = new Date().toISOString();
+    saveWorkOrders();
+    renderWorkOrdersView();
+    updateWorkOrderBeacon();
+  }
+}
+
+function deleteWorkOrder(id) {
+  const wo = workOrders.find(w => w.id === id);
+  if (!wo) return;
+  if (!confirm(`Delete this work order?\n\n"${wo.title}"\n${wo.property}${wo.unit ? ` · Unit ${wo.unit}` : ''}`)) return;
+  workOrders = workOrders.filter(w => w.id !== id);
+  saveWorkOrders();
+  renderWorkOrdersView();
+  updateWorkOrderBeacon();
 }
