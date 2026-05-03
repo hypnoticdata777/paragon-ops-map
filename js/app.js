@@ -1389,9 +1389,8 @@ function showOnboardingModal() {
   modal.classList.add('visible');
   const input = document.getElementById('company-input');
   setTimeout(() => input.focus(), 50);
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitCompanyName();
-  });
+  // Use onkeydown (not addEventListener) so re-showing the modal never stacks listeners.
+  input.onkeydown = e => { if (e.key === 'Enter') submitCompanyName(); };
 }
 
 function submitCompanyName() {
@@ -1866,13 +1865,13 @@ function buildEmployeeCard(emp, depts, workload, maxTasks) {
       <!-- Header row: color dot | name | task count | mini-bar | Remove button -->
       <div class="employee-card-header">
         <span class="emp-color-dot" style="background:${emp.hex}"></span>
-        <span class="emp-name">${emp.name}</span>
+        <span class="emp-name">${escapeHtml(emp.name)}</span>
         <span class="emp-task-count" style="color:${emp.hex}">${taskCount} task${taskCount !== 1 ? 's' : ''}</span>
         <!-- Mini workload bar — same data as the dashboard, just much smaller -->
         <div class="emp-mini-bar-track">
           <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${emp.hex}"></div>
         </div>
-        <button class="emp-remove-btn" onclick="removeEmployee('${emp.name}')" title="Remove ${emp.name}">&#x2715;</button>
+        <button class="emp-remove-btn" onclick="removeEmployee(${jsonAttr(emp.name)})" title="Remove ${escapeHtml(emp.name)}">&#x2715;</button>
       </div>
 
       <!-- Affinity tags: one toggle button per department.
@@ -1888,8 +1887,8 @@ function buildEmployeeCard(emp, depts, workload, maxTasks) {
               style="${active
                 ? `background:${dept.color};border-color:${dept.color}`
                 : `border-color:${dept.color};color:${dept.color}`}"
-              onclick="toggleAffinity('${emp.name}','${dept.id}')"
-              title="${active ? 'Remove' : 'Add'} affinity: ${dept.name}"
+              onclick="toggleAffinity(${jsonAttr(emp.name)}, ${jsonAttr(dept.id)})"
+              title="${active ? 'Remove' : 'Add'} affinity: ${escapeHtml(dept.name)}"
             >${dept.name}</button>
           `;
         }).join('')}
@@ -1920,7 +1919,7 @@ function buildWorkloadBars(workload, maxTasks) {
       <div class="workload-bar-row${overloaded ? ' overloaded' : ''}">
         <div class="workload-name-cell">
           <span class="wl-dot" style="background:${hex}"></span>
-          <span class="wl-name">${name}</span>
+          <span class="wl-name">${escapeHtml(name)}</span>
           ${overloaded
             ? '<span class="wl-beacon" title="Significantly above team average — consider re-balancing">&#9888;</span>'
             : ''}
@@ -2043,7 +2042,7 @@ function renderLegend() {
   legend.innerHTML = teamData.employees.map(emp => `
     <div class="legend-item">
       <div class="legend-color" style="background:${emp.hex}"></div>
-      <span>${emp.name}</span>
+      <span>${escapeHtml(emp.name)}</span>
     </div>
   `).join('') + `
     <div class="legend-item">
@@ -2111,6 +2110,14 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// Safely embeds a JS value inside a double-quoted HTML attribute that contains
+// a JS call, e.g. onclick="fn(jsonAttr(val))".
+// JSON.stringify handles all special characters; the resulting double-quotes are
+// HTML-encoded so they don't terminate the surrounding attribute.
+function jsonAttr(val) {
+  return JSON.stringify(String(val == null ? '' : val)).replace(/"/g, '&quot;');
 }
 
 function formatWODate(isoStr) {
