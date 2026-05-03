@@ -33,6 +33,10 @@
       &#128101; Team Manager
       <span class="tab-beacon" id="tab-beacon" hidden></span>
     </div>
+    <div class="nav-tab" id="wo-tab" onclick="switchView('workorders', this)">
+      &#128295; Work Orders
+      <span class="tab-beacon" id="wo-tab-beacon" hidden></span>
+    </div>
   </div>
 
   <div class="controls" id="controls">
@@ -163,6 +167,12 @@
     <div id="team-view" class="view-panel">
       <div id="team-view-inner"></div>
     </div>
+
+    <!-- WORK ORDERS VIEW
+         Inner content rendered entirely by renderWorkOrdersView() in app.js. -->
+    <div id="workorders-view" class="view-panel">
+      <div id="workorders-view-inner"></div>
+    </div>
   </div>
 
   <div class="stats">
@@ -196,6 +206,57 @@
     <label for="company-input" class="onboarding-label">What's your company name?</label>
     <input id="company-input" type="text" class="onboarding-input" placeholder="e.g. Sunrise Property Management" maxlength="60" autocomplete="off">
     <button class="onboarding-btn" onclick="submitCompanyName()">Get Started &rarr;</button>
+  </div>
+</div>
+<!-- Work Order creation modal -->
+<div id="wo-modal" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="wo-modal-title">
+  <div class="wo-modal-card">
+    <div class="onboarding-logo">Work Order</div>
+    <h2 id="wo-modal-title" class="onboarding-title">New Work Order</h2>
+    <div class="wo-form-grid">
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-property">Property *</label>
+        <input id="wo-property" type="text" class="wo-form-input" placeholder="e.g. 123 Main St" maxlength="80" autocomplete="off">
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-unit">Unit</label>
+        <input id="wo-unit" type="text" class="wo-form-input" placeholder="e.g. 2B" maxlength="20" autocomplete="off">
+      </div>
+      <div class="wo-form-group wo-form-group--full">
+        <label class="wo-form-label" for="wo-title">Issue *</label>
+        <input id="wo-title" type="text" class="wo-form-input" placeholder="e.g. Leaking faucet in kitchen" maxlength="120" autocomplete="off">
+      </div>
+      <div class="wo-form-group wo-form-group--full">
+        <label class="wo-form-label" for="wo-notes">Notes</label>
+        <textarea id="wo-notes" class="wo-form-input wo-form-textarea" placeholder="Additional details, access instructions..." rows="2"></textarea>
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-priority">Priority</label>
+        <select id="wo-priority" class="wo-form-input">
+          <option value="high">&#128308; High</option>
+          <option value="medium" selected>&#128993; Medium</option>
+          <option value="low">&#128994; Low</option>
+        </select>
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-assignee">Assignee</label>
+        <select id="wo-assignee" class="wo-form-input">
+          <option value="UNASSIGNED">&#8212; Unassigned &#8212;</option>
+        </select>
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-vendor">Vendor</label>
+        <input id="wo-vendor" type="text" class="wo-form-input" placeholder="e.g. Ace Plumbing" maxlength="60" autocomplete="off">
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-cost">Est. Cost ($)</label>
+        <input id="wo-cost" type="number" class="wo-form-input" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="wo-modal-actions">
+      <button class="btn btn-secondary" onclick="closeWorkOrderModal()">Cancel</button>
+      <button class="onboarding-btn wo-submit-btn" onclick="commitNewWorkOrder()">Create Work Order &#8594;</button>
+    </div>
   </div>
 </div>
 <div id="save-toast" class="save-toast"></div>

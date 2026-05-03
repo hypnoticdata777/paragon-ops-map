@@ -1596,3 +1596,347 @@ body {
     display: none;
   }
 }
+
+/* ==========================================================================
+   WORK ORDERS VIEW — Kanban Board
+   ========================================================================== */
+
+.wo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 30px 18px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.wo-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.wo-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: #263238;
+  margin: 0;
+}
+
+/* Quick-stat pills in the toolbar */
+.wo-stats-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wo-stat-pill {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wo-stat-open   { background: #e3f2fd; color: #1565c0; }
+.wo-stat-warn   { background: #fff3e0; color: #e65100; }
+.wo-stat-done   { background: #e8f5e9; color: #2e7d32; }
+
+/* Kanban grid — 4 equal columns */
+.wo-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 0 30px 30px;
+  overflow-x: auto;
+}
+
+.wo-column {
+  background: #f5f7f8;
+  border-radius: 10px;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wo-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #eceff1;
+  border-radius: 10px 10px 0 0;
+  border-top: 3px solid transparent; /* overridden inline per status */
+}
+
+.wo-col-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #37474f;
+}
+
+.wo-col-count {
+  background: #cfd8dc;
+  color: #546e7a;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wo-col-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 100px;
+}
+
+.wo-col-empty {
+  color: #b0bec5;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 10px;
+  font-style: italic;
+}
+
+/* Individual work-order card */
+.wo-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+  border-left: 4px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: box-shadow 0.15s;
+}
+
+.wo-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.14); }
+
+/* Priority left-border colours (reuses priority naming convention) */
+.wo-card.priority-border-high   { border-left-color: #d32f2f; }
+.wo-card.priority-border-medium { border-left-color: #f9a825; }
+.wo-card.priority-border-low    { border-left-color: #388e3c; }
+
+.wo-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.wo-card-location {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wo-property {
+  font-weight: 700;
+  font-size: 13px;
+  color: #263238;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wo-unit {
+  font-size: 11px;
+  color: #78909c;
+}
+
+.wo-card-title {
+  font-size: 13px;
+  color: #37474f;
+  line-height: 1.35;
+}
+
+.wo-card-notes {
+  font-size: 11px;
+  color: #90a4ae;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+.wo-vendor-label {
+  font-size: 11px;
+  color: #78909c;
+}
+
+.wo-vendor-label strong {
+  color: #546e7a;
+  font-weight: 600;
+}
+
+/* Card footer: assignee badge + cost + action buttons */
+.wo-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+/* Assignee badge — reuses .task-owner sizing */
+.wo-assignee-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+.wo-cost {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.wo-card-actions {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+/* "→ Next Status" advance button */
+.wo-advance-btn {
+  background: none;
+  border: 1px solid #b0bec5;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #546e7a;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.wo-advance-btn:hover {
+  background: #eceff1;
+  color: #263238;
+  border-color: #78909c;
+}
+
+/* Subtle delete button (×) */
+.wo-delete-btn {
+  background: none;
+  border: none;
+  color: #cfd8dc;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.1s;
+}
+
+.wo-delete-btn:hover { color: #d32f2f; }
+
+/* Creation date stamp */
+.wo-card-date {
+  font-size: 10px;
+  color: #cfd8dc;
+  text-align: right;
+}
+
+/* ==========================================================================
+   WORK ORDERS — New Work Order Modal
+   Reuses .onboarding-overlay for the backdrop; .wo-modal-card for sizing.
+   ========================================================================== */
+
+.wo-modal-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 40px 32px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: onboardingIn 0.25s ease;
+}
+
+.wo-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 18px 0 22px;
+}
+
+.wo-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wo-form-group--full {
+  grid-column: 1 / -1;
+}
+
+.wo-form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #78909c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wo-form-input {
+  padding: 9px 12px;
+  border: 1.5px solid #cfd8dc;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #263238;
+  outline: none;
+  transition: border-color 0.15s;
+  background: white;
+}
+
+.wo-form-input:focus { border-color: #1976d2; }
+
+.wo-form-input.shake {
+  animation: inputShake 0.35s ease;
+  border-color: #d32f2f;
+}
+
+.wo-form-textarea {
+  resize: vertical;
+  min-height: 58px;
+}
+
+.wo-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.wo-submit-btn {
+  margin-top: 0;
+  padding: 11px 22px;
+  font-size: 14px;
+}
+
+/* Responsive: collapse kanban to 2 columns then 1 */
+@media (max-width: 1100px) {
+  .wo-board { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .wo-board { grid-template-columns: 1fr; padding: 0 16px 20px; }
+  .wo-toolbar { padding: 16px 16px 12px; }
+  .wo-form-grid { grid-template-columns: 1fr; }
+  .wo-form-group--full { grid-column: 1; }
+  .wo-modal-card { padding: 28px 22px 24px; }
+}
