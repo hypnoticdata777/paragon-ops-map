@@ -793,7 +793,7 @@ function renderFlowMap() {
       hitPath.style.cursor = 'pointer';
       curveLayer.appendChild(hitPath);
 
-      const tooltipHtml = `<strong>${dept.name} → ${owner}</strong>${count} task${count !== 1 ? 's' : ''}`;
+      const tooltipHtml = `<strong>${dept.name} → ${owner}</strong><br>${count} task${count !== 1 ? 's' : ''}`;
       hitPath.addEventListener('mouseenter', (e) => showMapTooltip(tooltipHtml, e.clientX, e.clientY));
       hitPath.addEventListener('mousemove',  (e) => showMapTooltip(tooltipHtml, e.clientX, e.clientY));
       hitPath.addEventListener('mouseleave', hideMapTooltip);
@@ -839,7 +839,7 @@ function renderFlowMap() {
 
     // Tooltip
     const ownerList = [...new Set(dept.tasks.map(t => t.owner))].join(', ');
-    const tipHtml = `<strong>${dept.name}</strong>${dept.tasks.length} tasks · Owners: ${ownerList}`;
+    const tipHtml = `<strong>${dept.name}</strong><br>${dept.tasks.length} tasks · Owners: ${ownerList}`;
 
     g.addEventListener('mouseenter', (e) => {
       showMapTooltip(tipHtml, e.clientX, e.clientY);
@@ -888,7 +888,7 @@ function renderFlowMap() {
       .filter(d => d.tasks.some(t => t.owner === owner))
       .map(d => d.name)
       .join(', ');
-    const ownerTipHtml = `<strong>${owner}</strong>${taskCount} tasks · Depts: ${deptNames || 'none'}`;
+    const ownerTipHtml = `<strong>${owner}</strong><br>${taskCount} tasks · Depts: ${deptNames || 'none'}`;
 
     g.addEventListener('mouseenter', (e) => {
       showMapTooltip(ownerTipHtml, e.clientX, e.clientY);
@@ -1051,10 +1051,11 @@ function saveToStorage() {
       // Default values ('todo', 'medium') are written explicitly so exported
       // files can be re-imported into older versions without crashing.
       tasks: dept.tasks.map(t => ({
-        name:     t.name,
-        owner:    t.owner,
-        status:   t.status   || 'todo',
-        priority: t.priority || 'medium'
+        _configName: t._configName || t.name,
+        name:        t.name,
+        owner:       t.owner,
+        status:      t.status   || 'todo',
+        priority:    t.priority || 'medium'
       }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -1073,15 +1074,18 @@ function loadFromStorage() {
     saved.forEach(savedDept => {
       const dept = orgData.departments.find(d => d.id === savedDept.id);
       if (!dept) return;
-      savedDept.tasks.forEach((savedTask, idx) => {
-        if (dept.tasks[idx]) {
-          dept.tasks[idx].name  = savedTask.name;
-          dept.tasks[idx].owner = savedTask.owner;
-          // status and priority are optional so older saves load cleanly —
-          // they'll just default to 'todo' / 'medium' during rendering.
-          if (savedTask.status)   dept.tasks[idx].status   = savedTask.status;
-          if (savedTask.priority) dept.tasks[idx].priority = savedTask.priority;
-        }
+      savedDept.tasks.forEach((savedTask) => {
+        // Match by _configName (stable original name) so that adding, removing,
+        // or reordering tasks in config.json never maps saved data to the wrong task.
+        // Falls back to savedTask.name for saves produced before this fix.
+        const key  = savedTask._configName || savedTask.name;
+        const task = dept.tasks.find(t => t._configName === key);
+        if (!task) return;
+        task.name  = savedTask.name;
+        task.owner = savedTask.owner;
+        // status and priority are optional so older saves load cleanly.
+        if (savedTask.status)   task.status   = savedTask.status;
+        if (savedTask.priority) task.priority = savedTask.priority;
       });
     });
   } catch (e) {
@@ -1154,13 +1158,15 @@ function importJSON(inputEl) {
         const dept = orgData.departments.find(d => d.id === savedDept.id);
         if (!dept) return;
         if (!Array.isArray(savedDept.tasks)) return;
-        savedDept.tasks.forEach((savedTask, idx) => {
-          if (dept.tasks[idx] && savedTask.name && savedTask.owner) {
-            dept.tasks[idx].name  = savedTask.name;
-            dept.tasks[idx].owner = savedTask.owner;
-            if (savedTask.status)   dept.tasks[idx].status   = savedTask.status;
-            if (savedTask.priority) dept.tasks[idx].priority = savedTask.priority;
-          }
+        savedDept.tasks.forEach((savedTask) => {
+          if (!savedTask.name || !savedTask.owner) return;
+          const key  = savedTask._configName || savedTask.name;
+          const task = dept.tasks.find(t => t._configName === key);
+          if (!task) return;
+          task.name  = savedTask.name;
+          task.owner = savedTask.owner;
+          if (savedTask.status)   task.status   = savedTask.status;
+          if (savedTask.priority) task.priority = savedTask.priority;
         });
       });
 
@@ -1465,6 +1471,12 @@ document.addEventListener('DOMContentLoaded', () => {
       orgData           = config.orgData;
       defaultAffinities = config.defaultAffinities;
       ownerColors       = config.ownerColors;
+      // Stamp each task with its original config name as a stable identity key.
+      // _configName never changes even if the user renames the task, so
+      // save/load can always find the right task regardless of config edits.
+      orgData.departments.forEach(dept => {
+        dept.tasks.forEach(task => { task._configName = task.name; });
+      });
       initApp();
     })
     .catch(err => {
@@ -1796,9 +1808,9 @@ function renderTeamView() {
           >
           <!-- Color palette — click a swatch to set the employee's badge color -->
           <div class="color-palette" id="color-palette">
-            ${COLOR_PALETTE.map((hex, i) => `
+            ${COLOR_PALETTE.map((hex) => `
               <button
-                class="color-swatch${i === 0 ? ' selected' : ''}"
+                class="color-swatch${hex === _selectedColor ? ' selected' : ''}"
                 style="background:${hex}"
                 data-color="${hex}"
                 title="${hex}"
@@ -1833,9 +1845,6 @@ function renderTeamView() {
     </div>
   `;
 
-  // After rendering, reset the selected color to the first swatch so
-  // the `_selectedColor` state and the visual selection are in sync.
-  _selectedColor = COLOR_PALETTE[0];
 }
 
 // ── buildEmployeeCard ─────────────────────────────────────────────────────────
@@ -1960,6 +1969,7 @@ function commitAddEmployee() {
     affinities: [] // New employees start with no affinities — manager sets them via the tags
   });
 
+  _selectedColor = COLOR_PALETTE[0]; // Reset picker for the next add
   saveTeamData();
   renderTeamView();       // Re-render the team view to show the new card
   renderLegend();         // Add them to the color legend in the controls bar
