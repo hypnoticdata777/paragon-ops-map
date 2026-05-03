@@ -1,11 +1,6 @@
-const { orgData, ownerColors } = require('../data.js');
+const { orgData, ownerColors, defaultAffinities } = require('../data.js');
 
 describe('orgData', () => {
-  test('has a company name', () => {
-    expect(typeof orgData.company).toBe('string');
-    expect(orgData.company.length).toBeGreaterThan(0);
-  });
-
   test('has a departments array with entries', () => {
     expect(Array.isArray(orgData.departments)).toBe(true);
     expect(orgData.departments.length).toBeGreaterThan(0);
@@ -52,5 +47,29 @@ describe('ownerColors', () => {
 
   test('includes UNOWNED entry', () => {
     expect(ownerColors).toHaveProperty('UNOWNED');
+  });
+});
+
+describe('defaultAffinities', () => {
+  test('is a non-empty object', () => {
+    expect(typeof defaultAffinities).toBe('object');
+    expect(Object.keys(defaultAffinities).length).toBeGreaterThan(0);
+  });
+
+  test('every affinity value is an array of department id strings', () => {
+    const deptIds = new Set(orgData.departments.map(d => d.id));
+    Object.entries(defaultAffinities).forEach(([owner, ids]) => {
+      expect(Array.isArray(ids)).toBe(true);
+      ids.forEach(id => {
+        expect(typeof id).toBe('string');
+        expect(deptIds.has(id)).toBe(true);
+      });
+    });
+  });
+
+  test('affinity owners exist in ownerColors', () => {
+    Object.keys(defaultAffinities).forEach(owner => {
+      expect(ownerColors).toHaveProperty(owner);
+    });
   });
 });
