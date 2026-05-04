@@ -2011,6 +2011,241 @@ body {
 }
 
 /* ==========================================================================
+   ROLE PLAYBOOK MODAL
+   ========================================================================== */
+
+.playbook-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 21000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(16, 24, 32, 0.62);
+}
+
+.playbook-overlay.visible {
+  display: flex;
+}
+
+.playbook-panel {
+  width: min(920px, 94vw);
+  max-height: min(760px, 88vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dce4ea;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(23, 32, 42, 0.3);
+}
+
+.playbook-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #dce4ea;
+  background: #f8fafc;
+}
+
+.playbook-kicker {
+  color: #647482;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.playbook-header h2 {
+  margin-top: 4px;
+  color: #17202a;
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.playbook-close-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #c5d0d8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #647482;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.playbook-close-btn:hover {
+  background: #eef3f6;
+  color: #17202a;
+}
+
+.playbook-body {
+  overflow-y: auto;
+  padding: 20px 24px 22px;
+}
+
+.playbook-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.playbook-metric {
+  padding: 12px;
+  border: 1px solid #dce4ea;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.playbook-metric strong {
+  display: block;
+  color: #17202a;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.playbook-metric span {
+  display: block;
+  margin-top: 6px;
+  color: #647482;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.playbook-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #647482;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+.playbook-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.playbook-section {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #dce4ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.playbook-section h3 {
+  margin-bottom: 12px;
+  color: #17202a;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.playbook-status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.playbook-status-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #647482;
+  font-size: 13px;
+}
+
+.playbook-status-list strong {
+  color: #17202a;
+}
+
+.playbook-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.playbook-chip-list span {
+  padding: 5px 9px;
+  border: 1px solid #c5d0d8;
+  border-radius: 999px;
+  color: #2c3a46;
+  background: #f1f5f7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.playbook-list {
+  display: grid;
+  gap: 8px;
+}
+
+.playbook-list-item {
+  padding: 10px 12px;
+  border: 1px solid #edf2f5;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.playbook-list-item strong {
+  display: block;
+  color: #17202a;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.playbook-list-item span {
+  display: block;
+  margin-top: 4px;
+  color: #647482;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.playbook-empty {
+  color: #647482;
+  font-size: 13px;
+}
+
+.playbook-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid #dce4ea;
+  background: #f8fafc;
+}
+
+@media (max-width: 720px) {
+  .playbook-overlay {
+    padding: 12px;
+  }
+
+  .playbook-panel {
+    width: 100%;
+    max-height: 92vh;
+  }
+
+  .playbook-summary,
+  .playbook-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .playbook-meta,
+  .playbook-actions {
+    flex-direction: column;
+  }
+}
+
+/* ==========================================================================
    Premium UI Polish
    A restrained operations-console finish layered on top of the existing app.
    ========================================================================== */
@@ -2275,4 +2510,190 @@ body {
   .content { padding: 18px; }
   .controls,
   .stats { padding: 16px; }
+}
+
+/* ==========================================================================
+   Setup Landing + Adaptive Tone
+   First-run setup gives the app a company-specific operating feel.
+   ========================================================================== */
+
+body[data-ops-focus="maintenance"] {
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --brand: #254d57;
+  --brand-deep: #172f35;
+}
+
+body[data-ops-focus="growth"] {
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --brand: #283f63;
+  --brand-deep: #17233d;
+}
+
+body[data-ops-focus="compliance"] {
+  --accent: #7c3aed;
+  --accent-strong: #6d28d9;
+  --brand: #3f3357;
+  --brand-deep: #241c33;
+}
+
+.setup-landing.visible {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.setup-landing {
+  background: #101820;
+}
+
+.setup-landing .onboarding-card {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  border: 0;
+  padding: clamp(28px, 6vw, 76px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 480px);
+  gap: clamp(28px, 6vw, 92px);
+  align-items: center;
+  background: #f8fafc;
+}
+
+.setup-copy {
+  max-width: 760px;
+}
+
+.setup-copy .onboarding-logo {
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.setup-copy .onboarding-title {
+  max-width: 700px;
+  color: var(--ink-strong);
+  font-size: clamp(36px, 6vw, 72px);
+  line-height: 0.96;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.setup-copy .onboarding-subtitle {
+  max-width: 620px;
+  margin-top: 22px;
+  color: var(--ink-muted);
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.6;
+}
+
+.setup-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 620px;
+  margin-top: 34px;
+}
+
+.setup-proof-grid div {
+  padding: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.setup-proof-grid strong {
+  display: block;
+  color: var(--ink-strong);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.setup-proof-grid span {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-panel);
+}
+
+.setup-form .onboarding-input {
+  margin-bottom: 10px;
+}
+
+.setup-form .onboarding-btn {
+  margin-top: 8px;
+  background: var(--accent);
+}
+
+.setup-form .onboarding-btn:hover {
+  background: var(--accent-strong);
+}
+
+.nav-toggle-btn {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 7px;
+  background: rgba(255,255,255,0.08);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nav-toggle-btn:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+.nav-tabs {
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-tabs.nav-tabs--compact {
+  max-height: 9px;
+  opacity: 0.58;
+  overflow: hidden;
+}
+
+.nav-tabs.nav-tabs--compact:hover,
+.nav-tabs.nav-tabs--compact:focus-within {
+  max-height: 56px;
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .setup-landing.visible {
+    align-items: flex-start;
+  }
+
+  .setup-landing .onboarding-card {
+    grid-template-columns: 1fr;
+    align-content: start;
+    min-height: auto;
+  }
+
+  .setup-copy .onboarding-title {
+    font-size: clamp(34px, 12vw, 56px);
+  }
+
+  .setup-proof-grid {
+    grid-template-columns: 1fr;
+  }
 }
