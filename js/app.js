@@ -490,6 +490,7 @@ function clearFilter() {
 
   document.querySelectorAll('.department').forEach(deptEl => {
     deptEl.style.display = '';
+    deptEl.classList.remove('expanded'); // collapse back to resting state
     deptEl.querySelectorAll('.task-item').forEach(item => { item.style.display = ''; });
     const countSpan = deptEl.querySelector('.dept-task-count');
     if (countSpan) countSpan.textContent = deptEl.querySelectorAll('.task-item').length;
@@ -663,8 +664,8 @@ function showMapTooltip(html, mouseX, mouseY) {
   const th = tip.offsetHeight || 60;
   const x = mouseX + 14;
   const y = mouseY - 10;
-  tip.style.left = (x + tw > window.innerWidth  ? mouseX - tw - 10 : x) + 'px';
-  tip.style.top  = (y + th > window.innerHeight ? mouseY - th - 10 : y) + 'px';
+  tip.style.left = Math.max(4, x + tw > window.innerWidth  ? mouseX - tw - 10 : x) + 'px';
+  tip.style.top  = Math.max(4, y + th > window.innerHeight ? mouseY - th - 10 : y) + 'px';
 }
 
 function hideMapTooltip() {
@@ -1995,15 +1996,24 @@ function removeEmployee(name) {
     });
   });
 
+  // Revert any open work orders assigned to this employee back to UNASSIGNED
+  // so the WO beacon fires and nothing silently references a deleted person.
+  workOrders.forEach(wo => {
+    if (wo.assignee === name) wo.assignee = 'UNASSIGNED';
+  });
+
   teamData.employees = teamData.employees.filter(e => e.name !== name);
 
   saveTeamData();
-  saveToStorage();       // Persist the reverted task assignments
+  saveToStorage();
+  saveWorkOrders();
   renderTeamView();
-  renderTrackingView();  // Refresh the tracking view so removed owner badges update
+  renderTrackingView();
   updateStats();         // Recalculates unowned count → updateBeacons()
   renderLegend();
   populateOwnerFilter();
+  if (currentView === 'workorders') renderWorkOrdersView();
+  updateWorkOrderBeacon();
 
   if (currentView === 'map') {
     renderMapControls();
@@ -2249,6 +2259,14 @@ function showNewWorkOrderModal() {
 
   modal.classList.add('visible');
   setTimeout(() => document.getElementById('wo-property').focus(), 50);
+
+  ['wo-property','wo-unit','wo-title','wo-vendor','wo-cost'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.onkeydown = e => {
+      if (e.key === 'Enter')  commitNewWorkOrder();
+      if (e.key === 'Escape') closeWorkOrderModal();
+    };
+  });
 }
 
 function closeWorkOrderModal() {
@@ -2287,7 +2305,7 @@ function commitNewWorkOrder() {
     status:     'submitted',
     assignee:   document.getElementById('wo-assignee').value,
     vendor:     document.getElementById('wo-vendor').value.trim(),
-    cost:       isNaN(rawCost) ? 0 : rawCost,
+    cost:       isNaN(rawCost) || rawCost < 0 ? 0 : rawCost,
     createdAt:  new Date().toISOString(),
     updatedAt:  new Date().toISOString(),
   };
