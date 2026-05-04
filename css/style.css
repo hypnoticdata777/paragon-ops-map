@@ -1177,6 +1177,24 @@ body {
   transition: width 0.4s ease;
 }
 
+.emp-playbook-btn {
+  padding: 5px 9px;
+  background: #eef4f6;
+  border: 1px solid #cfd8dc;
+  border-radius: 7px;
+  color: #37474f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.emp-playbook-btn:hover {
+  background: #dbe8ec;
+  border-color: #b0bec5;
+}
+
 .emp-remove-btn {
   background: none;
   border: none;
