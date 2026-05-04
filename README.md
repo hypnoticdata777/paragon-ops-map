@@ -44,7 +44,7 @@ xdg-open index.html    # Linux
 
 ## What It Does
 
-PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 350+ standard tasks** — all fully editable to match your company.
+PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 260+ standard tasks** — all fully editable to match your company.
 
 It answers six questions at a glance:
 
