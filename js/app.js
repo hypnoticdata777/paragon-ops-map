@@ -1173,15 +1173,42 @@ function exportCSV() {
   _downloadBlob(csv, 'text/csv', `pm-ops-${_fileSlug()}.csv`);
 }
 
-function exportRolePlaybook(ownerName) {
+let currentPlaybook = null;
+
+function openRolePlaybook(ownerName) {
   const employee = teamData.employees.find(emp => emp.name === ownerName);
   if (!employee) {
     alert('That employee is no longer in the roster.');
     return;
   }
 
-  const tasks = collectTasksForOwner(ownerName);
-  const assignedWorkOrders = workOrders.filter(wo => wo.assignee === ownerName);
+  currentPlaybook = buildRolePlaybook(employee);
+  const modal = document.getElementById('playbook-modal');
+  const title = document.getElementById('playbook-title');
+  const body = document.getElementById('playbook-body');
+  if (!modal || !title || !body) return;
+
+  title.textContent = `${employee.name} Playbook`;
+  body.innerHTML = buildRolePlaybookHTML(currentPlaybook);
+  modal.classList.add('visible');
+}
+
+function closeRolePlaybook() {
+  document.getElementById('playbook-modal')?.classList.remove('visible');
+}
+
+function downloadOpenRolePlaybook() {
+  if (!currentPlaybook) return;
+  _downloadBlob(
+    buildRolePlaybookMarkdown(currentPlaybook),
+    'text/markdown',
+    `pm-ops-${_fileSlug()}-${_slugify(currentPlaybook.employee.name)}-playbook.md`
+  );
+}
+
+function buildRolePlaybook(employee) {
+  const tasks = collectTasksForOwner(employee.name);
+  const assignedWorkOrders = workOrders.filter(wo => wo.assignee === employee.name);
   const activeWorkOrders = assignedWorkOrders.filter(wo => wo.status !== 'completed');
   const statusCounts = tasks.reduce((acc, item) => {
     const status = item.task.status || 'todo';
@@ -1194,12 +1221,31 @@ function exportRolePlaybook(ownerName) {
   const affinityNames = employee.affinities
     .map(id => orgData.departments.find(dept => dept.id === id)?.name)
     .filter(Boolean);
+  const blockerItems = [...blocked, ...overdue].filter((item, idx, arr) =>
+    arr.findIndex(other => other.dept.id === item.dept.id && other.task.name === item.task.name) === idx
+  );
 
+  return {
+    employee,
+    tasks,
+    activeWorkOrders,
+    statusCounts,
+    highPriority,
+    blocked,
+    overdue,
+    affinityNames,
+    blockerItems,
+    generatedAt: new Date()
+  };
+}
+
+function buildRolePlaybookMarkdown(playbook) {
+  const { employee, tasks, activeWorkOrders, statusCounts, highPriority, blocked, overdue, affinityNames, blockerItems, generatedAt } = playbook;
   const lines = [
-    `# ${ownerName} Role Playbook`,
+    `# ${employee.name} Role Playbook`,
     '',
     `Company: ${getCompanyName()}`,
-    `Generated: ${new Date().toLocaleString()}`,
+    `Generated: ${generatedAt.toLocaleString()}`,
     '',
     '## Snapshot',
     '',
@@ -1228,9 +1274,7 @@ function exportRolePlaybook(ownerName) {
     '',
     '## Blockers And Overdue',
     '',
-    buildPlaybookTaskSection([...blocked, ...overdue].filter((item, idx, arr) =>
-      arr.findIndex(other => other.dept.id === item.dept.id && other.task.name === item.task.name) === idx
-    )),
+    buildPlaybookTaskSection(blockerItems),
     '',
     '## Active Work Orders',
     '',
@@ -1242,11 +1286,95 @@ function exportRolePlaybook(ownerName) {
     ''
   ];
 
-  _downloadBlob(
-    lines.join('\n'),
-    'text/markdown',
-    `pm-ops-${_fileSlug()}-${_slugify(ownerName)}-playbook.md`
-  );
+  return lines.join('\n');
+}
+
+function buildRolePlaybookHTML(playbook) {
+  const { employee, tasks, activeWorkOrders, statusCounts, highPriority, blocked, overdue, affinityNames, blockerItems, generatedAt } = playbook;
+  const priorityFocus = highPriority.length ? highPriority : tasks.slice(0, 8);
+
+  return `
+    <div class="playbook-summary">
+      ${buildPlaybookMetric('Owned Tasks', tasks.length)}
+      ${buildPlaybookMetric('High Priority', highPriority.length)}
+      ${buildPlaybookMetric('Blocked', blocked.length)}
+      ${buildPlaybookMetric('Overdue', overdue.length)}
+      ${buildPlaybookMetric('Active WOs', activeWorkOrders.length)}
+    </div>
+    <div class="playbook-meta">
+      <span>${escapeHtml(getCompanyName())}</span>
+      <span>Generated ${escapeHtml(generatedAt.toLocaleString())}</span>
+    </div>
+    <div class="playbook-grid">
+      <section class="playbook-section">
+        <h3>Status Breakdown</h3>
+        <div class="playbook-status-list">
+          ${buildPlaybookStatus('To Do', statusCounts.todo || 0)}
+          ${buildPlaybookStatus('In Progress', statusCounts['in-progress'] || 0)}
+          ${buildPlaybookStatus('Blocked', statusCounts.blocked || 0)}
+          ${buildPlaybookStatus('Done', statusCounts.done || 0)}
+        </div>
+      </section>
+      <section class="playbook-section">
+        <h3>Department Affinities</h3>
+        ${affinityNames.length
+          ? `<div class="playbook-chip-list">${affinityNames.map(name => `<span>${escapeHtml(name)}</span>`).join('')}</div>`
+          : '<p class="playbook-empty">No department affinities selected yet.</p>'}
+      </section>
+    </div>
+    <section class="playbook-section">
+      <h3>Priority Focus</h3>
+      ${buildPlaybookTaskListHTML(priorityFocus)}
+    </section>
+    <section class="playbook-section">
+      <h3>Blockers And Overdue</h3>
+      ${buildPlaybookTaskListHTML(blockerItems)}
+    </section>
+    <section class="playbook-section">
+      <h3>Active Work Orders</h3>
+      ${buildPlaybookWorkOrderListHTML(activeWorkOrders)}
+    </section>
+    <section class="playbook-section">
+      <h3>Full Responsibility List</h3>
+      ${buildPlaybookTaskListHTML(tasks)}
+    </section>
+  `;
+}
+
+function buildPlaybookMetric(label, value) {
+  return `<div class="playbook-metric"><strong>${value}</strong><span>${label}</span></div>`;
+}
+
+function buildPlaybookStatus(label, value) {
+  return `<div><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`;
+}
+
+function buildPlaybookTaskListHTML(items) {
+  if (!items.length) return '<p class="playbook-empty">None right now.</p>';
+  return `<div class="playbook-list">${items.map(({ dept, task }) => {
+    const status = STATUS_LABELS[task.status || 'todo'] || task.status || 'To Do';
+    const priority = PRIORITY_LABELS[task.priority || 'medium'] || task.priority || 'Medium';
+    return `
+      <article class="playbook-list-item">
+        <strong>${escapeHtml(task.name)}</strong>
+        <span>${escapeHtml(dept.name)} · ${escapeHtml(status)} · ${escapeHtml(priority)}${task.dueDate ? ` · Due ${escapeHtml(task.dueDate)}` : ''}</span>
+      </article>
+    `;
+  }).join('')}</div>`;
+}
+
+function buildPlaybookWorkOrderListHTML(items) {
+  if (!items.length) return '<p class="playbook-empty">None right now.</p>';
+  return `<div class="playbook-list">${items.map(wo => {
+    const status = WO_STATUS_LABELS[wo.status] || wo.status || 'Submitted';
+    const priority = PRIORITY_LABELS[wo.priority || 'medium'] || wo.priority || 'Medium';
+    return `
+      <article class="playbook-list-item">
+        <strong>${escapeHtml(wo.title)}</strong>
+        <span>${escapeHtml(wo.property)}${wo.unit ? `, Unit ${escapeHtml(wo.unit)}` : ''} · ${escapeHtml(status)} · ${escapeHtml(priority)}${wo.dueDate ? ` · Target ${escapeHtml(wo.dueDate)}` : ''}</span>
+      </article>
+    `;
+  }).join('')}</div>`;
 }
 
 function collectTasksForOwner(ownerName) {
@@ -2169,7 +2297,7 @@ function buildEmployeeCard(emp, depts, workload, maxTasks) {
         <div class="emp-mini-bar-track">
           <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${emp.hex}"></div>
         </div>
-        <button class="emp-playbook-btn" onclick="exportRolePlaybook(${jsonAttr(emp.name)})" title="Export role playbook for ${escapeHtml(emp.name)}">Playbook</button>
+        <button class="emp-playbook-btn" onclick="openRolePlaybook(${jsonAttr(emp.name)})" title="Open role playbook for ${escapeHtml(emp.name)}">Playbook</button>
         <button class="emp-remove-btn" onclick="removeEmployee(${jsonAttr(emp.name)})" title="Remove ${escapeHtml(emp.name)}">&#x2715;</button>
       </div>
 

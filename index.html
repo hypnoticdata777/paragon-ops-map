@@ -291,6 +291,23 @@
     </div>
   </div>
 </div>
+<!-- Role Playbook modal -->
+<div id="playbook-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="playbook-title">
+  <div class="playbook-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Role Playbook</div>
+        <h2 id="playbook-title">Team Member</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeRolePlaybook()" aria-label="Close role playbook">&times;</button>
+    </div>
+    <div id="playbook-body" class="playbook-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeRolePlaybook()">Close</button>
+      <button class="btn btn-export" id="playbook-download-btn" onclick="downloadOpenRolePlaybook()">Download Markdown</button>
+    </div>
+  </div>
+</div>
 <div id="save-toast" class="save-toast"></div>
 <script src="js/app.js"></script>
 </body>
