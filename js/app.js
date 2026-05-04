@@ -1446,6 +1446,8 @@ function cycleTaskStatus(deptId, taskIdx) {
     taskEl.dataset.status = newStatus;
     // Toggle the done-dimming class
     taskEl.classList.toggle('task-done', newStatus === 'done');
+    // Toggle overdue class — a task marked done is no longer overdue
+    taskEl.classList.toggle('task-overdue', isTaskOverdue(task));
 
     // Update the status pill: new class + new label text
     const pill = taskEl.querySelector('.status-pill');

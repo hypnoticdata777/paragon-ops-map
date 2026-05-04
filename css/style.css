@@ -822,22 +822,22 @@ body {
 }
 
 .btn-export {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #546e7a;
+  color: white;
 }
 
 .btn-export:hover {
-  background: #c8e6c9;
+  background: #455a64;
   transform: translateY(-1px);
 }
 
 .btn-import {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #546e7a;
+  color: white;
 }
 
 .btn-import:hover {
-  background: #bbdefb;
+  background: #455a64;
   transform: translateY(-1px);
 }
 
@@ -1718,10 +1718,8 @@ body {
   gap: 7px;
   transition: box-shadow 0.15s;
 }
-.wo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.13); }
+.wo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 .wo-card--overdue { border-left-color: #ef5350 !important; }
-
-.wo-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.14); }
 
 /* Priority left-border colours (reuses priority naming convention) */
 .wo-card.priority-border-high   { border-left-color: #d32f2f; }
