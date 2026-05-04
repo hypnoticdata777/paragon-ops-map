@@ -1398,8 +1398,7 @@ function submitCompanyName() {
   const input = document.getElementById('company-input');
   const name  = input.value.trim();
   if (!name) {
-    input.classList.add('shake');
-    setTimeout(() => input.classList.remove('shake'), 400);
+    shakeInput(input);
     return;
   }
   try { localStorage.setItem(COMPANY_KEY, name); } catch (_) { /* ignore */ }
@@ -1953,10 +1952,7 @@ function commitAddEmployee() {
   const name  = (input?.value || '').trim();
 
   if (!name) {
-    // Reuse the existing shake animation (defined in CSS for onboarding-input)
-    // as a lightweight "you forgot to fill this in" signal.
-    input?.classList.add('shake');
-    setTimeout(() => input?.classList.remove('shake'), 400);
+    shakeInput(input);
     return;
   }
 
@@ -2130,6 +2126,12 @@ function jsonAttr(val) {
   return JSON.stringify(String(val == null ? '' : val)).replace(/"/g, '&quot;');
 }
 
+function shakeInput(el) {
+  if (!el) return;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 400);
+}
+
 function formatWODate(isoStr) {
   try {
     return new Date(isoStr).toLocaleDateString('en-US',
@@ -2249,24 +2251,23 @@ function showNewWorkOrderModal() {
     sel.appendChild(opt);
   });
 
-  // Clear all fields
+  // Clear fields and wire keyboard shortcuts in one pass
   ['wo-property','wo-unit','wo-title','wo-notes','wo-vendor','wo-cost'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.value = '';
+    if (!el) return;
+    el.value = '';
+    if (el.tagName !== 'TEXTAREA') {
+      el.onkeydown = e => {
+        if (e.key === 'Enter')  commitNewWorkOrder();
+        if (e.key === 'Escape') closeWorkOrderModal();
+      };
+    }
   });
   document.getElementById('wo-priority').value = 'medium';
   document.getElementById('wo-assignee').value = 'UNASSIGNED';
 
   modal.classList.add('visible');
   setTimeout(() => document.getElementById('wo-property').focus(), 50);
-
-  ['wo-property','wo-unit','wo-title','wo-vendor','wo-cost'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.onkeydown = e => {
-      if (e.key === 'Enter')  commitNewWorkOrder();
-      if (e.key === 'Escape') closeWorkOrderModal();
-    };
-  });
 }
 
 function closeWorkOrderModal() {
@@ -2278,19 +2279,14 @@ function commitNewWorkOrder() {
   const property = document.getElementById('wo-property').value.trim();
   const title    = document.getElementById('wo-title').value.trim();
 
-  // Shake the first empty required field and bail
   if (!property) {
     const el = document.getElementById('wo-property');
-    el.classList.add('shake');
-    setTimeout(() => el.classList.remove('shake'), 400);
-    el.focus();
+    shakeInput(el); el.focus();
     return;
   }
   if (!title) {
     const el = document.getElementById('wo-title');
-    el.classList.add('shake');
-    setTimeout(() => el.classList.remove('shake'), 400);
-    el.focus();
+    shakeInput(el); el.focus();
     return;
   }
 
