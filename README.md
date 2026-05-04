@@ -20,7 +20,7 @@
 2. Download `pm-ops-map.zip` under **Assets**
 3. Unzip it anywhere on your computer
 4. Open `index.html` in Chrome, Firefox, Safari, or Edge
-5. Enter your company name when prompted — you're live
+5. Complete the setup screen — you're live
 
 ### Option B — Clone and Run
 
@@ -54,6 +54,8 @@ It answers six questions at a glance:
 4. **Who is overloaded?** — The workload dashboard shows task distribution and flags imbalances
 5. **What's the current state?** — Every task carries a live status and priority so you can see what's in flight, blocked, or done without a separate project tool
 6. **What maintenance is in progress?** — The Work Orders board tracks every repair and service request from intake to completion
+
+On first launch, the setup screen captures company name, portfolio size, and primary operations focus. That profile stays in `localStorage` and adjusts the app's tone automatically for stability, maintenance, growth, or compliance workflows.
 
 ---
 
@@ -105,9 +107,13 @@ The **Team Manager tab** manages your employee roster and distributes tasks auto
 Add employees by name and pick their badge color from the palette. Each employee card shows:
 - Their current task count and a mini workload bar
 - **Department affinity tags** — one per department, click to toggle on/off
-- A **Playbook** export for that employee's owned tasks, priorities, blockers, affinities, and active work orders
+- A **Playbook** panel for that employee's owned tasks, priorities, blockers, affinities, and active work orders
 
 Affinities tell the auto-assign engine which departments this person covers.
+
+#### Role Playbooks
+
+Click **Playbook** on any employee card to open a scrollable role summary without leaving the app. Each playbook shows workload metrics, status breakdown, department affinities, priority focus, blockers/overdue items, active work orders, and the full responsibility list. A Markdown download remains available inside the panel for handoffs or onboarding packets.
 
 #### ⚡ Auto-Assign
 
@@ -261,7 +267,11 @@ Edit `config.json` in the project root. This is the master data file — no Java
 
 ### Update your company name
 
-On first load a prompt asks for your company name. It saves to `localStorage` and appears in the header and SVG map. To reset it, open DevTools → Application → localStorage → delete `pm-ops-company-name`, then reload.
+On first load, the setup screen asks for your company name, portfolio size, and primary operations focus. It saves to `localStorage`, appears in the header and SVG map, and adjusts the app's accent tone. To reset it, open DevTools → Application → localStorage → delete `pm-ops-company-name` and `pm-ops-profile-v1`, then reload.
+
+### Keep navigation out of the way
+
+Use **Hide nav** in the header to collapse the tab bar into a thin working strip. Hover or focus the strip to reveal it, or click **Show nav** to restore the full tabs. The preference saves locally.
 
 ---
 
