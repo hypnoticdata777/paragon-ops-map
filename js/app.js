@@ -121,18 +121,25 @@ function renderTrackingView() {
           const priority  = task.priority || 'medium';
           const isDone    = status === 'done';
           return `
-          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''}"
+          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''}"
                data-dept-id="${dept.id}"
                data-task-idx="${taskIdx}"
                data-owner="${task.owner}"
                data-name="${safeName.toLowerCase()}"
                data-status="${status}"
                data-priority="${priority}">
-            <!-- Left half: priority dot (click to cycle) + editable task name -->
+            <!-- Left half: priority dot (click to cycle) + due date chip + editable task name -->
             <div class="task-left">
               <span class="priority-dot priority-${priority}"
                     onclick="cycleTaskPriority('${dept.id}', ${taskIdx})"
                     title="Priority: ${PRIORITY_LABELS[priority]} — click to change"></span>
+              ${task.dueDate
+                ? `<span class="due-date-chip${isTaskOverdue(task) ? ' due-date-overdue' : ''}"
+                         title="Due: ${task.dueDate}"
+                         onclick="openDueDatePicker('${dept.id}', ${taskIdx}, this)">${formatDueChip(task.dueDate)}</span>`
+                : `<span class="due-date-empty"
+                         onclick="openDueDatePicker('${dept.id}', ${taskIdx}, this)">+ date</span>`
+              }
               <div class="task-name"
                    ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
                    title="Double-click to rename">${task.name}</div>
@@ -434,7 +441,16 @@ function applyFilter() {
 
       const matchesKeyword  = !keyword          || name.includes(keyword);
       const matchesOwner    = !selectedOwner    || owner    === selectedOwner;
-      const matchesStatus   = !selectedStatus   || status   === selectedStatus;
+      let matchesStatus;
+      if (selectedStatus === 'overdue') {
+        const deptId  = item.dataset.deptId;
+        const taskIdx = parseInt(item.dataset.taskIdx, 10);
+        const deptObj = orgData.departments.find(d => d.id === deptId);
+        const taskObj = deptObj ? deptObj.tasks[taskIdx] : null;
+        matchesStatus = taskObj ? isTaskOverdue(taskObj) : false;
+      } else {
+        matchesStatus = !selectedStatus || status === selectedStatus;
+      }
       const matchesPriority = !selectedPriority || priority === selectedPriority;
 
       if (matchesKeyword && matchesOwner && matchesStatus && matchesPriority) {
@@ -990,7 +1006,7 @@ function svgPath(parent, d, stroke, strokeW, dashArray = null, opacity = 1) {
 // STATS
 // ====================
 function updateStats() {
-  let total = 0, assigned = 0, unowned = 0, done = 0, inProgress = 0, blocked = 0;
+  let total = 0, assigned = 0, unowned = 0, done = 0, inProgress = 0, blocked = 0, overdue = 0;
 
   orgData.departments.forEach(dept => {
     dept.tasks.forEach(task => {
@@ -1002,6 +1018,7 @@ function updateStats() {
       if (s === 'done')        done++;
       else if (s === 'in-progress') inProgress++;
       else if (s === 'blocked')     blocked++;
+      if (isTaskOverdue(task)) overdue++;
     });
   });
 
@@ -1012,6 +1029,8 @@ function updateStats() {
   document.getElementById('stat-assigned').textContent    = assigned;
   document.getElementById('stat-unowned').textContent     = unowned;
   document.getElementById('stat-departments').textContent = orgData.departments.length;
+  const overdueEl = document.getElementById('stat-overdue');
+  if (overdueEl) overdueEl.textContent = overdue;
 
   // Keep every beacon in sync whenever task counts change (after any assignment,
   // auto-assign run, import, or reset).
@@ -1058,7 +1077,8 @@ function saveToStorage() {
         name:        t.name,
         owner:       t.owner,
         status:      t.status   || 'todo',
-        priority:    t.priority || 'medium'
+        priority:    t.priority || 'medium',
+        dueDate:     t.dueDate  || null
       }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -1089,6 +1109,7 @@ function loadFromStorage() {
         // status and priority are optional so older saves load cleanly.
         if (savedTask.status)   task.status   = savedTask.status;
         if (savedTask.priority) task.priority = savedTask.priority;
+        if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
       });
     });
   } catch (e) {
@@ -1118,7 +1139,8 @@ function exportJSON() {
         name:     t.name,
         owner:    t.owner,
         status:   t.status   || 'todo',
-        priority: t.priority || 'medium'
+        priority: t.priority || 'medium',
+        dueDate:  t.dueDate  || null
       }))
     }))
   };
@@ -1130,7 +1152,7 @@ function exportJSON() {
 }
 
 function exportCSV() {
-  const rows = [['Department', 'Task', 'Owner', 'Status', 'Priority']];
+  const rows = [['Department', 'Task', 'Owner', 'Status', 'Priority', 'Due Date']];
   orgData.departments.forEach(dept => {
     dept.tasks.forEach(task => {
       rows.push([
@@ -1138,7 +1160,8 @@ function exportCSV() {
         task.name,
         task.owner,
         task.status   || 'todo',
-        task.priority || 'medium'
+        task.priority || 'medium',
+        task.dueDate  || ''
       ]);
     });
   });
@@ -1170,6 +1193,7 @@ function importJSON(inputEl) {
           task.owner = savedTask.owner;
           if (savedTask.status)   task.status   = savedTask.status;
           if (savedTask.priority) task.priority = savedTask.priority;
+          if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
         });
       });
 
@@ -1246,6 +1270,118 @@ function applyCompanyName(name) {
   const heading = document.getElementById('company-heading');
   if (heading) heading.textContent = name.toUpperCase();
   // SVG map re-reads getCompanyName() on next render — no extra action needed.
+}
+
+// ============================================================
+// DUE DATE HELPERS
+// ============================================================
+
+// Returns today's date as YYYY-MM-DD using local time (no UTC drift).
+function getTodayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Returns true if the task has a due date in the past and is not done.
+function isTaskOverdue(task) {
+  return !!(task.dueDate && task.dueDate < getTodayISO() && (task.status || 'todo') !== 'done');
+}
+
+// Formats YYYY-MM-DD to "Dec 15" without toLocaleDateString for consistency.
+function formatDueChip(dateStr) {
+  if (!dateStr) return '';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const parts = dateStr.split('-');
+  const month = parseInt(parts[1], 10) - 1;
+  const day   = parseInt(parts[2], 10);
+  return `${MONTHS[month]} ${day}`;
+}
+
+// Opens a native date picker anchored below the given element.
+// On change, saves the date; on Escape/blur, discards.
+function openDueDatePicker(deptId, taskIdx, anchorEl) {
+  const existing = document.getElementById('_due-date-picker');
+  if (existing) existing.remove();
+
+  const input = document.createElement('input');
+  input.type  = 'date';
+  input.id    = '_due-date-picker';
+  input.style.cssText = 'position:fixed;opacity:0;pointer-events:none;z-index:99999;width:1px;height:1px;';
+
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (dept && dept.tasks[taskIdx] && dept.tasks[taskIdx].dueDate) {
+    input.value = dept.tasks[taskIdx].dueDate;
+  }
+
+  const rect = anchorEl.getBoundingClientRect();
+  input.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  input.style.left = (rect.left  + window.scrollX) + 'px';
+
+  let changed = false;
+
+  input.addEventListener('change', () => {
+    changed = true;
+    setTaskDueDate(deptId, taskIdx, input.value);
+    input.remove();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      changed = true;
+      input.remove();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { if (!changed) input.remove(); }, 150);
+  });
+
+  document.body.appendChild(input);
+
+  try { input.showPicker(); } catch (_) { input.focus(); }
+}
+
+// Saves the due date to the task model and updates the DOM chip in place.
+function setTaskDueDate(deptId, taskIdx, dateStr) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  task.dueDate = dateStr || null;
+
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    taskEl.classList.toggle('task-overdue', isTaskOverdue(task));
+    const taskLeft = taskEl.querySelector('.task-left');
+    if (taskLeft) {
+      const overdue  = isTaskOverdue(task);
+      const priority = task.priority || 'medium';
+      taskLeft.innerHTML = `
+        <span class="priority-dot priority-${priority}"
+              onclick="cycleTaskPriority('${deptId}', ${taskIdx})"
+              title="Priority: ${PRIORITY_LABELS[priority]} — click to change"></span>
+        ${task.dueDate
+          ? `<span class="due-date-chip${overdue ? ' due-date-overdue' : ''}"
+                   title="Due: ${task.dueDate}"
+                   onclick="openDueDatePicker('${deptId}', ${taskIdx}, this)">${formatDueChip(task.dueDate)}</span>`
+          : `<span class="due-date-empty"
+                   onclick="openDueDatePicker('${deptId}', ${taskIdx}, this)">+ date</span>`
+        }
+        <div class="task-name"
+             ondblclick="startTaskEdit('${deptId}', ${taskIdx})"
+             title="Double-click to rename">${task.name}</div>
+      `;
+    }
+  }
+
+  saveToStorage();
+  updateStats();
 }
 
 // ============================================================
@@ -2107,9 +2243,6 @@ function saveWorkOrders() {
     localStorage.setItem(WORKORDERS_KEY, JSON.stringify(workOrders));
   } catch (e) { /* localStorage unavailable */ }
 }
-
-// ── HTML helper — escape user-supplied strings before innerHTML insertion ─────
-
 function escapeHtml(str) {
   return String(str == null ? '' : str)
     .replace(/&/g, '&amp;')
@@ -2157,9 +2290,11 @@ function buildWorkOrderCard(wo) {
   const canAdvance   = statusIdx < WO_STATUS_CYCLE.length - 1;
   const nextLabel    = canAdvance ? WO_STATUS_LABELS[WO_STATUS_CYCLE[statusIdx + 1]] : '';
   const assigneeBg   = isUnassigned ? '#d32f2f' : getEmployeeHex(wo.assignee);
+  const todayISO     = new Date().toISOString().slice(0, 10);
+  const woOverdue    = wo.dueDate && wo.dueDate < todayISO && wo.status !== 'completed';
 
   return `
-    <div class="wo-card priority-border-${wo.priority}">
+    <div class="wo-card priority-border-${wo.priority}${woOverdue ? ' wo-card--overdue' : ''}">
       <div class="wo-card-top">
         <div class="wo-card-location">
           <span class="wo-property">${escapeHtml(wo.property)}</span>
@@ -2188,7 +2323,11 @@ function buildWorkOrderCard(wo) {
                   title="Delete work order">&#x2715;</button>
         </div>
       </div>
-      <div class="wo-card-date">${formatWODate(wo.createdAt)}</div>
+      <div class="wo-card-date">
+        ${wo.dueDate ? `<span class="due-date-chip${woOverdue ? ' due-date-overdue' : ''}"
+          title="Target: ${wo.dueDate}">${woOverdue ? '⚠ ' : '📅 '}${formatDueChip(wo.dueDate)}</span>` : ''}
+        ${formatWODate(wo.createdAt)}
+      </div>
     </div>`;
 }
 
@@ -2252,7 +2391,7 @@ function showNewWorkOrderModal() {
   });
 
   // Clear fields and wire keyboard shortcuts in one pass
-  ['wo-property','wo-unit','wo-title','wo-notes','wo-vendor','wo-cost'].forEach(id => {
+  ['wo-property','wo-unit','wo-title','wo-notes','wo-duedate','wo-vendor','wo-cost'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = '';
@@ -2301,6 +2440,7 @@ function commitNewWorkOrder() {
     status:     'submitted',
     assignee:   document.getElementById('wo-assignee').value,
     vendor:     document.getElementById('wo-vendor').value.trim(),
+    dueDate:    document.getElementById('wo-duedate')?.value || null,
     cost:       isNaN(rawCost) || rawCost < 0 ? 0 : rawCost,
     createdAt:  new Date().toISOString(),
     updatedAt:  new Date().toISOString(),
