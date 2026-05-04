@@ -55,7 +55,6 @@ body {
   display: flex;
   background: #546e7a;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* hide scrollbar on Firefox */
 }
 .nav-tabs::-webkit-scrollbar { display: none; } /* hide scrollbar on Chrome/Safari */
@@ -165,10 +164,6 @@ body {
 .owner-unowned { background: #d32f2f; animation: pulse 2s infinite; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-
-/* Map view SVG wrapper - allow horizontal scroll on small screens */
-.map-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-#flowMap { display: block; }
 
 /* Stats */
 .stats {
@@ -446,7 +441,6 @@ body {
 .map-scroll-wrapper {
   flex: 1;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   min-width: 0;
 }
 
@@ -1465,14 +1459,6 @@ body {
   text-decoration: line-through;
   color: #78909c;
 }
-
-/* ==========================================================================
-   STAT CARDS — color-coded for the new status counters
-   ========================================================================== */
-
-.stat-card.done     .stat-value { color: #2e7d32; }
-.stat-card.progress .stat-value { color: #1565c0; }
-.stat-card.blocked  .stat-value { color: #c62828; }
 
 /* ==========================================================================
    WELCOME GUIDE — dismissible first-run onboarding strip
