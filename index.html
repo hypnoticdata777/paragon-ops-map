@@ -20,9 +20,10 @@
       <h1>PM Ops Map</h1>
       <p>Comprehensive Operational Analysis &amp; Strategic Planning</p>
     </div>
+    <button class="nav-toggle-btn" id="nav-toggle-btn" onclick="toggleNavCompact()" aria-pressed="false" title="Make navigation less prominent">Hide nav</button>
   </div>
 
-  <div class="nav-tabs">
+  <div class="nav-tabs" id="nav-tabs">
     <!-- FIX: pass `this` so switchView() receives the clicked element directly,
          avoiding reliance on window.event which is undefined in Firefox. -->
     <div class="nav-tab active" onclick="switchView('tracking', this)">&#128202; Tracking View</div>
@@ -199,15 +200,40 @@
 
 <!-- FIX: paths updated from bare filenames to js/ subdirectory,
      matching the actual file locations and making webpack entry consistent. -->
-<!-- Onboarding modal: shown on first visit to capture company name -->
-<div id="onboarding-modal" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+<!-- Setup landing: shown on first visit to configure the company workspace -->
+<div id="onboarding-modal" class="onboarding-overlay setup-landing" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
   <div class="onboarding-card">
-    <div class="onboarding-logo">PM Ops Map</div>
-    <h2 id="onboarding-title" class="onboarding-title">Welcome!</h2>
-    <p class="onboarding-subtitle">Map your team's tasks and ownership across every department. Let's start by setting up your company.</p>
-    <label for="company-input" class="onboarding-label">What's your company name?</label>
-    <input id="company-input" type="text" class="onboarding-input" placeholder="e.g. Sunrise Property Management" maxlength="60" autocomplete="off">
-    <button class="onboarding-btn" onclick="submitCompanyName()">Get Started &rarr;</button>
+    <div class="setup-copy">
+      <div class="onboarding-logo">PM Ops Map</div>
+      <h2 id="onboarding-title" class="onboarding-title">Build your operations map.</h2>
+      <p class="onboarding-subtitle">Start with your company context, then tune ownership, workload, and maintenance accountability from one browser-based workspace.</p>
+      <div class="setup-proof-grid" aria-label="What this setup unlocks">
+        <div><strong>17</strong><span>departments</span></div>
+        <div><strong>260+</strong><span>tasks</span></div>
+        <div><strong>0</strong><span>server setup</span></div>
+      </div>
+    </div>
+    <div class="setup-form">
+      <label for="company-input" class="onboarding-label">Company name</label>
+      <input id="company-input" type="text" class="onboarding-input" placeholder="e.g. Sunrise Property Management" maxlength="60" autocomplete="off">
+
+      <label for="portfolio-size-input" class="onboarding-label">Portfolio size</label>
+      <select id="portfolio-size-input" class="onboarding-input">
+        <option value="small">Under 100 doors</option>
+        <option value="mid" selected>100-500 doors</option>
+        <option value="large">500+ doors</option>
+      </select>
+
+      <label for="ops-focus-input" class="onboarding-label">Primary operations focus</label>
+      <select id="ops-focus-input" class="onboarding-input">
+        <option value="stability" selected>Stabilize ownership</option>
+        <option value="maintenance">Tighten maintenance flow</option>
+        <option value="growth">Scale team capacity</option>
+        <option value="compliance">Reduce compliance risk</option>
+      </select>
+
+      <button class="onboarding-btn" onclick="submitCompanyName()">Start Mapping &rarr;</button>
+    </div>
   </div>
 </div>
 <!-- Work Order creation modal -->

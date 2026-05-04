@@ -1064,6 +1064,8 @@ function showSaveToast(isError = false) {
 
 const STORAGE_KEY      = 'pm-ops-data-v1';
 const COMPANY_KEY      = 'pm-ops-company-name';
+const OPS_PROFILE_KEY  = 'pm-ops-profile-v1';
+const NAV_COMPACT_KEY  = 'pm-ops-nav-compact';
 
 function saveToStorage() {
   try {
@@ -1356,6 +1358,14 @@ function getCompanyName() {
   return localStorage.getItem(COMPANY_KEY) || 'Your Company';
 }
 
+function getOpsProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(OPS_PROFILE_KEY)) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
 // Render the company name into the SVG box, wrapping words across up to 3 lines.
 function drawCompanyLabel(layer, cx, cy) {
   const name  = getCompanyName().toUpperCase();
@@ -1386,6 +1396,28 @@ function applyCompanyName(name) {
   const heading = document.getElementById('company-heading');
   if (heading) heading.textContent = name.toUpperCase();
   // SVG map re-reads getCompanyName() on next render — no extra action needed.
+}
+
+function applyOpsProfile(profile = getOpsProfile()) {
+  document.body.dataset.opsFocus = profile.focus || 'stability';
+  document.body.dataset.portfolioSize = profile.portfolioSize || 'mid';
+}
+
+function applyNavCompactState() {
+  const isCompact = localStorage.getItem(NAV_COMPACT_KEY) === 'true';
+  const nav = document.getElementById('nav-tabs');
+  const btn = document.getElementById('nav-toggle-btn');
+  if (nav) nav.classList.toggle('nav-tabs--compact', isCompact);
+  if (btn) {
+    btn.textContent = isCompact ? 'Show nav' : 'Hide nav';
+    btn.setAttribute('aria-pressed', String(isCompact));
+  }
+}
+
+function toggleNavCompact() {
+  const next = localStorage.getItem(NAV_COMPACT_KEY) !== 'true';
+  try { localStorage.setItem(NAV_COMPACT_KEY, String(next)); } catch (_) {}
+  applyNavCompactState();
 }
 
 // ============================================================
@@ -1655,8 +1687,18 @@ function submitCompanyName() {
     shakeInput(input);
     return;
   }
-  try { localStorage.setItem(COMPANY_KEY, name); } catch (_) { /* ignore */ }
+  const profile = {
+    company: name,
+    portfolioSize: document.getElementById('portfolio-size-input')?.value || 'mid',
+    focus: document.getElementById('ops-focus-input')?.value || 'stability',
+    configuredAt: new Date().toISOString()
+  };
+  try {
+    localStorage.setItem(COMPANY_KEY, name);
+    localStorage.setItem(OPS_PROFILE_KEY, JSON.stringify(profile));
+  } catch (_) { /* ignore */ }
   applyCompanyName(name);
+  applyOpsProfile(profile);
   document.getElementById('onboarding-modal').classList.remove('visible');
 }
 
@@ -1676,6 +1718,8 @@ function initApp() {
   populateOwnerFilter();
   renderLegend();         // Build the dynamic legend from teamData
   initWelcomeGuide();     // Show first-run guide unless already dismissed
+  applyOpsProfile();
+  applyNavCompactState();
 
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');

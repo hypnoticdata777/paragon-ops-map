@@ -2276,3 +2276,183 @@ body {
   .controls,
   .stats { padding: 16px; }
 }
+
+/* ==========================================================================
+   Setup Landing + Adaptive Tone
+   First-run setup gives the app a company-specific operating feel.
+   ========================================================================== */
+
+body[data-ops-focus="maintenance"] {
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --brand: #254d57;
+  --brand-deep: #172f35;
+}
+
+body[data-ops-focus="growth"] {
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --brand: #283f63;
+  --brand-deep: #17233d;
+}
+
+body[data-ops-focus="compliance"] {
+  --accent: #7c3aed;
+  --accent-strong: #6d28d9;
+  --brand: #3f3357;
+  --brand-deep: #241c33;
+}
+
+.setup-landing.visible {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.setup-landing {
+  background: #101820;
+}
+
+.setup-landing .onboarding-card {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  border: 0;
+  padding: clamp(28px, 6vw, 76px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 480px);
+  gap: clamp(28px, 6vw, 92px);
+  align-items: center;
+  background: #f8fafc;
+}
+
+.setup-copy {
+  max-width: 760px;
+}
+
+.setup-copy .onboarding-logo {
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.setup-copy .onboarding-title {
+  max-width: 700px;
+  color: var(--ink-strong);
+  font-size: clamp(36px, 6vw, 72px);
+  line-height: 0.96;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.setup-copy .onboarding-subtitle {
+  max-width: 620px;
+  margin-top: 22px;
+  color: var(--ink-muted);
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.6;
+}
+
+.setup-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 620px;
+  margin-top: 34px;
+}
+
+.setup-proof-grid div {
+  padding: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.setup-proof-grid strong {
+  display: block;
+  color: var(--ink-strong);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.setup-proof-grid span {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-panel);
+}
+
+.setup-form .onboarding-input {
+  margin-bottom: 10px;
+}
+
+.setup-form .onboarding-btn {
+  margin-top: 8px;
+  background: var(--accent);
+}
+
+.setup-form .onboarding-btn:hover {
+  background: var(--accent-strong);
+}
+
+.nav-toggle-btn {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 7px;
+  background: rgba(255,255,255,0.08);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nav-toggle-btn:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+.nav-tabs {
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-tabs.nav-tabs--compact {
+  max-height: 9px;
+  opacity: 0.58;
+  overflow: hidden;
+}
+
+.nav-tabs.nav-tabs--compact:hover,
+.nav-tabs.nav-tabs--compact:focus-within {
+  max-height: 56px;
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .setup-landing .onboarding-card {
+    grid-template-columns: 1fr;
+    align-content: start;
+  }
+
+  .setup-copy .onboarding-title {
+    font-size: clamp(34px, 12vw, 56px);
+  }
+
+  .setup-proof-grid {
+    grid-template-columns: 1fr;
+  }
+}
