@@ -60,6 +60,7 @@
         <option value="in-progress">In Progress</option>
         <option value="blocked">⚠ Blocked</option>
         <option value="done">✓ Done</option>
+        <option value="overdue">📅 Overdue</option>
       </select>
       <!-- Priority filter — surface high-priority tasks quickly -->
       <select id="priority-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by priority">
@@ -181,6 +182,7 @@
     <div class="stat-card done"><div class="stat-label">&#10003; Done</div><div class="stat-value" id="stat-done">0</div></div>
     <div class="stat-card progress"><div class="stat-label">&#8987; In Progress</div><div class="stat-value" id="stat-in-progress">0</div></div>
     <div class="stat-card blocked"><div class="stat-label">&#9888; Blocked</div><div class="stat-value" id="stat-blocked">0</div></div>
+    <div class="stat-card overdue"><div class="stat-label">&#128197; Overdue</div><div class="stat-value" id="stat-overdue">0</div></div>
     <div class="stat-card danger"><div class="stat-label">&#9888; Unowned</div><div class="stat-value" id="stat-unowned">0</div></div>
     <div class="stat-card"><div class="stat-label">Departments</div><div class="stat-value" id="stat-departments">0</div></div>
     <div class="stats-actions">
@@ -243,6 +245,10 @@
         <select id="wo-assignee" class="wo-form-input">
           <option value="UNASSIGNED">&#8212; Unassigned &#8212;</option>
         </select>
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-duedate">Target Date</label>
+        <input id="wo-duedate" type="date" class="wo-form-input">
       </div>
       <div class="wo-form-group">
         <label class="wo-form-label" for="wo-vendor">Vendor</label>
