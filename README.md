@@ -105,6 +105,7 @@ The **Team Manager tab** manages your employee roster and distributes tasks auto
 Add employees by name and pick their badge color from the palette. Each employee card shows:
 - Their current task count and a mini workload bar
 - **Department affinity tags** — one per department, click to toggle on/off
+- A **Playbook** export for that employee's owned tasks, priorities, blockers, affinities, and active work orders
 
 Affinities tell the auto-assign engine which departments this person covers.
 

@@ -1171,6 +1171,118 @@ function exportCSV() {
   _downloadBlob(csv, 'text/csv', `pm-ops-${_fileSlug()}.csv`);
 }
 
+function exportRolePlaybook(ownerName) {
+  const employee = teamData.employees.find(emp => emp.name === ownerName);
+  if (!employee) {
+    alert('That employee is no longer in the roster.');
+    return;
+  }
+
+  const tasks = collectTasksForOwner(ownerName);
+  const assignedWorkOrders = workOrders.filter(wo => wo.assignee === ownerName);
+  const activeWorkOrders = assignedWorkOrders.filter(wo => wo.status !== 'completed');
+  const statusCounts = tasks.reduce((acc, item) => {
+    const status = item.task.status || 'todo';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  const highPriority = tasks.filter(item => (item.task.priority || 'medium') === 'high');
+  const blocked = tasks.filter(item => (item.task.status || 'todo') === 'blocked');
+  const overdue = tasks.filter(item => isPlaybookTaskOverdue(item.task));
+  const affinityNames = employee.affinities
+    .map(id => orgData.departments.find(dept => dept.id === id)?.name)
+    .filter(Boolean);
+
+  const lines = [
+    `# ${ownerName} Role Playbook`,
+    '',
+    `Company: ${getCompanyName()}`,
+    `Generated: ${new Date().toLocaleString()}`,
+    '',
+    '## Snapshot',
+    '',
+    `- Owned tasks: ${tasks.length}`,
+    `- High priority tasks: ${highPriority.length}`,
+    `- Blocked tasks: ${blocked.length}`,
+    `- Overdue tasks: ${overdue.length}`,
+    `- Active work orders: ${activeWorkOrders.length}`,
+    '',
+    '## Status Breakdown',
+    '',
+    `- To Do: ${statusCounts.todo || 0}`,
+    `- In Progress: ${statusCounts['in-progress'] || 0}`,
+    `- Blocked: ${statusCounts.blocked || 0}`,
+    `- Done: ${statusCounts.done || 0}`,
+    '',
+    '## Department Affinities',
+    '',
+    affinityNames.length
+      ? affinityNames.map(name => `- ${name}`).join('\n')
+      : '- No department affinities selected yet.',
+    '',
+    '## Priority Focus',
+    '',
+    buildPlaybookTaskSection(highPriority.length ? highPriority : tasks.slice(0, 10)),
+    '',
+    '## Blockers And Overdue',
+    '',
+    buildPlaybookTaskSection([...blocked, ...overdue].filter((item, idx, arr) =>
+      arr.findIndex(other => other.dept.id === item.dept.id && other.task.name === item.task.name) === idx
+    )),
+    '',
+    '## Active Work Orders',
+    '',
+    buildPlaybookWorkOrderSection(activeWorkOrders),
+    '',
+    '## Full Responsibility List',
+    '',
+    buildPlaybookTaskSection(tasks),
+    ''
+  ];
+
+  _downloadBlob(
+    lines.join('\n'),
+    'text/markdown',
+    `pm-ops-${_fileSlug()}-${_slugify(ownerName)}-playbook.md`
+  );
+}
+
+function collectTasksForOwner(ownerName) {
+  const tasks = [];
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      if (task.owner === ownerName) tasks.push({ dept, task });
+    });
+  });
+  return tasks;
+}
+
+function buildPlaybookTaskSection(items) {
+  if (!items.length) return '- None right now.';
+  return items.map(({ dept, task }) => {
+    const status = STATUS_LABELS[task.status || 'todo'] || task.status || 'To Do';
+    const priority = PRIORITY_LABELS[task.priority || 'medium'] || task.priority || 'Medium';
+    const due = task.dueDate ? ` | Due: ${task.dueDate}` : '';
+    return `- ${dept.name}: ${task.name} | ${status} | ${priority}${due}`;
+  }).join('\n');
+}
+
+function buildPlaybookWorkOrderSection(items) {
+  if (!items.length) return '- None right now.';
+  return items.map(wo => {
+    const status = WO_STATUS_LABELS[wo.status] || wo.status || 'Submitted';
+    const priority = PRIORITY_LABELS[wo.priority || 'medium'] || wo.priority || 'Medium';
+    const unit = wo.unit ? `, Unit ${wo.unit}` : '';
+    const due = wo.dueDate ? ` | Target: ${wo.dueDate}` : '';
+    return `- ${wo.property}${unit}: ${wo.title} | ${status} | ${priority}${due}`;
+  }).join('\n');
+}
+
+function isPlaybookTaskOverdue(task) {
+  if (!task.dueDate || (task.status || 'todo') === 'done') return false;
+  return task.dueDate < new Date().toISOString().slice(0, 10);
+}
+
 function importJSON(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -1217,7 +1329,11 @@ function importJSON(inputEl) {
 }
 
 function _fileSlug() {
-  return getCompanyName().replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-|-$/g, '');
+  return _slugify(getCompanyName());
+}
+
+function _slugify(value) {
+  return String(value || 'pm-ops').replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-|-$/g, '') || 'pm-ops';
 }
 
 function _downloadBlob(content, mimeType, filename) {
@@ -2009,6 +2125,7 @@ function buildEmployeeCard(emp, depts, workload, maxTasks) {
         <div class="emp-mini-bar-track">
           <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${emp.hex}"></div>
         </div>
+        <button class="emp-playbook-btn" onclick="exportRolePlaybook(${jsonAttr(emp.name)})" title="Export role playbook for ${escapeHtml(emp.name)}">Playbook</button>
         <button class="emp-remove-btn" onclick="removeEmployee(${jsonAttr(emp.name)})" title="Remove ${escapeHtml(emp.name)}">&#x2715;</button>
       </div>
 
