@@ -1152,6 +1152,10 @@ body {
   color: #263238;
   font-size: 15px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .emp-task-count {
