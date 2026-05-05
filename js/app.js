@@ -1409,7 +1409,7 @@ function buildPlaybookWorkOrderSection(items) {
 }
 
 function isPlaybookTaskOverdue(task) {
-  if (!task.dueDate || (task.status || 'todo') === 'done') return false;
+  if (!task.dueDate || !isValidISODate(task.dueDate) || (task.status || 'todo') === 'done') return false;
   return task.dueDate < new Date().toISOString().slice(0, 10);
 }
 
@@ -1435,7 +1435,7 @@ function importJSON(inputEl) {
           task.owner = savedTask.owner;
           if (savedTask.status)   task.status   = savedTask.status;
           if (savedTask.priority) task.priority = savedTask.priority;
-          if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
+          if (savedTask.dueDate !== undefined) task.dueDate = isValidISODate(savedTask.dueDate) ? savedTask.dueDate : undefined;
         });
       });
 
@@ -1552,6 +1552,11 @@ function toggleNavCompact() {
 // DUE DATE HELPERS
 // ============================================================
 
+// Returns true only for strings that are valid YYYY-MM-DD ISO dates.
+function isValidISODate(str) {
+  return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str);
+}
+
 // Returns today's date as YYYY-MM-DD using local time (no UTC drift).
 function getTodayISO() {
   const d = new Date();
@@ -1563,7 +1568,7 @@ function getTodayISO() {
 
 // Returns true if the task has a due date in the past and is not done.
 function isTaskOverdue(task) {
-  return !!(task.dueDate && task.dueDate < getTodayISO() && (task.status || 'todo') !== 'done');
+  return !!(task.dueDate && isValidISODate(task.dueDate) && task.dueDate < getTodayISO() && (task.status || 'todo') !== 'done');
 }
 
 // Formats YYYY-MM-DD to "Dec 15" without toLocaleDateString for consistency.
@@ -1571,8 +1576,10 @@ function formatDueChip(dateStr) {
   if (!dateStr) return '';
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
   const month = parseInt(parts[1], 10) - 1;
   const day   = parseInt(parts[2], 10);
+  if (month < 0 || month > 11 || isNaN(day)) return dateStr;
   return `${MONTHS[month]} ${day}`;
 }
 
