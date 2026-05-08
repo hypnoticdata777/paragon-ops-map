@@ -2704,3 +2704,228 @@ body[data-ops-focus="compliance"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   AUDIT LOG MODAL
+   ========================================================================== */
+
+.audit-panel {
+  width: min(760px, 94vw);
+  max-height: min(80vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dce4ea;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(23, 32, 42, 0.3);
+}
+
+.audit-body {
+  overflow-y: auto;
+  padding: 16px 20px;
+  flex: 1;
+}
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audit-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #edf2f5;
+  flex-wrap: wrap;
+}
+
+.audit-time {
+  font-size: 11px;
+  color: #90a4ae;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.audit-action {
+  font-size: 12px;
+  font-weight: 700;
+  color: #37474f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.audit-detail {
+  font-size: 12px;
+  color: #647482;
+  flex: 1;
+  min-width: 0;
+}
+
+.audit-empty {
+  color: #90a4ae;
+  font-size: 14px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+/* ==========================================================================
+   TASK DEPENDENCIES — Dep chip and picker
+   ========================================================================== */
+
+.dep-chip {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  transition: filter 0.15s;
+  user-select: none;
+}
+
+.dep-chip--blocking {
+  background: #ffebee;
+  color: #c62828;
+  border-color: #e57373;
+}
+
+.dep-chip--resolved {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+.dep-chip:hover {
+  filter: brightness(0.92);
+}
+
+.dep-add-btn {
+  font-size: 11px;
+  color: #b0bec5;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  user-select: none;
+  opacity: 0;
+}
+
+.task-item:hover .dep-add-btn {
+  opacity: 1;
+}
+
+.dep-picker {
+  position: absolute;
+  z-index: 9999;
+  background: white;
+  border: 2px solid #cfd8dc;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.dep-picker-search {
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid #eceff1;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  background: #f8fafc;
+}
+
+.dep-picker-list {
+  overflow-y: auto;
+  max-height: 220px;
+  padding: 4px 0;
+}
+
+.dep-dept-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #90a4ae;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px 2px;
+}
+
+.dep-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: #37474f;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dep-picker-item:hover {
+  background: #f0f4f8;
+}
+
+.dep-picker-item--active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.dep-picker-clear {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid #eceff1;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 12px;
+  color: #d32f2f;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dep-picker-clear:hover {
+  background: #ffebee;
+}
+
+.dep-picker-empty {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #90a4ae;
+  text-align: center;
+}
+
+/* ==========================================================================
+   MOBILE-OPTIMIZED TOUCH TARGETS
+   ========================================================================== */
+
+@media (hover: none) and (pointer: coarse) {
+  .task-item { min-height: 52px; gap: 10px; }
+  .status-pill { min-height: 36px; padding: 7px 14px; }
+  .task-owner { min-height: 36px; padding: 7px 12px; }
+  .priority-dot { width: 18px; height: 18px; }
+  .due-date-chip, .due-date-empty { min-height: 28px; padding: 5px 8px; }
+  .nav-tab { padding: 14px 18px; min-height: 52px; }
+  .btn { min-height: 44px; }
+  .wo-advance-btn, .wo-delete-btn { min-height: 40px; padding: 8px 14px; }
+  .affinity-tag { min-height: 36px; padding: 7px 12px; }
+  .emp-remove-btn, .emp-playbook-btn { min-height: 36px; }
+  .color-swatch { width: 28px; height: 28px; }
+  button, [role="button"], select, input[type="date"] { touch-action: manipulation; }
+}

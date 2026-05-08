@@ -187,13 +187,17 @@
     <div class="stat-card danger"><div class="stat-label">&#9888; Unowned</div><div class="stat-value" id="stat-unowned">0</div></div>
     <div class="stat-card"><div class="stat-label">Departments</div><div class="stat-value" id="stat-departments">0</div></div>
     <div class="stats-actions">
-      <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
       <button class="btn btn-export" onclick="exportJSON()" title="Export config as JSON to share or back up">&#8595; Export JSON</button>
       <button class="btn btn-export" onclick="exportCSV()" title="Export task list as CSV for spreadsheets">&#8595; Export CSV</button>
       <label class="btn btn-import" title="Import a previously exported JSON config">
         &#8593; Import JSON
         <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importJSON(this)">
       </label>
+      <button class="btn btn-export" onclick="copyStateToClipboard()" title="Copy full state to clipboard to paste on another device">&#128203; Copy State</button>
+      <button class="btn btn-export" onclick="pasteStateFromClipboard()" title="Paste a state copied from another device">&#128241; Paste State</button>
+      <button class="btn btn-secondary" onclick="openAuditLog()" title="View change history">&#128203; Audit Log</button>
+      <button class="btn btn-secondary" id="notif-btn" onclick="requestNotificationPermission()" title="Enable browser alerts for overdue tasks" hidden>&#128276; Alerts</button>
+      <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
     </div>
   </div>
 </div>
@@ -305,6 +309,23 @@
     <div class="playbook-actions">
       <button class="btn btn-secondary" onclick="closeRolePlaybook()">Close</button>
       <button class="btn btn-export" id="playbook-download-btn" onclick="downloadOpenRolePlaybook()">Download Markdown</button>
+    </div>
+  </div>
+</div>
+<!-- Audit Log modal -->
+<div id="audit-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="audit-modal-title">
+  <div class="audit-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Change History</div>
+        <h2 id="audit-modal-title">Audit Log</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeAuditLog()" aria-label="Close">&times;</button>
+    </div>
+    <div id="audit-body" class="audit-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="clearAuditLog()">Clear Log</button>
+      <button class="btn btn-secondary" onclick="closeAuditLog()">Close</button>
     </div>
   </div>
 </div>
