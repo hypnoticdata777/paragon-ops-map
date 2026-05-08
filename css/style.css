@@ -940,6 +940,10 @@ body {
   background: #2e7d32;
 }
 
+.save-toast--warn {
+  background: #e65100;
+}
+
 /* ==========================================================================
    ★ TEAM MANAGER VIEW — Hero Banner
    Mirrors the .tracking-hero style for visual consistency across views.
