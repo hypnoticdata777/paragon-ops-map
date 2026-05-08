@@ -128,7 +128,7 @@ function renderTrackingView() {
                data-name="${safeName.toLowerCase()}"
                data-status="${status}"
                data-priority="${priority}">
-            <!-- Left half: priority dot (click to cycle) + due date chip + editable task name -->
+            <!-- Left half: priority dot (click to cycle) + due date chip + dep chip + editable task name -->
             <div class="task-left">
               <span class="priority-dot priority-${priority}"
                     onclick="cycleTaskPriority('${dept.id}', ${taskIdx})"
@@ -139,6 +139,12 @@ function renderTrackingView() {
                          onclick="openDueDatePicker('${dept.id}', ${taskIdx}, this)">${formatDueChip(task.dueDate)}</span>`
                 : `<span class="due-date-empty"
                          onclick="openDueDatePicker('${dept.id}', ${taskIdx}, this)">+ date</span>`
+              }
+              ${task.blockedBy
+                ? `<span class="dep-chip${isDependencyBlocking(task) ? ' dep-chip--blocking' : ' dep-chip--resolved'}"
+                         title="Blocked by: ${escapeHtml(task.blockedBy.name)}"
+                         onclick="openDependencyPicker('${dept.id}', ${taskIdx}, this)">&#128279; ${escapeHtml(task.blockedBy.name.slice(0, 16))}${task.blockedBy.name.length > 16 ? '…' : ''}</span>`
+                : `<span class="dep-add-btn" title="Add dependency" onclick="openDependencyPicker('${dept.id}', ${taskIdx}, this)">&#128279;</span>`
               }
               <div class="task-name"
                    ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
@@ -255,6 +261,9 @@ function _commitTaskName(deptId, taskIdx, newValue, originalName, nameEl, taskEl
     // Like refusing to notarize a blank contract.
     nameEl.textContent = originalName;
   } else {
+    if (trimmed !== originalName) {
+      logAudit('name_changed', { dept: dept.name, task: originalName, from: originalName, to: trimmed });
+    }
     // Commit the new name to the data model (the source of truth).
     dept.tasks[taskIdx].name = trimmed;
     // Also update the hidden data attribute used for search/filtering.
@@ -348,6 +357,8 @@ function setTaskOwner(deptId, taskIdx, newOwner) {
   // Find the department in data — the filing cabinet drawer.
   const dept = orgData.departments.find(d => d.id === deptId);
   if (!dept) return;
+
+  logAudit('owner_changed', { dept: dept.name, task: dept.tasks[taskIdx].name, from: dept.tasks[taskIdx].owner, to: newOwner });
 
   // Update the data model first — this is the source of truth.
   dept.tasks[taskIdx].owner = newOwner;
@@ -1088,7 +1099,8 @@ function saveToStorage() {
         owner:       t.owner,
         status:      t.status   || 'todo',
         priority:    t.priority || 'medium',
-        dueDate:     t.dueDate  || null
+        dueDate:     t.dueDate  || null,
+        blockedBy:   t.blockedBy || null
       }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -1119,6 +1131,7 @@ function loadFromStorage() {
         if (savedTask.status)   task.status   = savedTask.status;
         if (savedTask.priority) task.priority = savedTask.priority;
         if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
+        if (savedTask.blockedBy !== undefined) task.blockedBy = savedTask.blockedBy || null;
       });
     });
   } catch (e) {
@@ -1131,6 +1144,101 @@ function resetStorage() {
   if (!confirm('Reset all task names and owner assignments to defaults?')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+const AUDIT_KEY   = 'pm-ops-audit-v1';
+const AUDIT_LIMIT = 500;
+let auditLog = [];
+
+const AUDIT_LABELS = {
+  owner_changed:      'Owner Changed',
+  status_changed:     'Status Changed',
+  priority_changed:   'Priority Changed',
+  name_changed:       'Task Renamed',
+  auto_assign:        'Auto-Assign Run',
+  import_file:        'Imported from File',
+  import_clipboard:   'Imported from Clipboard',
+  wo_advanced:        'Work Order Advanced',
+  wo_deleted:         'Work Order Deleted',
+  dependency_set:     'Dependency Set',
+  dependency_cleared: 'Dependency Cleared',
+};
+
+function loadAuditLog() {
+  try {
+    const raw = localStorage.getItem(AUDIT_KEY);
+    if (raw) auditLog = JSON.parse(raw) || [];
+  } catch (_) {
+    auditLog = [];
+  }
+}
+
+function saveAuditLog() {
+  try {
+    localStorage.setItem(AUDIT_KEY, JSON.stringify(auditLog));
+  } catch (_) { /* silent fail */ }
+}
+
+function logAudit(action, details = {}) {
+  auditLog.unshift({ ts: new Date().toISOString(), action, ...details });
+  if (auditLog.length > AUDIT_LIMIT) auditLog.length = AUDIT_LIMIT;
+  saveAuditLog();
+}
+
+function openAuditLog() {
+  const modal = document.getElementById('audit-modal');
+  const body  = document.getElementById('audit-body');
+  if (!modal || !body) return;
+  body.innerHTML = buildAuditLogHTML();
+  modal.classList.add('visible');
+}
+
+function closeAuditLog() {
+  const modal = document.getElementById('audit-modal');
+  if (modal) modal.classList.remove('visible');
+}
+
+function clearAuditLog() {
+  if (!confirm('Clear all audit log entries?')) return;
+  auditLog = [];
+  saveAuditLog();
+  const body = document.getElementById('audit-body');
+  if (body) body.innerHTML = buildAuditLogHTML();
+}
+
+function buildAuditLogHTML() {
+  if (auditLog.length === 0) {
+    return '<p class="audit-empty">No changes recorded yet.</p>';
+  }
+  const rows = auditLog.map(entry => {
+    const label  = AUDIT_LABELS[entry.action] || entry.action;
+    const time   = new Date(entry.ts).toLocaleString();
+    let detail   = '';
+    if (entry.dept && entry.task) {
+      detail = `${escapeHtml(entry.dept)}: ${escapeHtml(entry.task)}`;
+      if (entry.from !== undefined && entry.to !== undefined) {
+        detail += ` — ${escapeHtml(String(entry.from))} → ${escapeHtml(String(entry.to))}`;
+      }
+    } else if (entry.count !== undefined) {
+      detail = `${entry.count} task${entry.count !== 1 ? 's' : ''} assigned`;
+    } else if (entry.title) {
+      detail = escapeHtml(entry.title);
+      if (entry.from !== undefined && entry.to !== undefined) {
+        detail += ` — ${escapeHtml(String(entry.from))} → ${escapeHtml(String(entry.to))}`;
+      }
+    }
+    return `
+      <div class="audit-row">
+        <span class="audit-time">${escapeHtml(time)}</span>
+        <span class="audit-action">${escapeHtml(label)}</span>
+        ${detail ? `<span class="audit-detail">${detail}</span>` : ''}
+      </div>`;
+  }).join('');
+  return `<div class="audit-list">${rows}</div>`;
 }
 
 // ====================
@@ -1420,6 +1528,51 @@ function isPlaybookTaskOverdue(task) {
   return task.dueDate < new Date().toISOString().slice(0, 10);
 }
 
+// Applies imported state (departments task data, optionally team and workOrders)
+// to the live data model, then re-renders all affected UI surfaces.
+// Extracted so both importJSON and pasteStateFromClipboard can share this logic.
+function _applyImportedState(data) {
+  data.departments.forEach(savedDept => {
+    const dept = orgData.departments.find(d => d.id === savedDept.id);
+    if (!dept) return;
+    if (!Array.isArray(savedDept.tasks)) return;
+    savedDept.tasks.forEach((savedTask) => {
+      if (!savedTask.name || !savedTask.owner) return;
+      const key  = savedTask._configName || savedTask.name;
+      const task = dept.tasks.find(t => t._configName === key);
+      if (!task) return;
+      task.name  = savedTask.name;
+      task.owner = savedTask.owner;
+      if (savedTask.status)   task.status   = savedTask.status;
+      if (savedTask.priority) task.priority = savedTask.priority;
+      if (savedTask.dueDate !== undefined) task.dueDate = isValidISODate(savedTask.dueDate) ? savedTask.dueDate : undefined;
+      if (savedTask.blockedBy !== undefined) task.blockedBy = savedTask.blockedBy || null;
+    });
+  });
+
+  if (data.company) {
+    try { localStorage.setItem(COMPANY_KEY, data.company); } catch (_) {}
+    applyCompanyName(data.company);
+  }
+
+  if (data.team && Array.isArray(data.team.employees)) {
+    teamData = data.team;
+    saveTeamData();
+  }
+
+  if (Array.isArray(data.workOrders)) {
+    workOrders = data.workOrders;
+    saveWorkOrders();
+  }
+
+  saveToStorage();
+  renderTrackingView();
+  updateStats();
+  document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
+  populateOwnerFilter();
+  renderLegend();
+}
+
 function importJSON(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -1442,34 +1595,8 @@ function importJSON(inputEl) {
       }
 
       _saveUndoSnapshot();
-
-      data.departments.forEach(savedDept => {
-        const dept = orgData.departments.find(d => d.id === savedDept.id);
-        if (!dept) return;
-        if (!Array.isArray(savedDept.tasks)) return;
-        savedDept.tasks.forEach((savedTask) => {
-          if (!savedTask.name || !savedTask.owner) return;
-          const key  = savedTask._configName || savedTask.name;
-          const task = dept.tasks.find(t => t._configName === key);
-          if (!task) return;
-          task.name  = savedTask.name;
-          task.owner = savedTask.owner;
-          if (savedTask.status)   task.status   = savedTask.status;
-          if (savedTask.priority) task.priority = savedTask.priority;
-          if (savedTask.dueDate !== undefined) task.dueDate = isValidISODate(savedTask.dueDate) ? savedTask.dueDate : undefined;
-        });
-      });
-
-      if (data.company) {
-        try { localStorage.setItem(COMPANY_KEY, data.company); } catch (_) {}
-        applyCompanyName(data.company);
-      }
-
-      saveToStorage();
-      renderTrackingView();
-      updateStats();
-      document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
-      populateOwnerFilter();
+      _applyImportedState(data);
+      logAudit('import_file');
     } catch (e) {
       alert('Import failed: invalid or incompatible file.');
     } finally {
@@ -1477,6 +1604,70 @@ function importJSON(inputEl) {
     }
   };
   reader.readAsText(file);
+}
+
+// ============================================================
+// MULTI-DEVICE SYNC (clipboard-based)
+// ============================================================
+
+function copyStateToClipboard() {
+  const payload = JSON.stringify({
+    company:    getCompanyName(),
+    exported:   new Date().toISOString(),
+    departments: orgData.departments.map(dept => ({
+      id: dept.id,
+      tasks: dept.tasks.map(t => ({
+        _configName: t._configName,
+        name:        t.name,
+        owner:       t.owner,
+        status:      t.status   || 'todo',
+        priority:    t.priority || 'medium',
+        dueDate:     t.dueDate  || null,
+        blockedBy:   t.blockedBy || null
+      }))
+    })),
+    team:       teamData,
+    workOrders: workOrders
+  }, null, 2);
+
+  if (!navigator.clipboard) {
+    alert('Clipboard API not available. Use Export JSON instead.');
+    return;
+  }
+  navigator.clipboard.writeText(payload)
+    .then(() => _showActionToast('✓ State copied — paste on another device', 'save-toast--success'))
+    .catch(() => _showActionToast('⚠ Clipboard access denied', 'save-toast--error'));
+}
+
+async function pasteStateFromClipboard() {
+  if (!navigator.clipboard) {
+    alert('Clipboard API not available in this context.');
+    return;
+  }
+  try {
+    const text = await navigator.clipboard.readText();
+    const data = JSON.parse(text);
+    if (!Array.isArray(data.departments)) throw new Error('not a PM Ops state');
+    const fromLabel = data.company ? ` from "${data.company}"` : '';
+    if (!confirm(`Paste state${fromLabel} and replace current data on this device?`)) return;
+    _saveUndoSnapshot();
+    _applyImportedState(data);
+    logAudit('import_clipboard');
+    _showActionToast('✓ State pasted from clipboard', 'save-toast--success');
+  } catch (e) {
+    alert('Could not read PM Ops state from clipboard.\nMake sure you copied a valid export first.');
+  }
+}
+
+function _showActionToast(msg, cls) {
+  const toast = document.getElementById('save-toast');
+  if (!toast) return;
+  clearTimeout(_toastTimer);
+  toast.textContent = msg;
+  toast.className = 'save-toast ' + cls;
+  void toast.offsetWidth;
+  toast.classList.add('visible');
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
 }
 
 function _fileSlug() {
@@ -1682,6 +1873,12 @@ function setTaskDueDate(deptId, taskIdx, dateStr) {
           : `<span class="due-date-empty"
                    onclick="openDueDatePicker('${deptId}', ${taskIdx}, this)">+ date</span>`
         }
+        ${task.blockedBy
+          ? `<span class="dep-chip${isDependencyBlocking(task) ? ' dep-chip--blocking' : ' dep-chip--resolved'}"
+                   title="Blocked by: ${escapeHtml(task.blockedBy.name)}"
+                   onclick="openDependencyPicker('${deptId}', ${taskIdx}, this)">&#128279; ${escapeHtml(task.blockedBy.name.slice(0, 16))}${task.blockedBy.name.length > 16 ? '…' : ''}</span>`
+          : `<span class="dep-add-btn" title="Add dependency" onclick="openDependencyPicker('${deptId}', ${taskIdx}, this)">&#128279;</span>`
+        }
         <div class="task-name"
              ondblclick="startTaskEdit('${deptId}', ${taskIdx})"
              title="Double-click to rename">${escapeHtml(task.name)}</div>
@@ -1691,6 +1888,186 @@ function setTaskDueDate(deptId, taskIdx, dateStr) {
 
   saveToStorage();
   updateStats();
+}
+
+// ============================================================
+// TASK DEPENDENCIES
+// ============================================================
+
+let _depPickerCloseHandler = null;
+
+// Opens a floating picker dropdown anchored to anchorEl, listing all tasks
+// (grouped by dept, skipping the task itself) so the user can pick a dependency.
+function openDependencyPicker(deptId, taskIdx, anchorEl) {
+  _closeDependencyPicker();
+
+  const dept    = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task    = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const picker  = document.createElement('div');
+  picker.id     = 'dep-picker';
+  picker.className = 'dep-picker';
+
+  // Search input
+  const searchInput = document.createElement('input');
+  searchInput.type  = 'text';
+  searchInput.className = 'dep-picker-search';
+  searchInput.placeholder = 'Search tasks…';
+  picker.appendChild(searchInput);
+
+  // Scrollable list
+  const list = document.createElement('div');
+  list.className = 'dep-picker-list';
+  picker.appendChild(list);
+
+  // Clear button (only shown if a dep is already set)
+  if (task.blockedBy) {
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'dep-picker-clear';
+    clearBtn.textContent = '✕ Clear dependency';
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTaskDependency(deptId, taskIdx, anchorEl);
+      _closeDependencyPicker();
+    });
+    picker.appendChild(clearBtn);
+  }
+
+  // Build the list of all tasks (excluding self)
+  function buildList(filter) {
+    list.innerHTML = '';
+    let anyVisible = false;
+    orgData.departments.forEach(d => {
+      const matchingTasks = d.tasks.filter((t, idx) => {
+        if (d.id === deptId && idx === taskIdx) return false; // skip self
+        const label = `${d.name}: ${t.name}`.toLowerCase();
+        return !filter || label.includes(filter.toLowerCase());
+      });
+      if (!matchingTasks.length) return;
+      anyVisible = true;
+
+      const label = document.createElement('div');
+      label.className = 'dep-dept-label';
+      label.textContent = d.name;
+      list.appendChild(label);
+
+      matchingTasks.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'dep-picker-item' +
+          (task.blockedBy && task.blockedBy.deptId === d.id && task.blockedBy.configName === t._configName
+            ? ' dep-picker-item--active' : '');
+        btn.textContent = t.name;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setTaskDependency(deptId, taskIdx, d.id, t._configName, t.name, anchorEl);
+          _closeDependencyPicker();
+        });
+        list.appendChild(btn);
+      });
+    });
+
+    if (!anyVisible) {
+      const empty = document.createElement('p');
+      empty.className = 'dep-picker-empty';
+      empty.textContent = 'No tasks found.';
+      list.appendChild(empty);
+    }
+  }
+
+  buildList('');
+  searchInput.addEventListener('input', () => buildList(searchInput.value));
+
+  document.body.appendChild(picker);
+
+  // Position below anchor
+  const rect = anchorEl.getBoundingClientRect();
+  picker.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  picker.style.left = Math.min(rect.left + window.scrollX, window.innerWidth - 260) + 'px';
+
+  searchInput.focus();
+
+  _depPickerCloseHandler = (e) => {
+    if (!e.target.closest('#dep-picker')) _closeDependencyPicker();
+  };
+  setTimeout(() => document.addEventListener('click', _depPickerCloseHandler), 0);
+}
+
+function _closeDependencyPicker() {
+  const picker = document.getElementById('dep-picker');
+  if (picker) picker.remove();
+  if (_depPickerCloseHandler) {
+    document.removeEventListener('click', _depPickerCloseHandler);
+    _depPickerCloseHandler = null;
+  }
+}
+
+function setTaskDependency(deptId, taskIdx, depDeptId, depConfigName, depName, anchorEl) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  task.blockedBy = { deptId: depDeptId, configName: depConfigName, name: depName };
+  logAudit('dependency_set', { dept: dept.name, task: task.name, from: null, to: depName });
+  _updateDepChip(deptId, taskIdx, task, anchorEl);
+  saveToStorage();
+}
+
+function clearTaskDependency(deptId, taskIdx, anchorEl) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const oldDep = task.blockedBy ? task.blockedBy.name : null;
+  task.blockedBy = null;
+  logAudit('dependency_cleared', { dept: dept.name, task: task.name, from: oldDep, to: null });
+  _updateDepChip(deptId, taskIdx, task, anchorEl);
+  saveToStorage();
+}
+
+// Updates the dep chip DOM element in place after a dependency change.
+function _updateDepChip(deptId, taskIdx, task, anchorEl) {
+  // Try to find the existing chip/btn via the task row
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+  const oldChip = taskEl.querySelector('.dep-chip, .dep-add-btn');
+  if (!oldChip) return;
+
+  const newChip = document.createElement('span');
+  if (task.blockedBy) {
+    newChip.className = 'dep-chip' + (isDependencyBlocking(task) ? ' dep-chip--blocking' : ' dep-chip--resolved');
+    newChip.title     = `Blocked by: ${task.blockedBy.name}`;
+    const short = task.blockedBy.name.slice(0, 16) + (task.blockedBy.name.length > 16 ? '…' : '');
+    newChip.innerHTML = `&#128279; ${escapeHtml(short)}`;
+    newChip.addEventListener('click', function() {
+      openDependencyPicker(deptId, taskIdx, this);
+    });
+  } else {
+    newChip.className = 'dep-add-btn';
+    newChip.title     = 'Add dependency';
+    newChip.innerHTML = '&#128279;';
+    newChip.addEventListener('click', function() {
+      openDependencyPicker(deptId, taskIdx, this);
+    });
+  }
+  oldChip.replaceWith(newChip);
+}
+
+// Returns true if the task has a blockedBy dependency AND the blocking task
+// is not yet done (i.e., the dependency is still "active/blocking").
+function isDependencyBlocking(task) {
+  if (!task.blockedBy) return false;
+  const dep = task.blockedBy;
+  const depDept = orgData.departments.find(d => d.id === dep.deptId);
+  if (!depDept) return false;
+  const depTask = depDept.tasks.find(t => t._configName === dep.configName);
+  if (!depTask) return false;
+  return (depTask.status || 'todo') !== 'done';
 }
 
 // ============================================================
@@ -1744,6 +2121,7 @@ function cycleTaskStatus(deptId, taskIdx) {
   const current = task.status || 'todo';
   // Advance to next step, wrapping back to 'todo' after 'done'
   task.status   = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
+  logAudit('status_changed', { dept: dept.name, task: task.name, from: current, to: task.status });
 
   // ── Surgical DOM update — only touch what changed ──────────────────────────
   const taskEl = document.querySelector(
@@ -1784,6 +2162,7 @@ function cycleTaskPriority(deptId, taskIdx) {
   const task    = dept.tasks[taskIdx];
   const current = task.priority || 'medium';
   task.priority = PRIORITY_CYCLE[(PRIORITY_CYCLE.indexOf(current) + 1) % PRIORITY_CYCLE.length];
+  logAudit('priority_changed', { dept: dept.name, task: task.name, from: current, to: task.priority });
 
   // Update data attribute so the filter reads the new value immediately
   const taskEl = document.querySelector(
@@ -1873,6 +2252,7 @@ function initApp() {
   loadTeamData();
   loadWorkOrders();
 
+  loadAuditLog();
   loadFromStorage();
   renderTrackingView();
   updateStats();          // Also calls updateBeacons() internally
@@ -1892,6 +2272,8 @@ function initApp() {
   } else {
     showOnboardingModal();
   }
+
+  initNotifications();
 }
 
 // ====================
@@ -1920,6 +2302,73 @@ function dismissWelcomeGuide() {
   guide.style.overflow   = 'hidden';
   setTimeout(() => { guide.hidden = true; }, 420);
   try { localStorage.setItem(GUIDE_KEY, '1'); } catch (_) {}
+}
+
+// ============================================================
+// BROWSER NOTIFICATIONS — overdue task alerts
+// ============================================================
+
+const NOTIF_DATE_KEY = 'pm-ops-notif-date';
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    alert('Your browser does not support notifications.');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    _showActionToast('✓ Notifications already enabled', 'save-toast--success');
+    return;
+  }
+  const result = await Notification.requestPermission();
+  const btn = document.getElementById('notif-btn');
+  if (result === 'granted') {
+    if (btn) btn.hidden = true;
+    _showActionToast('✓ Notifications enabled', 'save-toast--success');
+    checkOverdueNotifications(true);
+    setInterval(checkOverdueNotifications, 60 * 60 * 1000);
+  } else {
+    if (btn) btn.hidden = true; // denied — hide permanently
+    _showActionToast('⚠ Notification permission denied', 'save-toast--error');
+  }
+}
+
+function checkOverdueNotifications(force = false) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = getTodayISO();
+  if (!force) {
+    try { if (localStorage.getItem(NOTIF_DATE_KEY) === today) return; } catch (_) {}
+  }
+
+  const overdue = [];
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      if (isTaskOverdue(task)) overdue.push(`${dept.name}: ${task.name}`);
+    });
+  });
+
+  if (overdue.length > 0) {
+    const body = overdue.slice(0, 4).join('\n') + (overdue.length > 4 ? `\n+${overdue.length - 4} more` : '');
+    new Notification(`PM Ops Map — ${overdue.length} overdue task${overdue.length !== 1 ? 's' : ''}`, {
+      body,
+      icon: 'icon.png'
+    });
+  }
+
+  try { localStorage.setItem(NOTIF_DATE_KEY, today); } catch (_) {}
+}
+
+function initNotifications() {
+  if (!('Notification' in window)) return;
+  const btn = document.getElementById('notif-btn');
+  if (Notification.permission === 'default') {
+    if (btn) btn.hidden = false; // show "Enable Alerts" button
+  } else if (Notification.permission === 'granted') {
+    if (btn) btn.hidden = true;
+    checkOverdueNotifications();
+    setInterval(checkOverdueNotifications, 60 * 60 * 1000);
+  } else {
+    if (btn) btn.hidden = true; // denied — don't prompt
+  }
 }
 
 document.addEventListener('keydown', e => {
@@ -2268,6 +2717,7 @@ function runAutoAssign() {
     renderTeamView(); // Refresh the workload chart to reflect new assignments
   }
 
+  logAudit('auto_assign', { count: assignedCount });
   showAutoAssignToast(assignedCount, fallbackDepts);
 }
 
@@ -2867,6 +3317,7 @@ function advanceWorkOrder(id) {
   if (!wo) return;
   const idx = WO_STATUS_CYCLE.indexOf(wo.status);
   if (idx < WO_STATUS_CYCLE.length - 1) {
+    logAudit('wo_advanced', { title: wo.title, from: WO_STATUS_LABELS[wo.status], to: WO_STATUS_LABELS[WO_STATUS_CYCLE[idx + 1]] });
     wo.status    = WO_STATUS_CYCLE[idx + 1];
     wo.updatedAt = new Date().toISOString();
     saveWorkOrders();
@@ -2879,8 +3330,26 @@ function deleteWorkOrder(id) {
   const wo = workOrders.find(w => w.id === id);
   if (!wo) return;
   if (!confirm(`Delete this work order?\n\n"${wo.title}"\n${wo.property}${wo.unit ? ` · Unit ${wo.unit}` : ''}`)) return;
+  logAudit('wo_deleted', { title: wo.title });
   workOrders = workOrders.filter(w => w.id !== id);
   saveWorkOrders();
   renderWorkOrdersView();
   updateWorkOrderBeacon();
+}
+
+// ============================================================
+// MODULE EXPORTS — Jest unit tests only
+// ============================================================
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+  module.exports = {
+    isValidISODate,
+    getTodayISO,
+    isTaskOverdue,
+    escapeHtml,
+    jsonAttr,
+    formatDueChip,
+    buildDeptCompletionText,
+    _slugify,
+    _isQuotaError,
+  };
 }
