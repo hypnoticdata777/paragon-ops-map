@@ -142,7 +142,7 @@ function renderTrackingView() {
               }
               <div class="task-name"
                    ondblclick="startTaskEdit('${dept.id}', ${taskIdx})"
-                   title="Double-click to rename">${task.name}</div>
+                   title="Double-click to rename">${escapeHtml(task.name)}</div>
             </div>
             <!-- Right half: status pill (click to cycle) + owner badge -->
             <div class="task-right">
@@ -637,7 +637,7 @@ function showDeptPanel(dept) {
           <div class="map-panel-owner-badge${owner === 'UNOWNED' ? ' owner-unowned' : ''}"
                style="${owner !== 'UNOWNED' ? `background:${getEmployeeHex(owner)}` : ''}">${owner}</div>
           <ul>
-            ${tasks.map(t => `<li>${t}</li>`).join('')}
+            ${tasks.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
           </ul>
         </div>
       `).join('')}
@@ -1043,19 +1043,27 @@ function updateStats() {
 
 let _toastTimer = null;
 
-function showSaveToast(isError = false) {
+function showSaveToast(isError = false, isQuota = false) {
   const toast = document.getElementById('save-toast');
   if (!toast) return;
   clearTimeout(_toastTimer);
 
-  toast.textContent = isError ? '⚠ Save failed' : '✓ Saved';
+  toast.textContent = isQuota
+    ? '⚠ Storage full — export your data now!'
+    : isError ? '⚠ Save failed' : '✓ Saved';
   toast.className = 'save-toast' + (isError ? ' save-toast--error' : '');
 
   // Force reflow so re-triggering the animation works
   void toast.offsetWidth;
   toast.classList.add('visible');
 
-  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), isQuota ? 6000 : 2000);
+}
+
+function _isQuotaError(e) {
+  return e instanceof DOMException && (
+    e.code === 22 || e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+  );
 }
 
 // ====================
@@ -1086,8 +1094,7 @@ function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     showSaveToast();
   } catch (e) {
-    // localStorage unavailable (private browsing, quota exceeded, etc.)
-    showSaveToast(true);
+    showSaveToast(true, _isQuotaError(e));
   }
 }
 
@@ -1422,6 +1429,20 @@ function importJSON(inputEl) {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data.departments)) throw new Error('Missing departments');
 
+      // Warn before clobbering existing assignments, statuses, or due dates
+      const hasExistingData = orgData.departments.some(dept =>
+        dept.tasks.some(t => t.owner !== 'UNOWNED' || (t.status && t.status !== 'todo') || t.dueDate)
+      );
+      if (hasExistingData) {
+        const fromLabel = data.company ? ` from "${data.company}"` : '';
+        if (!confirm(`Importing${fromLabel} will overwrite your current task assignments, statuses, and due dates.\n\nContinue?`)) {
+          inputEl.value = '';
+          return;
+        }
+      }
+
+      _saveUndoSnapshot();
+
       data.departments.forEach(savedDept => {
         const dept = orgData.departments.find(d => d.id === savedDept.id);
         if (!dept) return;
@@ -1554,7 +1575,9 @@ function toggleNavCompact() {
 
 // Returns true only for strings that are valid YYYY-MM-DD ISO dates.
 function isValidISODate(str) {
-  return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str);
+  if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const d = new Date(str + 'T00:00:00');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === str;
 }
 
 // Returns today's date as YYYY-MM-DD using local time (no UTC drift).
@@ -1604,9 +1627,11 @@ function openDueDatePicker(deptId, taskIdx, anchorEl) {
   input.style.left = (rect.left  + window.scrollX) + 'px';
 
   let changed = false;
+  let blurTimer = null;
 
   input.addEventListener('change', () => {
     changed = true;
+    clearTimeout(blurTimer);
     setTaskDueDate(deptId, taskIdx, input.value);
     input.remove();
   });
@@ -1614,12 +1639,13 @@ function openDueDatePicker(deptId, taskIdx, anchorEl) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       changed = true;
+      clearTimeout(blurTimer);
       input.remove();
     }
   });
 
   input.addEventListener('blur', () => {
-    setTimeout(() => { if (!changed) input.remove(); }, 150);
+    blurTimer = setTimeout(() => { if (!changed) input.remove(); }, 150);
   });
 
   document.body.appendChild(input);
@@ -1658,7 +1684,7 @@ function setTaskDueDate(deptId, taskIdx, dateStr) {
         }
         <div class="task-name"
              ondblclick="startTaskEdit('${deptId}', ${taskIdx})"
-             title="Double-click to rename">${task.name}</div>
+             title="Double-click to rename">${escapeHtml(task.name)}</div>
       `;
     }
   }
@@ -1896,6 +1922,17 @@ function dismissWelcomeGuide() {
   try { localStorage.setItem(GUIDE_KEY, '1'); } catch (_) {}
 }
 
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    const active = document.activeElement;
+    const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+    if (!isTyping && _undoSnapshot) {
+      e.preventDefault();
+      undoLastAction();
+    }
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   fetch('config.json')
     .then(r => {
@@ -1973,7 +2010,7 @@ function saveTeamData() {
   try {
     localStorage.setItem(TEAM_KEY, JSON.stringify(teamData));
   } catch (e) {
-    // localStorage unavailable (private browsing, quota exceeded) — fail silently
+    if (_isQuotaError(e)) showSaveToast(true, true);
   }
 }
 
@@ -2085,6 +2122,56 @@ function updateBeacons() {
 }
 
 // ============================================================
+// UNDO STACK — single-level snapshot before bulk operations
+// ============================================================
+// Saves full task state before auto-assign or import so the user
+// can press Ctrl+Z (or Cmd+Z) to roll back immediately.
+// Only one snapshot is kept — the most recent destructive action.
+// ============================================================
+
+let _undoSnapshot = null;
+
+function _saveUndoSnapshot() {
+  _undoSnapshot = orgData.departments.map(dept => ({
+    id: dept.id,
+    tasks: dept.tasks.map(t => ({
+      _configName: t._configName,
+      name:        t.name,
+      owner:       t.owner,
+      status:      t.status   || 'todo',
+      priority:    t.priority || 'medium',
+      dueDate:     t.dueDate  || null
+    }))
+  }));
+}
+
+function undoLastAction() {
+  if (!_undoSnapshot) return;
+  _undoSnapshot.forEach(snap => {
+    const dept = orgData.departments.find(d => d.id === snap.id);
+    if (!dept) return;
+    snap.tasks.forEach(snapTask => {
+      const task = dept.tasks.find(t => t._configName === snapTask._configName);
+      if (!task) return;
+      task.name     = snapTask.name;
+      task.owner    = snapTask.owner;
+      task.status   = snapTask.status;
+      task.priority = snapTask.priority;
+      task.dueDate  = snapTask.dueDate;
+    });
+  });
+  _undoSnapshot = null;
+  saveToStorage();
+  renderTrackingView();
+  updateStats();
+  populateOwnerFilter();
+  renderLegend();
+  if (currentView === 'map') { renderMapControls(); renderFlowMap(); }
+  if (currentView === 'team') renderTeamView();
+  showSaveToast();
+}
+
+// ============================================================
 // ★ AUTO-ASSIGN ENGINE
 // ============================================================
 // Distributes every UNOWNED task to an employee based on two rules:
@@ -2115,11 +2202,16 @@ function runAutoAssign() {
     return;
   }
 
+  _saveUndoSnapshot();
+
   // Live workload map — updated incrementally so each assignment within
   // this run is immediately visible to the next iteration.
   // This is what prevents a single person from getting ALL the tasks.
   const workload = buildWorkloadMap();
   let assignedCount = 0;
+  // Track departments that had no affinity match and used global fallback,
+  // so the completion toast can warn the manager about coverage gaps.
+  const fallbackDepts = [];
 
   orgData.departments.forEach(dept => {
     dept.tasks.forEach((task) => {
@@ -2132,10 +2224,15 @@ function runAutoAssign() {
 
       // Step 2: Build the candidate pool.
       // If nobody has a matching affinity we use the entire team as a fallback
-      // rather than leaving the task UNOWNED.
-      const candidates = affinityMatches.length > 0
-        ? affinityMatches
-        : [...teamData.employees];
+      // rather than leaving the task UNOWNED. Track which depts fell back so
+      // we can warn the manager after the run.
+      let candidates;
+      if (affinityMatches.length > 0) {
+        candidates = affinityMatches;
+      } else {
+        candidates = [...teamData.employees];
+        if (!fallbackDepts.includes(dept.name)) fallbackDepts.push(dept.name);
+      }
 
       // Step 3: Sort candidates by current task count (ascending) so the
       // least-loaded employee is always at index 0.
@@ -2171,24 +2268,33 @@ function runAutoAssign() {
     renderTeamView(); // Refresh the workload chart to reflect new assignments
   }
 
-  showAutoAssignToast(assignedCount);
+  showAutoAssignToast(assignedCount, fallbackDepts);
 }
 
-// Shows a green success toast confirming how many tasks were just auto-assigned.
-function showAutoAssignToast(count) {
+// Shows a toast confirming how many tasks were just auto-assigned.
+// If any departments used the global fallback (no affinity match), a warning
+// variant lists them so the manager knows to set up affinities.
+function showAutoAssignToast(count, fallbackDepts = []) {
   const toast = document.getElementById('save-toast');
   if (!toast) return;
   clearTimeout(_toastTimer);
 
-  toast.textContent = count > 0
-    ? `⚡ ${count} task${count !== 1 ? 's' : ''} auto-assigned!`
-    : '✓ All tasks already assigned';
+  let msg;
+  if (count === 0) {
+    msg = '✓ All tasks already assigned';
+  } else if (fallbackDepts.length > 0) {
+    const listed = fallbackDepts.slice(0, 2).join(', ') + (fallbackDepts.length > 2 ? ` +${fallbackDepts.length - 2} more` : '');
+    msg = `⚡ ${count} task${count !== 1 ? 's' : ''} assigned · ⚠ ${fallbackDepts.length} dept${fallbackDepts.length !== 1 ? 's' : ''} had no affinity match (${listed}) · Ctrl+Z to undo`;
+  } else {
+    msg = `⚡ ${count} task${count !== 1 ? 's' : ''} auto-assigned · Ctrl+Z to undo`;
+  }
 
-  toast.className = 'save-toast save-toast--success';
+  toast.textContent = msg;
+  toast.className = 'save-toast' + (fallbackDepts.length > 0 ? ' save-toast--warn' : ' save-toast--success');
   void toast.offsetWidth; // Force reflow so the animation restarts cleanly
   toast.classList.add('visible');
 
-  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), fallbackDepts.length > 0 ? 7000 : 3500);
 }
 
 // ============================================================
@@ -2539,7 +2645,9 @@ function loadWorkOrders() {
 function saveWorkOrders() {
   try {
     localStorage.setItem(WORKORDERS_KEY, JSON.stringify(workOrders));
-  } catch (e) { /* localStorage unavailable */ }
+  } catch (e) {
+    if (_isQuotaError(e)) showSaveToast(true, true);
+  }
 }
 function escapeHtml(str) {
   return String(str == null ? '' : str)
