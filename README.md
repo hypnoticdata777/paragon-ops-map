@@ -73,6 +73,72 @@ On first launch, the setup screen captures company name, portfolio size, and pri
 
 ## Features
 
+### 🔄 Multi-Device Sync
+
+Use the **Copy State** and **Paste State** buttons in the stats bar to transfer your full data set between devices without a backend.
+
+- **Copy State** — serializes all tasks, team members, and work orders to your clipboard as a single JSON blob
+- **Paste State** — reads from the clipboard and restores the full state (prompts for confirmation before overwriting)
+
+Works across any two browsers that share clipboard access (e.g. paste into a colleague's machine via a chat tool, or sync between your laptop and tablet).
+
+---
+
+### 📋 Audit Log
+
+Every meaningful change is recorded in an append-only audit log stored in `localStorage`.
+
+Click **Audit Log** in the stats bar to open the log panel. Each entry shows:
+
+| Field | Content |
+|-------|---------|
+| Time | Timestamp of the action |
+| Action | What happened (Owner changed, Status changed, Priority changed, Task renamed, Auto-assigned, etc.) |
+| Detail | The before/after values or relevant context |
+
+The log caps at 500 entries (oldest entries are dropped). You can clear it at any time from inside the panel. Logged actions include: owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, and paste-state operations.
+
+---
+
+### 🔗 Task Dependencies
+
+Each task can be marked as **blocked by** another task in any department.
+
+Click the dependency chip on a task row (in Tracking view or the due-date panel) to open the dependency picker:
+
+- Search across all departments and tasks
+- Select the blocking task — a chip appears on the dependent task
+- The chip turns **red** if the blocking task is not yet Done, and **green** once it is resolved
+- Click **Clear** in the picker or the chip's remove control to unlink the dependency
+
+Dependencies persist in `localStorage` alongside all other task data.
+
+---
+
+### 📱 Mobile Touch Targets
+
+The app is optimized for touch devices via a `@media (hover: none) and (pointer: coarse)` media query that activates only on real touch screens (not just narrow viewports):
+
+- Task rows expand to a minimum of 52 px tall
+- Status pills, owner badges, priority dots, and action buttons all meet the 36 px minimum tap target
+- All interactive elements use `touch-action: manipulation` to eliminate the 300 ms tap delay
+
+---
+
+### 🔔 Overdue Notifications
+
+The app can send browser notifications for overdue tasks.
+
+Click **🔔 Alerts** in the stats bar (visible after granting permission) to trigger a permission request. Once granted:
+
+- On each page load the app checks for tasks with a due date in the past that are not Done
+- One grouped notification is sent per session (not on every reload) listing the overdue count
+- Permission is requested lazily on interaction, not on page load, which browsers prefer
+
+The last notification date is stored in `localStorage` to avoid spamming repeated visits.
+
+---
+
 ### 🔧 Work Orders — Maintenance Pipeline
 
 The **Work Orders tab** is a kanban board for tracking maintenance requests and service jobs from intake to completion.
@@ -154,6 +220,8 @@ Every department displayed as a collapsible card. Each task row shows its priori
 | Reassign an owner | Click the owner badge → pick from dropdown |
 | Change status | Click the status pill — cycles through the four states |
 | Change priority | Click the colored dot — cycles through the three levels |
+| Set a due date | Click the calendar icon on the task row |
+| Set a dependency | Click the dependency chip → search and select the blocking task |
 | Spot unowned tasks | Red pulsing badge — impossible to miss |
 
 #### Status lifecycle
@@ -218,7 +286,7 @@ Persistent across all views, updates whenever any task changes:
 | ⚠ Unowned | Tasks with no assigned owner (red) |
 | Departments | Total department count |
 
-Also contains: Export to JSON or CSV · Import a saved config · Reset to defaults
+Also contains: Export to JSON or CSV · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
 
 > **Export/Import note:** JSON and CSV exports include `status` and `priority` alongside `name` and `owner`. Old exports without those fields import cleanly — they default to `To Do` / `Medium` on load.
 
@@ -287,7 +355,8 @@ pm-ops-map/
 │   ├── app.js              All rendering — views, SVG map, editing, filters, persistence
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
 │   └── __tests__/
-│       └── data.test.js    Unit tests for config.json structure
+│       ├── data.test.js    Unit tests for config.json structure (10 tests)
+│       └── utils.test.js   Unit tests for app utility functions (37 tests)
 ├── CONTRIBUTING.md         How to contribute
 ├── LICENSE.txt             MIT License
 └── webpack.config.*.js     Optional build configs (not needed to run the app)
