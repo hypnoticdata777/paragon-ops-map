@@ -5,10 +5,12 @@ import {
   STATUS_LABELS, PRIORITY_LABELS, WO_STATUS_LABELS,
   currentView, getEmployeeHex, getEmployeeNames,
   buildWorkloadMap, countUnowned,
+  auditLog, setAuditLog, AUDIT_LABELS,
 } from '../state.js';
 import {
   saveToStorage, saveTeamData, saveWorkOrders, logAudit,
   getCompanyName, _showActionToast, showSaveToast, _fileSlug,
+  saveAuditLog,
 } from '../storage.js';
 import {
   escapeHtml, jsonAttr, isTaskOverdue, _downloadBlob, _slugify,
@@ -581,9 +583,6 @@ function _buildPlaybookWorkOrderSection(items) {
 }
 
 // ── Audit log modal ───────────────────────────────────────────────────────────
-import { auditLog, setAuditLog, AUDIT_LABELS } from '../state.js';
-import { saveAuditLog } from '../storage.js';
-
 export function openAuditLog() {
   const modal = document.getElementById('audit-modal');
   const body  = document.getElementById('audit-body');
