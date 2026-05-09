@@ -352,17 +352,74 @@ pm-ops-map/
 ├── css/
 │   └── style.css           All styles, responsive breakpoints, animations
 ├── js/
-│   ├── app.js              All rendering — views, SVG map, editing, filters, persistence
+│   ├── app.js              Entry point — imports all modules, registers window globals, boots the app
+│   ├── state.js            Shared mutable state, constants, setters, and employee helpers
+│   ├── storage.js          localStorage persistence, toast notifications, company profile helpers
+│   ├── ui.js               Stats bar, beacons, onboarding modal, welcome guide, notifications
+│   ├── io.js               Export / Import (JSON + CSV), clipboard sync, undo stack
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
+│   ├── utils.js            Pure utility functions (CommonJS — imported by both webpack and Jest)
+│   ├── views/
+│   │   ├── tracking.js     Tracking view, filter bar, owner picker, status/priority cycles,
+│   │   │                   due dates, task dependencies
+│   │   ├── map.js          SVG flow map, department panel, tooltips, SVG helpers
+│   │   ├── team.js         Team Manager, auto-assign engine, role playbooks, audit log
+│   │   └── workorders.js   Work Orders kanban board
 │   └── __tests__/
 │       ├── data.test.js    Unit tests for config.json structure (10 tests)
-│       └── utils.test.js   Unit tests for app utility functions (37 tests)
+│       └── utils.test.js   Unit tests for utility functions (37 tests)
 ├── CONTRIBUTING.md         How to contribute
 ├── LICENSE.txt             MIT License
 └── webpack.config.*.js     Optional build configs (not needed to run the app)
 ```
 
-**Design principle:** All data lives in `config.json`. On load the app fetches it, hydrates the in-memory `orgData` object, and every view reads from that. Edits in the UI mutate the in-memory object; `localStorage` persists those edits across page reloads. Nothing goes to a server.
+---
+
+## Architecture
+
+### Data flow
+
+All data lives in `config.json`. On load, `app.js` fetches it, stamps each task with a stable `_configName` identity key, and hands the result to `state.js`. Every module imports state variables directly from there. Edits in the UI mutate those in-memory objects; `storage.js` persists them to `localStorage` after each change. Nothing goes to a server.
+
+### Module dependency graph
+
+```
+utils.js          ← no dependencies (pure functions, CommonJS)
+state.js          ← no dependencies
+storage.js        ← state, utils
+ui.js             ← state, storage, utils
+views/tracking.js ← state, storage, utils, ui, views/map
+views/map.js      ← state, storage, utils
+views/team.js     ← state, storage, utils, ui, views/tracking, views/map, views/workorders
+views/workorders.js ← state, storage, utils, ui
+io.js             ← state, storage, utils, ui, views/tracking, views/map, views/team
+app.js            ← everything above
+```
+
+There are **no circular dependencies** in this graph. Each arrow points only downward.
+
+### Why `utils.js` uses CommonJS
+
+All other modules use ES module `import/export` syntax. `utils.js` deliberately uses `module.exports` so Jest can `require()` it directly without any Babel transform or `--experimental-vm-modules` flag. Webpack 5 handles the CJS↔ESM interop transparently for the browser build.
+
+### Global function assignments
+
+Webpack bundles ES modules into a closure, which means functions are not automatically on `window`. Because `index.html` uses inline `onclick="fn()"` handlers throughout, `app.js` explicitly assigns every handler to `window` via `Object.assign(window, { ... })` after importing them. If you add a new function that needs to be callable from HTML, add it to that block at the bottom of `app.js`.
+
+### Known workaround — `window._saveUndoSnapshot`
+
+The undo snapshot function (`_saveUndoSnapshot`) lives in `io.js`. The auto-assign engine in `views/team.js` needs to call it before bulk-assigning tasks, but `io.js` already imports from `views/team.js` (for `renderTeamView` and `renderLegend`). A direct import back would create a circular dependency.
+
+The workaround is that `runAutoAssign()` in `team.js` calls it via the window global:
+
+```js
+// views/team.js
+window._saveUndoSnapshot && window._saveUndoSnapshot();
+```
+
+`app.js` assigns `_saveUndoSnapshot` to `window` as part of its normal global registration, so this works correctly in the browser. The `&&` guard prevents a crash in any environment where `app.js` hasn't run yet (e.g. isolated unit tests).
+
+The clean long-term fix would be to extract `_saveUndoSnapshot` and `undoLastAction` into their own `undo.js` module that both `team.js` and `io.js` can import without a cycle. PRs welcome.
 
 ---
 
