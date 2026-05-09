@@ -42,6 +42,10 @@ import {
   copyStateToClipboard, pasteStateFromClipboard,
   _saveUndoSnapshot, undoLastAction,
 } from './io.js';
+import {
+  renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
+  focusLaunchDepartment, downloadLaunchPlan,
+} from './launchPlan.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -84,11 +88,13 @@ function initApp() {
   loadAuditLog();
   loadFromStorage();
   renderTrackingView();
+  renderLaunchPlan();
   updateStats();
   populateOwnerFilter();
   renderLegend();
   initWelcomeGuide();
   applyOpsProfile();
+  renderLaunchPlan();
   applyNavCompactState();
 
   document.querySelectorAll('.department').forEach(dept => {
@@ -210,4 +216,9 @@ Object.assign(window, {
   updateBeacons,
   updateStats,
   populateOwnerFilter,
+  renderLaunchPlan,
+  toggleLaunchChecklistItem,
+  resetLaunchChecklist,
+  focusLaunchDepartment,
+  downloadLaunchPlan,
 });
