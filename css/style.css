@@ -1506,6 +1506,238 @@ body {
 }
 
 /* ==========================================================================
+   LAUNCH PLAN - guided first-week operating setup
+   ========================================================================== */
+
+.launch-plan {
+  margin: -12px 0 28px;
+  padding: 20px;
+  border: 1px solid var(--line-soft, #dce4ea);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft, 0 1px 2px rgba(23, 32, 42, 0.06));
+}
+
+.launch-plan-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line-soft, #dce4ea);
+}
+
+.launch-kicker,
+.launch-panel-title {
+  color: var(--accent, #00897b);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.launch-plan-header h3 {
+  margin-top: 4px;
+  color: var(--ink-strong, #17202a);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.launch-plan-header p {
+  max-width: 760px;
+  margin-top: 6px;
+  color: var(--ink-muted, #647482);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.launch-score {
+  min-width: 112px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft, #dce4ea);
+  border-radius: 8px;
+  background: var(--surface-muted, #f1f5f7);
+  text-align: center;
+}
+
+.launch-score strong {
+  display: block;
+  color: var(--ink-strong, #17202a);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.launch-score span {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-muted, #647482);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.launch-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.35fr) minmax(260px, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.launch-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line-soft, #dce4ea);
+  border-radius: 8px;
+  background: var(--surface-panel, #ffffff);
+}
+
+.launch-profile-line {
+  margin-top: 8px;
+  color: var(--ink-muted, #647482);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.launch-dept-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.launch-dept-pill {
+  border: 1px solid #dce4ea;
+  border-left: 4px solid var(--dept-color);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--ink, #2c3a46);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.launch-dept-pill:hover {
+  background: var(--surface-muted, #f1f5f7);
+}
+
+.launch-checklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.launch-check-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line-soft, #dce4ea);
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.launch-check-item input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--accent, #00897b);
+  flex-shrink: 0;
+}
+
+.launch-check-item strong {
+  display: block;
+  color: var(--ink-strong, #17202a);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.launch-check-item small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-muted, #647482);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.launch-check-item.is-complete {
+  background: #f0f8f4;
+  border-color: #b9dfc8;
+}
+
+.launch-check-item.is-complete strong {
+  color: #1b5e20;
+}
+
+.launch-gap-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.launch-gap {
+  padding: 10px 12px;
+  border: 1px solid #f0c7c7;
+  border-left: 4px solid var(--danger, #c62828);
+  border-radius: 7px;
+  background: #fff7f7;
+}
+
+.launch-gap strong {
+  display: block;
+  color: var(--ink-strong, #17202a);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.launch-gap span,
+.launch-empty {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-muted, #647482);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.launch-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.department.launch-highlight {
+  outline: 3px solid var(--accent, #00897b);
+  outline-offset: 4px;
+  transition: outline-color 0.2s ease;
+}
+
+@media (max-width: 1100px) {
+  .launch-plan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .launch-plan {
+    margin-top: 0;
+    padding: 16px;
+  }
+
+  .launch-plan-header,
+  .launch-actions {
+    flex-direction: column;
+  }
+
+  .launch-score {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
    WELCOME GUIDE — dismissible first-run onboarding strip
    ========================================================================== */
 

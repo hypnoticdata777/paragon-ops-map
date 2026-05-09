@@ -8,6 +8,7 @@ import {
   showSaveToast, _showActionToast,
 } from './storage.js';
 import { isTaskOverdue, getTodayISO, shakeInput } from './utils.js';
+import { renderLaunchPlan } from './launchPlan.js';
 
 // ── Stats bar ─────────────────────────────────────────────────────────────────
 export function updateStats() {
@@ -37,6 +38,7 @@ export function updateStats() {
   if (overdueEl) overdueEl.textContent = overdue;
 
   updateBeacons();
+  renderLaunchPlan();
 }
 
 // ── Beacon updater ────────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ export function submitCompanyName() {
   applyCompanyName(name);
   applyOpsProfile(profile);
   document.getElementById('onboarding-modal').classList.remove('visible');
+  renderLaunchPlan();
 }
 
 // ── Welcome guide ─────────────────────────────────────────────────────────────
