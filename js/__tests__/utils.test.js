@@ -1,27 +1,5 @@
-// Mock browser globals so app.js can be required without a real DOM
-global.window       = { innerWidth: 1280, innerHeight: 800, scrollX: 0, scrollY: 0 };
-global.document     = {
-  addEventListener: jest.fn(),
-  getElementById: jest.fn(() => null),
-  querySelector: jest.fn(() => null),
-  querySelectorAll: jest.fn(() => ({ forEach: jest.fn(), length: 0 })),
-  body: { appendChild: jest.fn(), dataset: {} },
-  createElementNS: jest.fn(() => ({ setAttribute: jest.fn(), appendChild: jest.fn(), style: {}, addEventListener: jest.fn(), classList: { add: jest.fn(), remove: jest.fn(), toggle: jest.fn() } })),
-  createElement: jest.fn(() => ({ style: {}, appendChild: jest.fn(), classList: { add: jest.fn(), remove: jest.fn() }, addEventListener: jest.fn() })),
-};
-global.localStorage = {
-  getItem: jest.fn(() => null),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-};
-global.fetch        = jest.fn(() => Promise.reject('test env'));
-global.location     = { reload: jest.fn() };
-global.confirm      = jest.fn(() => true);
-global.alert        = jest.fn();
-global.DOMException = class DOMException extends Error { constructor(msg, name) { super(msg); this.name = name || 'DOMException'; } };
-global.Notification = undefined; // not available in test env
 
-const utils = require('../app');
+const utils = require('../utils');
 
 describe('isValidISODate', () => {
   test('valid date returns true', () => {
