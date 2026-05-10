@@ -8,6 +8,13 @@ import {
 } from './storage.js';
 import { _downloadBlob, isTaskOverdue } from './utils.js';
 
+// Maintainer note:
+// This module is read-only against app state. It generates the Markdown
+// Operations Handbook from state.js and storage.js, then downloads it through
+// utils._downloadBlob. The stats button in index.html calls
+// downloadOperationsHandbook through app.js -> window, so keep that export name
+// stable or update app.js and index.html together.
+
 const PROFILE_LABELS = {
   small: 'Under 100 doors',
   mid: '100-500 doors',
