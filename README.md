@@ -102,6 +102,8 @@ The **Launch Plan** appears on the Tracking view after setup. It uses the compan
 
 It includes:
 
+- A **Start Here** panel that recommends the single next best action
+- Plain-language setup steps for adding people, closing unowned gaps, and exporting the handbook
 - A focus-specific starter blueprint for stability, maintenance, growth, or compliance
 - Department shortcuts that jump directly to the most important operating areas
 - A first-week checklist for ownership, maintenance intake, rent collection, vendors, owner reporting, and backup coverage
