@@ -46,7 +46,7 @@ xdg-open index.html    # Linux
 
 PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 260+ standard tasks** — all fully editable to match your company.
 
-It answers six questions at a glance:
+It answers eight questions at a glance:
 
 1. **What work exists?** — Every task across every department, organized and documented
 2. **Who owns it?** — Every task assigned to a named team member or flagged UNOWNED
@@ -54,8 +54,23 @@ It answers six questions at a glance:
 4. **Who is overloaded?** — The workload dashboard shows task distribution and flags imbalances
 5. **What's the current state?** — Every task carries a live status and priority so you can see what's in flight, blocked, or done without a separate project tool
 6. **What maintenance is in progress?** — The Work Orders board tracks every repair and service request from intake to completion
+7. **What should a new company set up first?** — The Launch Plan recommends a first-week operating blueprint, checklist, and setup gaps
+8. **How do we document this for the team?** — The Handbook export turns the configured map into a Markdown SOP starter pack
 
 On first launch, the setup screen captures company name, portfolio size, and primary operations focus. That profile stays in `localStorage` and adjusts the app's tone automatically for stability, maintenance, growth, or compliance workflows.
+
+---
+
+## Best Workflow for New Companies
+
+1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/) or a downloaded release ZIP
+2. Enter your company name, portfolio size, and primary operations focus
+3. Review the **Launch Plan** on the Tracking view
+4. Add your real team members in **Team Manager**
+5. Assign every UNOWNED responsibility or run **Auto-Assign**
+6. Create one starter work order to validate maintenance intake and closeout
+7. Download the **Handbook** to get a shareable operations SOP starter pack
+8. Re-export JSON or copy state whenever you want a backup or device transfer
 
 ---
 
@@ -72,6 +87,39 @@ On first launch, the setup screen captures company name, portfolio size, and pri
 ---
 
 ## Features
+
+### Launch Plan — Guided First-Week Setup
+
+The **Launch Plan** appears on the Tracking view after setup. It uses the company's portfolio size and operating focus to recommend a practical operating blueprint for beginners.
+
+It includes:
+
+- A focus-specific starter blueprint for stability, maintenance, growth, or compliance
+- Department shortcuts that jump directly to the most important operating areas
+- A first-week checklist for ownership, maintenance intake, rent collection, vendors, owner reporting, and backup coverage
+- Live setup gaps based on the current map, team roster, and work orders
+- A Markdown **Download Launch Plan** action for sharing or onboarding
+
+---
+
+### Operations Handbook Export
+
+Click **Handbook** in the stats bar to download a Markdown operations handbook generated from the current workspace.
+
+The handbook includes:
+
+- Company profile and operating focus
+- Operating snapshot with assignment, blocker, overdue, team, and work order counts
+- First-week operating rhythm
+- Setup gaps to close
+- Team roster and workload
+- Department-by-department SOP checklist
+- Maintenance work order summary
+- Handoff notes for the next manager or new hire
+
+This turns PM Ops Map from a live dashboard into a starter operating manual for a new property management company.
+
+---
 
 ### 🔄 Multi-Device Sync
 
@@ -286,7 +334,7 @@ Persistent across all views, updates whenever any task changes:
 | ⚠ Unowned | Tasks with no assigned owner (red) |
 | Departments | Total department count |
 
-Also contains: Export to JSON or CSV · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
+Also contains: Export to JSON or CSV · Download Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
 
 > **Export/Import note:** JSON and CSV exports include `status` and `priority` alongside `name` and `owner`. Old exports without those fields import cleanly — they default to `To Do` / `Medium` on load.
 
@@ -357,6 +405,8 @@ pm-ops-map/
 │   ├── storage.js          localStorage persistence, toast notifications, company profile helpers
 │   ├── ui.js               Stats bar, beacons, onboarding modal, welcome guide, notifications
 │   ├── io.js               Export / Import (JSON + CSV), clipboard sync, undo stack
+│   ├── launchPlan.js       Guided first-week setup plan, launch checklist, setup gap detection
+│   ├── handbook.js         Markdown operations handbook generator
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
 │   ├── utils.js            Pure utility functions (CommonJS — imported by both webpack and Jest)
 │   ├── views/
