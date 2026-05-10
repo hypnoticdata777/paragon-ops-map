@@ -1,5 +1,5 @@
 
-const utils = require('../utils');
+const utils = require('../utils.cjs');
 
 describe('isValidISODate', () => {
   test('valid date returns true', () => {
