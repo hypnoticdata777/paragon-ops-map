@@ -2,6 +2,13 @@
 import {
   setOrgData, setDefaultAffinities, setOwnerColors, setCurrentView,
 } from './state.js';
+// Maintainer note:
+// index.html calls many functions through inline onclick/onchange/oninput
+// attributes. ES modules do not expose imports to window automatically, so
+// every HTML-called handler must be imported here and added to
+// Object.assign(window, ...) below. If you rename, remove, or move a handler,
+// update index.html and this window binding together or the GitHub Pages app
+// can render while clicks silently fail.
 import {
   loadFromStorage, loadTeamData, loadWorkOrders, loadAuditLog,
   applyOpsProfile, applyNavCompactState, applyCompanyName,
@@ -85,6 +92,11 @@ function switchView(view, tabEl) {
 
 // ── App init ──────────────────────────────────────────────────────────────────
 function initApp() {
+  // Order matters:
+  // 1. Load team/work order/audit/task state from localStorage.
+  // 2. Render Tracking, Launch Plan, stats, filters, and legend from that state.
+  // 3. Apply company/profile UI after the data-backed panels exist.
+  // launchPlan.js, ui.js, tracking.js, and team.js all depend on this sequence.
   loadTeamData();
   loadWorkOrders();
   loadAuditLog();
@@ -127,6 +139,9 @@ document.addEventListener('keydown', e => {
 
 // ── Bootstrap: fetch config.json then start ───────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // GitHub Pages serves this repo directly from source. Keep index.html loading
+  // this file as type="module", keep imports browser-compatible, and keep
+  // config.json reachable at the repo root for this fetch.
   fetch('config.json')
     .then(r => {
       if (!r.ok) throw new Error(`config.json fetch failed: ${r.status}`);
@@ -151,8 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Expose globals for inline HTML onclick handlers ───────────────────────────
-// Webpack bundles ES modules into a closure, so functions are not automatically
-// global. We assign them to window so that onclick="fn()" in index.html works.
+// Dependency map for editors:
+// - index.html calls these names from onclick/onchange/oninput attributes.
+// - launchPlan.js calls some through window.* for guided next-step buttons.
+// - team.js calls window._saveUndoSnapshot before bulk auto-assign.
+// Add new UI handlers here when adding inline HTML actions.
 Object.assign(window, {
   // View
   switchView,

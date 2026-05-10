@@ -96,6 +96,8 @@
         <h2 id="company-heading">YOUR COMPANY</h2>
       </div>
 
+      <!-- Rendered by js/launchPlan.js. Generated buttons call functions
+           exposed through app.js window bindings, so update both files together. -->
       <section id="launch-plan" class="launch-plan" aria-label="Launch plan"></section>
 
       <!-- Welcome guide: shown once to new users, dismissed to localStorage.
@@ -333,6 +335,8 @@
   </div>
 </div>
 <div id="save-toast" class="save-toast"></div>
+<!-- Must stay type="module": GitHub Pages serves source files directly, and
+     js/app.js uses browser-native ES module imports. -->
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

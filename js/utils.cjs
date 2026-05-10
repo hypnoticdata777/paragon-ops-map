@@ -1,4 +1,5 @@
 // CommonJS mirror for Jest tests. Keep behavior in sync with utils.js.
+// Browser code does not import this file.
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)

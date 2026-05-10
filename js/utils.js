@@ -1,4 +1,9 @@
 // Pure utility functions — no DOM side-effects, no shared state.
+//
+// Maintainer note:
+// Browser modules import this file directly. Jest tests import utils.cjs instead
+// because the test suite runs in CommonJS mode. If behavior changes here, mirror
+// the same change in utils.cjs or tests and browser behavior can diverge.
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)
