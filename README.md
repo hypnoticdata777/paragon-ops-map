@@ -10,11 +10,17 @@
 
 ---
 
-## Download & Use in 5 Minutes
+## Use in 5 Minutes
 
-**No server. No database. No login. No dependencies.**
+**No database. No login. No backend.**
 
-### Option A — Download the ZIP (Recommended for most companies)
+### Option A — Live Demo (Recommended for most companies)
+
+1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/)
+2. Complete the setup screen
+3. Start assigning owners, tracking work orders, and exporting your handbook
+
+### Option B — Download the Release ZIP
 
 1. Go to [Releases](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
 2. Download `pm-ops-map.zip` under **Assets**
@@ -22,19 +28,21 @@
 4. Open `index.html` in Chrome, Firefox, Safari, or Edge
 5. Complete the setup screen — you're live
 
-### Option B — Clone and Run
+### Option C — Clone and Run Locally
+
+The source version uses browser modules and loads `config.json`, so run it from a tiny local web server:
 
 ```bash
 git clone https://github.com/hypnoticdata777/paragon-ops-map.git
 cd paragon-ops-map
-open index.html        # Mac
-start index.html       # Windows
-xdg-open index.html    # Linux
+python -m http.server 8000
 ```
 
-> **Note:** `fetch('config.json')` requires a server. If you open `index.html` directly from the filesystem and see a config error, run `npm start` instead (see [Development](#development)).
+Then open `http://localhost:8000`.
 
-### Option C — Fork and Host on GitHub Pages (Free)
+If you are developing with Node installed, `npm start` also works (see [Development](#development)).
+
+### Option D — Fork and Host on GitHub Pages (Free)
 
 1. Fork this repo
 2. Go to **Settings → Pages → Source → main branch**
@@ -408,7 +416,8 @@ pm-ops-map/
 │   ├── launchPlan.js       Guided first-week setup plan, launch checklist, setup gap detection
 │   ├── handbook.js         Markdown operations handbook generator
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
-│   ├── utils.js            Pure utility functions (CommonJS — imported by both webpack and Jest)
+│   ├── utils.js            Pure utility functions for browser modules
+│   ├── utils.cjs           CommonJS mirror for Jest tests
 │   ├── views/
 │   │   ├── tracking.js     Tracking view, filter bar, owner picker, status/priority cycles,
 │   │   │                   due dates, task dependencies
@@ -434,7 +443,7 @@ All data lives in `config.json`. On load, `app.js` fetches it, stamps each task 
 ### Module dependency graph
 
 ```
-utils.js          ← no dependencies (pure functions, CommonJS)
+utils.js          ← no dependencies (pure browser-module functions)
 state.js          ← no dependencies
 storage.js        ← state, utils
 ui.js             ← state, storage, utils
@@ -442,19 +451,21 @@ views/tracking.js ← state, storage, utils, ui, views/map
 views/map.js      ← state, storage, utils
 views/team.js     ← state, storage, utils, ui, views/tracking, views/map, views/workorders
 views/workorders.js ← state, storage, utils, ui
+launchPlan.js     ← state, storage, utils
+handbook.js       ← state, storage, utils
 io.js             ← state, storage, utils, ui, views/tracking, views/map, views/team
 app.js            ← everything above
 ```
 
 There are **no circular dependencies** in this graph. Each arrow points only downward.
 
-### Why `utils.js` uses CommonJS
+### Why `utils.cjs` exists
 
-All other modules use ES module `import/export` syntax. `utils.js` deliberately uses `module.exports` so Jest can `require()` it directly without any Babel transform or `--experimental-vm-modules` flag. Webpack 5 handles the CJS↔ESM interop transparently for the browser build.
+The browser app uses ES module `import/export` syntax so GitHub Pages can serve the source directly. Jest still runs in CommonJS mode, so `utils.cjs` mirrors `utils.js` for the unit tests without requiring Babel or `--experimental-vm-modules`.
 
 ### Global function assignments
 
-Webpack bundles ES modules into a closure, which means functions are not automatically on `window`. Because `index.html` uses inline `onclick="fn()"` handlers throughout, `app.js` explicitly assigns every handler to `window` via `Object.assign(window, { ... })` after importing them. If you add a new function that needs to be callable from HTML, add it to that block at the bottom of `app.js`.
+ES modules do not automatically place functions on `window`. Because `index.html` uses inline `onclick="fn()"` handlers throughout, `app.js` explicitly assigns every handler to `window` via `Object.assign(window, { ... })` after importing them. If you add a new function that needs to be callable from HTML, add it to that block at the bottom of `app.js`.
 
 ### Known workaround — `window._saveUndoSnapshot`
 

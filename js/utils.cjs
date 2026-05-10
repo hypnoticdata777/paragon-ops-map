@@ -1,4 +1,4 @@
-// Pure utility functions — no DOM side-effects, no shared state.
+// CommonJS mirror for Jest tests. Keep behavior in sync with utils.js.
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)
@@ -8,8 +8,6 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// Safely embeds a JS value inside a double-quoted HTML attribute that contains
-// a JS call, e.g. onclick="fn(jsonAttr(val))".
 function jsonAttr(val) {
   return JSON.stringify(String(val == null ? '' : val)).replace(/"/g, '&quot;');
 }
@@ -26,14 +24,12 @@ function _isQuotaError(e) {
   );
 }
 
-// Returns true only for strings that are valid YYYY-MM-DD ISO dates.
 function isValidISODate(str) {
   if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
   const d = new Date(str + 'T00:00:00');
   return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === str;
 }
 
-// Returns today's date as YYYY-MM-DD using local time (no UTC drift).
 function getTodayISO() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -42,12 +38,10 @@ function getTodayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Returns true if the task has a due date in the past and is not done.
 function isTaskOverdue(task) {
   return !!(task.dueDate && isValidISODate(task.dueDate) && task.dueDate < getTodayISO() && (task.status || 'todo') !== 'done');
 }
 
-// Formats YYYY-MM-DD to "Dec 15" without toLocaleDateString for consistency.
 function formatDueChip(dateStr) {
   if (!dateStr) return '';
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -59,11 +53,10 @@ function formatDueChip(dateStr) {
   return `${MONTHS[month]} ${day}`;
 }
 
-// Returns the inline HTML that shows done and blocked counts in the dept header.
 function buildDeptCompletionText(doneCount, blockedCount) {
   const parts = [];
-  if (doneCount   > 0) parts.push(`· <span class="dept-done-count">✓ ${doneCount} done</span>`);
-  if (blockedCount > 0) parts.push(`· <span class="dept-blocked-count">⚠ ${blockedCount} blocked</span>`);
+  if (doneCount   > 0) parts.push(`Â· <span class="dept-done-count">âœ“ ${doneCount} done</span>`);
+  if (blockedCount > 0) parts.push(`Â· <span class="dept-blocked-count">âš  ${blockedCount} blocked</span>`);
   return parts.join(' ');
 }
 
@@ -90,7 +83,7 @@ function formatWODate(isoStr) {
   } catch (e) { return ''; }
 }
 
-export {
+module.exports = {
   escapeHtml,
   jsonAttr,
   shakeInput,
