@@ -1,5 +1,5 @@
 import {
-  orgData, teamData, workOrders, countUnowned,
+  orgData, teamData, workOrders, ownerColors, countUnowned,
 } from './state.js';
 import { getOpsProfile, getCompanyName, _showActionToast } from './storage.js';
 import { escapeHtml, _slugify } from './utils.js';
@@ -118,11 +118,36 @@ export function renderLaunchPlan() {
   const saved = readChecklistState();
   const completeCount = checklist.filter(item => saved[item.id] || item.metric()).length;
   const gaps = getLaunchGaps();
+  const nextAction = getNextAction();
   const blueprintDepts = blueprint.departments
     .map(id => orgData.departments.find(dept => dept.id === id))
     .filter(Boolean);
 
   container.innerHTML = `
+    <div class="launch-start">
+      <div>
+        <div class="launch-kicker">Start Here</div>
+        <h3>${escapeHtml(nextAction.title)}</h3>
+        <p>${escapeHtml(nextAction.detail)}</p>
+      </div>
+      <button class="btn btn-primary launch-primary-action" onclick="${nextAction.onclick}">
+        ${escapeHtml(nextAction.button)}
+      </button>
+    </div>
+    <div class="launch-explainer-grid" aria-label="How to use PM Ops Map">
+      <div class="launch-explainer-step">
+        <strong>1. Tell it who works here</strong>
+        <span>Add your people so the map can assign real responsibility.</span>
+      </div>
+      <div class="launch-explainer-step">
+        <strong>2. Close the red gaps</strong>
+        <span>UNOWNED means nobody is accountable yet. Assign those first.</span>
+      </div>
+      <div class="launch-explainer-step">
+        <strong>3. Export the handbook</strong>
+        <span>When the map looks right, download the starter SOP for the team.</span>
+      </div>
+    </div>
     <div class="launch-plan-header">
       <div>
         <div class="launch-kicker">Launch Plan</div>
@@ -186,6 +211,30 @@ export function resetLaunchChecklist() {
   renderLaunchPlan();
 }
 
+export function startTeamSetup() {
+  switchToView('team', 'team-tab');
+  document.getElementById('new-emp-name')?.focus();
+}
+
+export function showUnownedTasks() {
+  switchToView('tracking', document.querySelector('.nav-tab'));
+  const ownerFilter = document.getElementById('owner-filter');
+  if (ownerFilter) ownerFilter.value = 'UNOWNED';
+  if (window.applyFilter) window.applyFilter();
+  document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export function startWorkOrderSetup() {
+  switchToView('workorders', 'wo-tab');
+  setTimeout(() => {
+    if (window.showNewWorkOrderModal) window.showNewWorkOrderModal();
+  }, 100);
+}
+
+export function downloadLaunchHandbook() {
+  if (window.downloadOperationsHandbook) window.downloadOperationsHandbook();
+}
+
 export function focusLaunchDepartment(deptId) {
   const deptEl = document.querySelector(`.department[data-id="${deptId}"]`);
   if (!deptEl) return;
@@ -245,6 +294,60 @@ function renderChecklistItem(item, manuallyChecked) {
 
 function getLaunchChecklist(focus) {
   return [...BASE_CHECKLIST, ...(FOCUS_CHECKLIST[focus] || [])];
+}
+
+function getNextAction() {
+  const unowned = countUnowned();
+  const openUnassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+
+  if (!teamData.employees.length || isStarterTeam()) {
+    return {
+      title: 'Add your real team first',
+      detail: 'The starter map has sample owners. Replace them with your people so every responsibility can point to a real person.',
+      button: 'Open Team Manager',
+      onclick: 'startTeamSetup()',
+    };
+  }
+
+  if (unowned > 0) {
+    return {
+      title: `Assign ${unowned} unowned responsibilities`,
+      detail: 'Red UNOWNED items are the highest-priority setup gaps. Click each owner badge or use Auto-Assign after your team affinities look right.',
+      button: 'Show Unowned Tasks',
+      onclick: 'showUnownedTasks()',
+    };
+  }
+
+  if (!workOrders.length || openUnassignedWorkOrders > 0) {
+    return {
+      title: 'Create a starter work order',
+      detail: 'Use one sample repair to confirm intake, assignment, vendor, cost, target date, and closeout before real maintenance work arrives.',
+      button: 'Create Work Order',
+      onclick: 'startWorkOrderSetup()',
+    };
+  }
+
+  return {
+    title: 'Download your operations handbook',
+    detail: 'Your core setup signals look good. Export the handbook so the team has a simple SOP starter pack to review and improve.',
+    button: 'Download Handbook',
+    onclick: 'downloadLaunchHandbook()',
+  };
+}
+
+function switchToView(view, tabRef) {
+  const tabEl = typeof tabRef === 'string' ? document.getElementById(tabRef) : tabRef;
+  if (window.switchView && tabEl) window.switchView(view, tabEl);
+}
+
+function isStarterTeam() {
+  if (!ownerColors || !teamData.employees.length) return false;
+  const starterNames = Object.keys(ownerColors)
+    .filter(name => name !== 'UNOWNED')
+    .sort();
+  const currentNames = teamData.employees.map(emp => emp.name).sort();
+  if (starterNames.length !== currentNames.length) return false;
+  return starterNames.every((name, idx) => currentNames[idx] === name);
 }
 
 function readChecklistState() {

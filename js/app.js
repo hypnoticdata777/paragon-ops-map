@@ -45,6 +45,7 @@ import {
 import {
   renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
   focusLaunchDepartment, downloadLaunchPlan,
+  startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
 } from './launchPlan.js';
 import { downloadOperationsHandbook } from './handbook.js';
 
@@ -222,5 +223,9 @@ Object.assign(window, {
   resetLaunchChecklist,
   focusLaunchDepartment,
   downloadLaunchPlan,
+  startTeamSetup,
+  showUnownedTasks,
+  startWorkOrderSetup,
+  downloadLaunchHandbook,
   downloadOperationsHandbook,
 });
