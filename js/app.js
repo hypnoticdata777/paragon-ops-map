@@ -46,6 +46,7 @@ import {
   renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
   focusLaunchDepartment, downloadLaunchPlan,
 } from './launchPlan.js';
+import { downloadOperationsHandbook } from './handbook.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -221,4 +222,5 @@ Object.assign(window, {
   resetLaunchChecklist,
   focusLaunchDepartment,
   downloadLaunchPlan,
+  downloadOperationsHandbook,
 });
