@@ -1,4 +1,16 @@
-// Entry point — imports all modules, wires globals for inline HTML handlers, and boots the app.
+// Entry point for the browser app.
+//
+// This is the best file to read first when editing the project because it
+// shows how the separate feature files fit together:
+// - state.js stores shared app data.
+// - storage.js loads and saves the user's customized workspace.
+// - ui.js manages app-wide UI like the welcome guide, stats, and company name.
+// - views/* render each main tab.
+// - launchPlan.js and handbook.js add beginner setup/export tools.
+//
+// Most product changes should happen in the feature files above. Edit this
+// file when adding a new screen, adding a new button handler from index.html,
+// or changing the app startup order.
 import {
   setOrgData, setDefaultAffinities, setOwnerColors, setCurrentView,
 } from './state.js';
@@ -58,18 +70,26 @@ import { downloadOperationsHandbook } from './handbook.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
+  // The nav tabs are simple HTML buttons. When someone clicks a tab, this
+  // function updates the shared current view, swaps the visible panel, and then
+  // asks that feature's renderer to redraw itself from the latest state.
   setCurrentView(view);
 
+  // Hide every major panel before showing the selected one. The panel ids in
+  // index.html must follow the pattern "{view}-view" for this to work.
   document.querySelectorAll('.view-panel').forEach(panel => {
     panel.classList.remove('active');
   });
   document.getElementById(`${view}-view`).classList.add('active');
 
+  // Keep the nav highlight in sync with the visible panel.
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.remove('active');
   });
   tabEl.classList.add('active');
 
+  // The filter bar only belongs to the Tracking view. Clearing filters when
+  // leaving Tracking prevents hidden filters from confusing a new editor/user.
   const filterBar = document.getElementById('filter-bar');
   if (view === 'tracking') {
     filterBar.style.display = 'flex';
@@ -80,6 +100,8 @@ function switchView(view, tabEl) {
 
   closeOwnerPicker();
 
+  // Non-tracking views render on demand so they always reflect the latest
+  // edits made in Tracking, Team Manager, or Work Orders.
   if (view === 'map') {
     renderMapControls();
     renderFlowMap();
@@ -97,6 +119,9 @@ function initApp() {
   // 2. Render Tracking, Launch Plan, stats, filters, and legend from that state.
   // 3. Apply company/profile UI after the data-backed panels exist.
   // launchPlan.js, ui.js, tracking.js, and team.js all depend on this sequence.
+  //
+  // If a future change adds a new saved data type, load it before rendering.
+  // If it adds a new visible panel, render it after loadFromStorage().
   loadTeamData();
   loadWorkOrders();
   loadAuditLog();
@@ -111,10 +136,14 @@ function initApp() {
   renderLaunchPlan();
   applyNavCompactState();
 
+  // Start with all departments open so a first-time user can immediately see
+  // the operational checklist instead of hunting through collapsed sections.
   document.querySelectorAll('.department').forEach(dept => {
     dept.classList.add('expanded');
   });
 
+  // A saved company name means the user has already onboarded. Otherwise we
+  // show the lightweight setup prompt that personalizes exports and headings.
   const savedName = localStorage.getItem(COMPANY_KEY);
   if (savedName) {
     applyCompanyName(savedName);
@@ -127,6 +156,8 @@ function initApp() {
 
 // ── Undo keyboard shortcut (Ctrl+Z / Cmd+Z) ──────────────────────────────────
 document.addEventListener('keydown', e => {
+  // Undo should feel natural, but it must not steal Ctrl+Z while the user is
+  // typing in an input, textarea, or editable field.
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
     const active = document.activeElement;
     const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
@@ -142,6 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // GitHub Pages serves this repo directly from source. Keep index.html loading
   // this file as type="module", keep imports browser-compatible, and keep
   // config.json reachable at the repo root for this fetch.
+  //
+  // config.json is the starter operating system for the app: departments,
+  // tasks, default role affinities, and owner colors all come from there.
   fetch('config.json')
     .then(r => {
       if (!r.ok) throw new Error(`config.json fetch failed: ${r.status}`);
@@ -152,6 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setDefaultAffinities(config.defaultAffinities);
       setOwnerColors(config.ownerColors);
       // Stamp each task with its original config name as a stable identity key.
+      // User edits can rename tasks later, so this hidden key lets storage.js
+      // reconnect saved progress to the correct starter task on reload.
       config.orgData.departments.forEach(dept => {
         dept.tasks.forEach(task => { task._configName = task.name; });
       });
@@ -174,7 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
 Object.assign(window, {
   // View
   switchView,
-  // Tracking
+  // Tracking tab: departments, tasks, ownership, status, priority, due dates,
+  // dependencies, and filters.
   renderTrackingView,
   toggleDepartment,
   startTaskEdit,
@@ -190,12 +227,12 @@ Object.assign(window, {
   openDependencyPicker,
   setTaskDependency,
   clearTaskDependency,
-  // Map
+  // Map tab: visual operational flow and department detail panels.
   renderMapControls,
   renderFlowMap,
   showDeptPanel,
   closeDeptPanel,
-  // Team
+  // Team tab: employees, role fit, auto-assignment, legend, playbooks, and audit.
   renderTeamView,
   selectPaletteColor,
   commitAddEmployee,
@@ -209,14 +246,15 @@ Object.assign(window, {
   openAuditLog,
   closeAuditLog,
   clearAuditLog,
-  // Work orders
+  // Work Orders tab: intake modal and work order lifecycle actions.
   renderWorkOrdersView,
   showNewWorkOrderModal,
   closeWorkOrderModal,
   commitNewWorkOrder,
   advanceWorkOrder,
   deleteWorkOrder,
-  // I/O
+  // Import/export tools: let users keep ownership of their data with plain files
+  // or clipboard transfer instead of needing a hosted database.
   exportJSON,
   exportCSV,
   importJSON,
@@ -228,7 +266,8 @@ Object.assign(window, {
   // Storage
   resetStorage,
   toggleNavCompact,
-  // UI
+  // App-wide UI: onboarding, guide, notifications, counters, filters, and
+  // beginner launch-plan actions.
   showOnboardingModal,
   submitCompanyName,
   dismissWelcomeGuide,
