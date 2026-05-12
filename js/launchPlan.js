@@ -131,11 +131,32 @@ export function renderLaunchPlan() {
   const completeCount = checklist.filter(item => saved[item.id] || item.metric()).length;
   const gaps = getLaunchGaps();
   const nextAction = getNextAction();
+  const readiness = getReadinessScore(checklist, saved);
+  const snapshot = getOperationsSnapshot();
+  const commandModules = getCommandModules(snapshot);
+  const riskQueue = getRiskQueue(snapshot);
   const blueprintDepts = blueprint.departments
     .map(id => orgData.departments.find(dept => dept.id === id))
     .filter(Boolean);
 
   container.innerHTML = `
+    <div class="launch-dashboard-header">
+      <div>
+        <div class="launch-kicker">Beginner PM Command Center</div>
+        <h3>${escapeHtml(getCompanyName())} operating snapshot</h3>
+        <p>One place to set ownership, catch maintenance risk, build the team routine, and export the handbook before the company needs heavyweight software.</p>
+      </div>
+      <div class="launch-readiness-card" aria-label="${readiness.score} percent launch readiness">
+        <strong>${readiness.score}%</strong>
+        <span>${escapeHtml(readiness.label)}</span>
+      </div>
+    </div>
+    <div class="launch-metrics-grid" aria-label="Launch readiness metrics">
+      ${renderMetricCard('Owned tasks', `${snapshot.assignedTasks}/${snapshot.totalTasks}`, `${snapshot.unownedTasks} unowned`, snapshot.unownedTasks ? 'warn' : 'good')}
+      ${renderMetricCard('Team roster', String(snapshot.employeeCount), snapshot.isStarterTeam ? 'sample roster' : 'real people', snapshot.isStarterTeam ? 'warn' : 'good')}
+      ${renderMetricCard('Open repairs', String(snapshot.openWorkOrders), `${snapshot.unassignedWorkOrders} unassigned`, snapshot.unassignedWorkOrders ? 'warn' : 'good')}
+      ${renderMetricCard('Blocked work', String(snapshot.blockedTasks), `${snapshot.overdueTasks} overdue`, snapshot.blockedTasks || snapshot.overdueTasks ? 'danger' : 'good')}
+    </div>
     <div class="launch-start">
       <div>
         <div class="launch-kicker">Start Here</div>
@@ -146,18 +167,19 @@ export function renderLaunchPlan() {
         ${escapeHtml(nextAction.button)}
       </button>
     </div>
-    <div class="launch-explainer-grid" aria-label="How to use PM Ops Map">
-      <div class="launch-explainer-step">
-        <strong>1. Tell it who works here</strong>
-        <span>Add your people so the map can assign real responsibility.</span>
+    <div class="launch-command-grid" aria-label="Beginner property manager modules">
+      ${commandModules.map(renderCommandModule).join('')}
+    </div>
+    <div class="launch-risk-panel">
+      <div>
+        <div class="launch-kicker">Risk Queue</div>
+        <h3>What needs attention before this can run cleanly?</h3>
       </div>
-      <div class="launch-explainer-step">
-        <strong>2. Close the red gaps</strong>
-        <span>UNOWNED means nobody is accountable yet. Assign those first.</span>
-      </div>
-      <div class="launch-explainer-step">
-        <strong>3. Export the handbook</strong>
-        <span>When the map looks right, download the starter SOP for the team.</span>
+      <div class="launch-risk-list">
+        ${riskQueue.length
+          ? riskQueue.map(renderRiskItem).join('')
+          : '<div class="launch-risk-empty">No major launch risks detected. Keep adding real properties, vendors, dates, and SOP detail as work comes in.</div>'
+        }
       </div>
     </div>
     <div class="launch-plan-header">
@@ -308,8 +330,185 @@ function renderChecklistItem(item, manuallyChecked) {
   `;
 }
 
+function renderMetricCard(label, value, detail, tone) {
+  return `
+    <div class="launch-metric-card launch-metric-card--${tone}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(detail)}</small>
+    </div>
+  `;
+}
+
+function renderCommandModule(module) {
+  return `
+    <div class="launch-command-card launch-command-card--${module.tone}">
+      <div class="launch-command-top">
+        <span class="launch-command-icon">${module.icon}</span>
+        <span class="launch-command-status">${escapeHtml(module.status)}</span>
+      </div>
+      <strong>${escapeHtml(module.title)}</strong>
+      <p>${escapeHtml(module.detail)}</p>
+      <button class="btn btn-secondary launch-command-btn" onclick="${module.onclick}">
+        ${escapeHtml(module.button)}
+      </button>
+    </div>
+  `;
+}
+
+function renderRiskItem(risk) {
+  return `
+    <button class="launch-risk-item launch-risk-item--${risk.tone}" onclick="${risk.onclick}">
+      <span>${escapeHtml(risk.label)}</span>
+      <strong>${escapeHtml(risk.title)}</strong>
+      <small>${escapeHtml(risk.detail)}</small>
+    </button>
+  `;
+}
+
 function getLaunchChecklist(focus) {
   return [...BASE_CHECKLIST, ...(FOCUS_CHECKLIST[focus] || [])];
+}
+
+function getReadinessScore(checklist, saved) {
+  const snapshot = getOperationsSnapshot();
+  const checklistComplete = checklist.filter(item => saved[item.id] || item.metric()).length / Math.max(checklist.length, 1);
+  const ownershipScore = snapshot.totalTasks ? snapshot.assignedTasks / snapshot.totalTasks : 0;
+  const teamScore = snapshot.employeeCount && !snapshot.isStarterTeam ? 1 : 0.35;
+  const maintenanceScore = snapshot.workOrderCount
+    ? Math.max(0.25, 1 - (snapshot.unassignedWorkOrders / Math.max(snapshot.openWorkOrders, 1)))
+    : 0.25;
+  const riskPenalty = Math.min(0.25, ((snapshot.blockedTasks + snapshot.overdueTasks) / Math.max(snapshot.totalTasks, 1)) * 2);
+  const score = Math.max(0, Math.min(100, Math.round(
+    ((ownershipScore * 0.36) + (teamScore * 0.24) + (maintenanceScore * 0.18) + (checklistComplete * 0.22) - riskPenalty) * 100
+  )));
+
+  let label = 'Needs setup';
+  if (score >= 85) label = 'Launch ready';
+  else if (score >= 65) label = 'Operational';
+  else if (score >= 40) label = 'Getting organized';
+
+  return { score, label };
+}
+
+function getOperationsSnapshot() {
+  const totalTasks = orgData.departments.reduce((sum, dept) => sum + dept.tasks.length, 0);
+  const unownedTasks = countUnowned();
+  const assignedTasks = totalTasks - unownedTasks;
+  const blockedTasks = orgData.departments.reduce(
+    (sum, dept) => sum + dept.tasks.filter(task => task.status === 'blocked').length,
+    0
+  );
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const overdueTasks = orgData.departments.reduce(
+    (sum, dept) => sum + dept.tasks.filter(task => task.dueDate && task.dueDate < todayISO && task.status !== 'done').length,
+    0
+  );
+  const openWorkOrders = workOrders.filter(w => w.status !== 'completed').length;
+  const unassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+
+  return {
+    totalTasks,
+    assignedTasks,
+    unownedTasks,
+    blockedTasks,
+    overdueTasks,
+    workOrderCount: workOrders.length,
+    openWorkOrders,
+    unassignedWorkOrders,
+    employeeCount: teamData.employees.length,
+    isStarterTeam: isStarterTeam(),
+  };
+}
+
+function getCommandModules(snapshot) {
+  return [
+    {
+      icon: '01',
+      title: 'Ownership Map',
+      status: snapshot.unownedTasks ? `${snapshot.unownedTasks} gaps` : 'ready',
+      tone: snapshot.unownedTasks ? 'warn' : 'good',
+      detail: 'Name who owns every recurring operating responsibility across leasing, maintenance, accounting, compliance, and owner updates.',
+      button: snapshot.unownedTasks ? 'Close Gaps' : 'Review Map',
+      onclick: snapshot.unownedTasks ? 'showUnownedTasks()' : "switchView('map', document.querySelector('[onclick*=map]'))",
+    },
+    {
+      icon: '02',
+      title: 'Team Operating Model',
+      status: snapshot.isStarterTeam ? 'sample team' : `${snapshot.employeeCount} people`,
+      tone: snapshot.isStarterTeam ? 'warn' : 'good',
+      detail: 'Replace sample roles with real people, set department affinities, and spot overload before work becomes invisible.',
+      button: 'Open Team',
+      onclick: 'startTeamSetup()',
+    },
+    {
+      icon: '03',
+      title: 'Maintenance Flow',
+      status: snapshot.workOrderCount ? `${snapshot.openWorkOrders} open` : 'not tested',
+      tone: snapshot.unassignedWorkOrders || !snapshot.workOrderCount ? 'warn' : 'good',
+      detail: 'Validate intake, dispatch, vendor, cost, due date, and closeout with at least one starter work order.',
+      button: snapshot.workOrderCount ? 'Open Board' : 'Create First WO',
+      onclick: snapshot.workOrderCount ? "switchView('workorders', document.getElementById('wo-tab'))" : 'startWorkOrderSetup()',
+    },
+    {
+      icon: '04',
+      title: 'SOP Handbook',
+      status: snapshot.unownedTasks ? 'draft only' : 'exportable',
+      tone: snapshot.unownedTasks ? 'neutral' : 'good',
+      detail: 'Turn the live map into a Markdown starter handbook so new managers have a source of truth from day one.',
+      button: 'Download SOP',
+      onclick: 'downloadLaunchHandbook()',
+    },
+  ];
+}
+
+function getRiskQueue(snapshot) {
+  const risks = [];
+  if (snapshot.isStarterTeam) {
+    risks.push({
+      label: 'Team',
+      title: 'Sample people are still assigned',
+      detail: 'Replace starter owners with your real team before trusting the map.',
+      tone: 'warn',
+      onclick: 'startTeamSetup()',
+    });
+  }
+  if (snapshot.unownedTasks > 0) {
+    risks.push({
+      label: 'Ownership',
+      title: `${snapshot.unownedTasks} responsibilities have no owner`,
+      detail: 'These are the highest-value gaps to close for a beginner PM company.',
+      tone: 'danger',
+      onclick: 'showUnownedTasks()',
+    });
+  }
+  if (!snapshot.workOrderCount) {
+    risks.push({
+      label: 'Maintenance',
+      title: 'Maintenance workflow has not been tested',
+      detail: 'Create one realistic work order to prove intake, assignment, vendor, cost, and closeout.',
+      tone: 'warn',
+      onclick: 'startWorkOrderSetup()',
+    });
+  } else if (snapshot.unassignedWorkOrders > 0) {
+    risks.push({
+      label: 'Maintenance',
+      title: `${snapshot.unassignedWorkOrders} open work orders are unassigned`,
+      detail: 'Every repair needs a named accountable person.',
+      tone: 'danger',
+      onclick: "switchView('workorders', document.getElementById('wo-tab'))",
+    });
+  }
+  if (snapshot.blockedTasks || snapshot.overdueTasks) {
+    risks.push({
+      label: 'Execution',
+      title: `${snapshot.blockedTasks} blocked / ${snapshot.overdueTasks} overdue tasks`,
+      detail: 'Review blocked or late responsibilities before the operating map becomes stale.',
+      tone: 'danger',
+      onclick: "switchView('tracking', document.querySelector('.nav-tab'))",
+    });
+  }
+  return risks.slice(0, 4);
 }
 
 function getNextAction() {
