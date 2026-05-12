@@ -53,7 +53,7 @@ const BASE_CHECKLIST = [
     id: 'portfolio',
     label: 'Add the first managed property and vendor',
     detail: 'Record at least one property plus one reliable vendor so the operating map has real-world context.',
-    metric: () => portfolio.properties.length > 0 && portfolio.vendors.length > 0,
+    metric: () => portfolio.properties.length > 0 && portfolio.tenants.length > 0 && portfolio.vendors.length > 0,
   },
   {
     id: 'owners',
@@ -158,7 +158,7 @@ export function renderLaunchPlan() {
       </div>
     </div>
     <div class="launch-metrics-grid" aria-label="Launch readiness metrics">
-      ${renderMetricCard('Portfolio', String(snapshot.propertyCount), `${snapshot.unitCount} units / ${snapshot.vendorCount} vendors`, snapshot.propertyCount && snapshot.vendorCount ? 'good' : 'warn')}
+      ${renderMetricCard('Portfolio', String(snapshot.propertyCount), `${snapshot.unitCount} units / ${snapshot.tenantCount} tenants / ${snapshot.vendorCount} vendors`, snapshot.propertyCount && snapshot.tenantCount && snapshot.vendorCount ? 'good' : 'warn')}
       ${renderMetricCard('Owned tasks', `${snapshot.assignedTasks}/${snapshot.totalTasks}`, `${snapshot.unownedTasks} unowned`, snapshot.unownedTasks ? 'warn' : 'good')}
       ${renderMetricCard('Team roster', String(snapshot.employeeCount), snapshot.isStarterTeam ? 'sample roster' : 'real people', snapshot.isStarterTeam ? 'warn' : 'good')}
       ${renderMetricCard('Open repairs', String(snapshot.openWorkOrders), `${snapshot.unassignedWorkOrders} unassigned`, snapshot.unassignedWorkOrders ? 'warn' : 'good')}
@@ -382,7 +382,7 @@ function getReadinessScore(checklist, saved) {
   const checklistComplete = checklist.filter(item => saved[item.id] || item.metric()).length / Math.max(checklist.length, 1);
   const ownershipScore = snapshot.totalTasks ? snapshot.assignedTasks / snapshot.totalTasks : 0;
   const teamScore = snapshot.employeeCount && !snapshot.isStarterTeam ? 1 : 0.35;
-  const portfolioScore = (snapshot.propertyCount ? 0.6 : 0) + (snapshot.vendorCount ? 0.4 : 0);
+  const portfolioScore = (snapshot.propertyCount ? 0.42 : 0) + (snapshot.tenantCount ? 0.28 : 0) + (snapshot.vendorCount ? 0.3 : 0);
   const maintenanceScore = snapshot.workOrderCount
     ? Math.max(0.25, 1 - (snapshot.unassignedWorkOrders / Math.max(snapshot.openWorkOrders, 1)))
     : 0.25;
@@ -426,6 +426,7 @@ function getOperationsSnapshot() {
     unassignedWorkOrders,
     propertyCount: portfolio.properties.length,
     unitCount: portfolio.properties.reduce((sum, property) => sum + Number(property.units || 0), 0),
+    tenantCount: portfolio.tenants.length,
     vendorCount: portfolio.vendors.length,
     employeeCount: teamData.employees.length,
     isStarterTeam: isStarterTeam(),
@@ -438,8 +439,8 @@ function getCommandModules(snapshot) {
       icon: '01',
       title: 'Portfolio Basics',
       status: snapshot.propertyCount ? `${snapshot.propertyCount} properties` : 'missing',
-      tone: snapshot.propertyCount && snapshot.vendorCount ? 'good' : 'warn',
-      detail: 'Capture properties, unit counts, owner/client names, and the starter vendor bench before daily work starts moving.',
+      tone: snapshot.propertyCount && snapshot.tenantCount && snapshot.vendorCount ? 'good' : 'warn',
+      detail: 'Capture properties, unit counts, owner/client names, tenant roster, and starter vendor bench before daily work starts moving.',
       button: 'Open Portfolio',
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     },
@@ -489,6 +490,15 @@ function getRiskQueue(snapshot) {
       label: 'Portfolio',
       title: 'No managed properties are recorded',
       detail: 'Add at least one property with units and owner/client context.',
+      tone: 'warn',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
+  if (!snapshot.tenantCount) {
+    risks.push({
+      label: 'Tenants',
+      title: 'No tenant roster exists yet',
+      detail: 'Add at least one tenant so maintenance and communication have unit-level context.',
       tone: 'warn',
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     });
@@ -556,10 +566,10 @@ function getNextAction() {
   const unowned = countUnowned();
   const openUnassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
 
-  if (!portfolio.properties.length || !portfolio.vendors.length) {
+  if (!portfolio.properties.length || !portfolio.tenants.length || !portfolio.vendors.length) {
     return {
-      title: 'Add your first property and vendor',
-      detail: 'Start by recording what you manage and who you can call for repairs. This makes the rest of the operating map feel real.',
+      title: 'Add your first property, tenant, and vendor',
+      detail: 'Start by recording what you manage, who lives there, and who you can call for repairs. This makes the rest of the operating map feel real.',
       button: 'Open Portfolio',
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     };

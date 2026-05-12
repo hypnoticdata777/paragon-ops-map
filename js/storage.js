@@ -174,9 +174,10 @@ export function loadPortfolio() {
     setPortfolio({
       properties: Array.isArray(parsed?.properties) ? parsed.properties : [],
       vendors:    Array.isArray(parsed?.vendors)    ? parsed.vendors    : [],
+      tenants:    Array.isArray(parsed?.tenants)    ? parsed.tenants    : [],
     });
   } catch (e) {
-    setPortfolio({ properties: [], vendors: [] });
+    setPortfolio({ properties: [], vendors: [], tenants: [] });
   }
 }
 

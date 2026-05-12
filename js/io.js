@@ -94,6 +94,7 @@ function _applyImportedState(data) {
     setPortfolio({
       properties: Array.isArray(data.portfolio.properties) ? data.portfolio.properties : [],
       vendors:    Array.isArray(data.portfolio.vendors)    ? data.portfolio.vendors    : [],
+      tenants:    Array.isArray(data.portfolio.tenants)    ? data.portfolio.tenants    : [],
     });
     savePortfolio();
   }

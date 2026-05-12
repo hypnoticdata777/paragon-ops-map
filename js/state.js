@@ -20,7 +20,7 @@ export function setCurrentView(v) { currentView = v; }
 export let teamData   = { employees: [] };
 export let workOrders = [];
 export let auditLog   = [];
-export let portfolio  = { properties: [], vendors: [] };
+export let portfolio  = { properties: [], vendors: [], tenants: [] };
 
 export function setTeamData(v)   { teamData   = v; }
 export function setWorkOrders(v) { workOrders = v; }
@@ -91,6 +91,8 @@ export const AUDIT_LABELS = {
   wo_deleted:         'Work Order Deleted',
   portfolio_property_added:   'Property Added',
   portfolio_property_deleted: 'Property Deleted',
+  portfolio_tenant_added:     'Tenant Added',
+  portfolio_tenant_deleted:   'Tenant Deleted',
   portfolio_vendor_added:     'Vendor Added',
   portfolio_vendor_deleted:   'Vendor Deleted',
   dependency_set:     'Dependency Set',
