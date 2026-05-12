@@ -23,6 +23,7 @@ import {
 // can render while clicks silently fail.
 import {
   loadFromStorage, loadTeamData, loadWorkOrders, loadAuditLog,
+  loadPortfolio,
   applyOpsProfile, applyNavCompactState, applyCompanyName,
   resetStorage, toggleNavCompact, COMPANY_KEY,
 } from './storage.js';
@@ -56,6 +57,10 @@ import {
   showNewWorkOrderModal, closeWorkOrderModal, commitNewWorkOrder,
   advanceWorkOrder, deleteWorkOrder,
 } from './views/workorders.js';
+import {
+  renderPortfolioView, commitAddProperty, commitAddVendor,
+  deleteProperty, deleteVendor,
+} from './views/portfolio.js';
 import {
   exportJSON, exportCSV, importJSON,
   copyStateToClipboard, pasteStateFromClipboard,
@@ -109,6 +114,8 @@ function switchView(view, tabEl) {
     renderTeamView();
   } else if (view === 'workorders') {
     renderWorkOrdersView();
+  } else if (view === 'portfolio') {
+    renderPortfolioView();
   }
 }
 
@@ -124,6 +131,7 @@ function initApp() {
   // If it adds a new visible panel, render it after loadFromStorage().
   loadTeamData();
   loadWorkOrders();
+  loadPortfolio();
   loadAuditLog();
   loadFromStorage();
   renderTrackingView();
@@ -131,6 +139,7 @@ function initApp() {
   updateStats();
   populateOwnerFilter();
   renderLegend();
+  renderPortfolioView();
   initWelcomeGuide();
   applyOpsProfile();
   renderLaunchPlan();
@@ -253,6 +262,12 @@ Object.assign(window, {
   commitNewWorkOrder,
   advanceWorkOrder,
   deleteWorkOrder,
+  // Portfolio tab: starter property and vendor registry.
+  renderPortfolioView,
+  commitAddProperty,
+  commitAddVendor,
+  deleteProperty,
+  deleteVendor,
   // Import/export tools: let users keep ownership of their data with plain files
   // or clipboard transfer instead of needing a hosted database.
   exportJSON,

@@ -1,7 +1,8 @@
 // localStorage persistence, toast notifications, and company profile helpers.
 import {
   orgData, teamData, setTeamData, workOrders, setWorkOrders,
-  auditLog, setAuditLog, ownerColors, defaultAffinities, AUDIT_LABELS,
+  auditLog, setAuditLog, portfolio, setPortfolio,
+  ownerColors, defaultAffinities, AUDIT_LABELS,
 } from './state.js';
 import { _isQuotaError, _slugify } from './utils.js';
 
@@ -12,6 +13,7 @@ export const OPS_PROFILE_KEY = 'pm-ops-profile-v1';
 export const NAV_COMPACT_KEY = 'pm-ops-nav-compact';
 export const TEAM_KEY        = 'pm-ops-team-v1';
 export const WORKORDERS_KEY  = 'pm-ops-workorders-v1';
+export const PORTFOLIO_KEY   = 'pm-ops-portfolio-v1';
 export const AUDIT_KEY       = 'pm-ops-audit-v1';
 export const GUIDE_KEY       = 'pm-ops-guide-dismissed';
 export const NOTIF_DATE_KEY  = 'pm-ops-notif-date';
@@ -152,6 +154,29 @@ export function loadWorkOrders() {
     if (raw) setWorkOrders(JSON.parse(raw) || []);
   } catch (e) {
     setWorkOrders([]);
+  }
+}
+
+// Portfolio persistence: starter property/vendor registry for beginner PMs.
+export function savePortfolio() {
+  try {
+    localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(portfolio));
+  } catch (e) {
+    if (_isQuotaError(e)) showSaveToast(true, true);
+  }
+}
+
+export function loadPortfolio() {
+  try {
+    const raw = localStorage.getItem(PORTFOLIO_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    setPortfolio({
+      properties: Array.isArray(parsed?.properties) ? parsed.properties : [],
+      vendors:    Array.isArray(parsed?.vendors)    ? parsed.vendors    : [],
+    });
+  } catch (e) {
+    setPortfolio({ properties: [], vendors: [] });
   }
 }
 

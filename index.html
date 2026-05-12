@@ -38,6 +38,7 @@
       &#128295; Work Orders
       <span class="tab-beacon" id="wo-tab-beacon" hidden></span>
     </div>
+    <div class="nav-tab" id="portfolio-tab" onclick="switchView('portfolio', this)">Portfolio</div>
   </div>
 
   <div class="controls" id="controls">
@@ -178,6 +179,12 @@
          Inner content rendered entirely by renderWorkOrdersView() in app.js. -->
     <div id="workorders-view" class="view-panel">
       <div id="workorders-view-inner"></div>
+    </div>
+
+    <!-- PORTFOLIO VIEW
+         Starter registry for properties, units, owners, and vendors. -->
+    <div id="portfolio-view" class="view-panel">
+      <div id="portfolio-view-inner"></div>
     </div>
   </div>
 

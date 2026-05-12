@@ -20,10 +20,12 @@ export function setCurrentView(v) { currentView = v; }
 export let teamData   = { employees: [] };
 export let workOrders = [];
 export let auditLog   = [];
+export let portfolio  = { properties: [], vendors: [] };
 
 export function setTeamData(v)   { teamData   = v; }
 export function setWorkOrders(v) { workOrders = v; }
 export function setAuditLog(v)   { auditLog   = v; }
+export function setPortfolio(v)  { portfolio  = v; }
 
 // ── Map interaction state ─────────────────────────────────────────────────────
 export const mapState = {
@@ -87,6 +89,10 @@ export const AUDIT_LABELS = {
   import_clipboard:   'Imported from Clipboard',
   wo_advanced:        'Work Order Advanced',
   wo_deleted:         'Work Order Deleted',
+  portfolio_property_added:   'Property Added',
+  portfolio_property_deleted: 'Property Deleted',
+  portfolio_vendor_added:     'Vendor Added',
+  portfolio_vendor_deleted:   'Vendor Deleted',
   dependency_set:     'Dependency Set',
   dependency_cleared: 'Dependency Cleared',
 };

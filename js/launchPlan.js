@@ -1,5 +1,5 @@
 import {
-  orgData, teamData, workOrders, ownerColors, countUnowned,
+  orgData, teamData, workOrders, portfolio, ownerColors, countUnowned,
 } from './state.js';
 import { getOpsProfile, getCompanyName, _showActionToast } from './storage.js';
 import { escapeHtml, _slugify } from './utils.js';
@@ -49,6 +49,12 @@ const FOCUS_BLUEPRINTS = {
 };
 
 const BASE_CHECKLIST = [
+  {
+    id: 'portfolio',
+    label: 'Add the first managed property and vendor',
+    detail: 'Record at least one property plus one reliable vendor so the operating map has real-world context.',
+    metric: () => portfolio.properties.length > 0 && portfolio.vendors.length > 0,
+  },
   {
     id: 'owners',
     label: 'Assign every red UNOWNED responsibility',
@@ -152,6 +158,7 @@ export function renderLaunchPlan() {
       </div>
     </div>
     <div class="launch-metrics-grid" aria-label="Launch readiness metrics">
+      ${renderMetricCard('Portfolio', String(snapshot.propertyCount), `${snapshot.unitCount} units / ${snapshot.vendorCount} vendors`, snapshot.propertyCount && snapshot.vendorCount ? 'good' : 'warn')}
       ${renderMetricCard('Owned tasks', `${snapshot.assignedTasks}/${snapshot.totalTasks}`, `${snapshot.unownedTasks} unowned`, snapshot.unownedTasks ? 'warn' : 'good')}
       ${renderMetricCard('Team roster', String(snapshot.employeeCount), snapshot.isStarterTeam ? 'sample roster' : 'real people', snapshot.isStarterTeam ? 'warn' : 'good')}
       ${renderMetricCard('Open repairs', String(snapshot.openWorkOrders), `${snapshot.unassignedWorkOrders} unassigned`, snapshot.unassignedWorkOrders ? 'warn' : 'good')}
@@ -375,12 +382,13 @@ function getReadinessScore(checklist, saved) {
   const checklistComplete = checklist.filter(item => saved[item.id] || item.metric()).length / Math.max(checklist.length, 1);
   const ownershipScore = snapshot.totalTasks ? snapshot.assignedTasks / snapshot.totalTasks : 0;
   const teamScore = snapshot.employeeCount && !snapshot.isStarterTeam ? 1 : 0.35;
+  const portfolioScore = (snapshot.propertyCount ? 0.6 : 0) + (snapshot.vendorCount ? 0.4 : 0);
   const maintenanceScore = snapshot.workOrderCount
     ? Math.max(0.25, 1 - (snapshot.unassignedWorkOrders / Math.max(snapshot.openWorkOrders, 1)))
     : 0.25;
   const riskPenalty = Math.min(0.25, ((snapshot.blockedTasks + snapshot.overdueTasks) / Math.max(snapshot.totalTasks, 1)) * 2);
   const score = Math.max(0, Math.min(100, Math.round(
-    ((ownershipScore * 0.36) + (teamScore * 0.24) + (maintenanceScore * 0.18) + (checklistComplete * 0.22) - riskPenalty) * 100
+    ((ownershipScore * 0.3) + (teamScore * 0.2) + (portfolioScore * 0.16) + (maintenanceScore * 0.16) + (checklistComplete * 0.18) - riskPenalty) * 100
   )));
 
   let label = 'Needs setup';
@@ -416,6 +424,9 @@ function getOperationsSnapshot() {
     workOrderCount: workOrders.length,
     openWorkOrders,
     unassignedWorkOrders,
+    propertyCount: portfolio.properties.length,
+    unitCount: portfolio.properties.reduce((sum, property) => sum + Number(property.units || 0), 0),
+    vendorCount: portfolio.vendors.length,
     employeeCount: teamData.employees.length,
     isStarterTeam: isStarterTeam(),
   };
@@ -425,6 +436,15 @@ function getCommandModules(snapshot) {
   return [
     {
       icon: '01',
+      title: 'Portfolio Basics',
+      status: snapshot.propertyCount ? `${snapshot.propertyCount} properties` : 'missing',
+      tone: snapshot.propertyCount && snapshot.vendorCount ? 'good' : 'warn',
+      detail: 'Capture properties, unit counts, owner/client names, and the starter vendor bench before daily work starts moving.',
+      button: 'Open Portfolio',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      icon: '02',
       title: 'Ownership Map',
       status: snapshot.unownedTasks ? `${snapshot.unownedTasks} gaps` : 'ready',
       tone: snapshot.unownedTasks ? 'warn' : 'good',
@@ -433,7 +453,7 @@ function getCommandModules(snapshot) {
       onclick: snapshot.unownedTasks ? 'showUnownedTasks()' : "switchView('map', document.querySelector('[onclick*=map]'))",
     },
     {
-      icon: '02',
+      icon: '03',
       title: 'Team Operating Model',
       status: snapshot.isStarterTeam ? 'sample team' : `${snapshot.employeeCount} people`,
       tone: snapshot.isStarterTeam ? 'warn' : 'good',
@@ -442,7 +462,7 @@ function getCommandModules(snapshot) {
       onclick: 'startTeamSetup()',
     },
     {
-      icon: '03',
+      icon: '04',
       title: 'Maintenance Flow',
       status: snapshot.workOrderCount ? `${snapshot.openWorkOrders} open` : 'not tested',
       tone: snapshot.unassignedWorkOrders || !snapshot.workOrderCount ? 'warn' : 'good',
@@ -451,7 +471,7 @@ function getCommandModules(snapshot) {
       onclick: snapshot.workOrderCount ? "switchView('workorders', document.getElementById('wo-tab'))" : 'startWorkOrderSetup()',
     },
     {
-      icon: '04',
+      icon: '05',
       title: 'SOP Handbook',
       status: snapshot.unownedTasks ? 'draft only' : 'exportable',
       tone: snapshot.unownedTasks ? 'neutral' : 'good',
@@ -464,6 +484,24 @@ function getCommandModules(snapshot) {
 
 function getRiskQueue(snapshot) {
   const risks = [];
+  if (!snapshot.propertyCount) {
+    risks.push({
+      label: 'Portfolio',
+      title: 'No managed properties are recorded',
+      detail: 'Add at least one property with units and owner/client context.',
+      tone: 'warn',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
+  if (!snapshot.vendorCount) {
+    risks.push({
+      label: 'Vendors',
+      title: 'No starter vendor bench exists',
+      detail: 'Add at least one vendor before the first urgent repair hits.',
+      tone: 'warn',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
   if (snapshot.isStarterTeam) {
     risks.push({
       label: 'Team',
@@ -513,10 +551,19 @@ function getRiskQueue(snapshot) {
 
 function getNextAction() {
   // Beginner guidance engine. Order is intentional:
-  // personalize sample roster -> close UNOWNED task gaps -> create maintenance
-  // workflow -> export handbook. Changing this order changes first-run UX.
+  // define portfolio -> personalize sample roster -> close UNOWNED task gaps ->
+  // create maintenance workflow -> export handbook. Changing this order changes first-run UX.
   const unowned = countUnowned();
   const openUnassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+
+  if (!portfolio.properties.length || !portfolio.vendors.length) {
+    return {
+      title: 'Add your first property and vendor',
+      detail: 'Start by recording what you manage and who you can call for repairs. This makes the rest of the operating map feel real.',
+      button: 'Open Portfolio',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    };
+  }
 
   if (!teamData.employees.length || isStarterTeam()) {
     return {
