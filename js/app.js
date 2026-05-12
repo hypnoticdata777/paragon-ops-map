@@ -58,8 +58,8 @@ import {
   advanceWorkOrder, deleteWorkOrder,
 } from './views/workorders.js';
 import {
-  renderPortfolioView, commitAddProperty, commitAddVendor,
-  deleteProperty, deleteVendor,
+  renderPortfolioView, commitAddProperty, commitAddTenant, commitAddVendor,
+  deleteProperty, deleteTenant, deleteVendor,
 } from './views/portfolio.js';
 import {
   exportJSON, exportCSV, importJSON,
@@ -265,8 +265,10 @@ Object.assign(window, {
   // Portfolio tab: starter property and vendor registry.
   renderPortfolioView,
   commitAddProperty,
+  commitAddTenant,
   commitAddVendor,
   deleteProperty,
+  deleteTenant,
   deleteVendor,
   // Import/export tools: let users keep ownership of their data with plain files
   // or clipboard transfer instead of needing a hosted database.

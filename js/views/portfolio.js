@@ -7,6 +7,19 @@ function totalUnits() {
   return portfolio.properties.reduce((sum, property) => sum + Number(property.units || 0), 0);
 }
 
+function propertyOptions() {
+  return [
+    '<option value="">Select property</option>',
+    ...portfolio.properties.map(property => (
+      `<option value="${escapeHtml(property.id)}">${escapeHtml(property.name)}</option>`
+    ))
+  ].join('');
+}
+
+function propertyName(propertyId) {
+  return portfolio.properties.find(property => property.id === propertyId)?.name || 'Unassigned property';
+}
+
 export function renderPortfolioView() {
   const inner = document.getElementById('portfolio-view-inner');
   if (!inner) return;
@@ -16,12 +29,13 @@ export function renderPortfolioView() {
       <div class="portfolio-header">
         <div>
           <div class="portfolio-kicker">Portfolio Starter</div>
-          <h2>Properties, units, owners, and vendors.</h2>
-          <p>Keep the beginner registry simple: what you manage, who owns it, and who you call when something breaks.</p>
+          <h2>Properties, units, owners, tenants, and vendors.</h2>
+          <p>Keep the beginner registry simple: what you manage, who lives there, who owns it, and who you call when something breaks.</p>
         </div>
         <div class="portfolio-summary">
           <div><strong>${portfolio.properties.length}</strong><span>properties</span></div>
           <div><strong>${totalUnits()}</strong><span>units</span></div>
+          <div><strong>${portfolio.tenants.length}</strong><span>tenants</span></div>
           <div><strong>${portfolio.vendors.length}</strong><span>vendors</span></div>
         </div>
       </div>
@@ -53,6 +67,49 @@ export function renderPortfolioView() {
             </label>
           </div>
           <button class="btn btn-primary portfolio-submit" onclick="commitAddProperty()">Add Property</button>
+        </section>
+
+        <section class="portfolio-panel">
+          <div class="portfolio-panel-head">
+            <div>
+              <h3>Add Tenant</h3>
+              <p>Know who is connected to each unit before requests and renewals arrive.</p>
+            </div>
+          </div>
+          <div class="portfolio-form-grid">
+            <label>
+              <span>Tenant name</span>
+              <input id="tenant-name" class="portfolio-input" type="text" placeholder="e.g. Maya Chen" maxlength="80">
+            </label>
+            <label>
+              <span>Property</span>
+              <select id="tenant-property" class="portfolio-input">
+                ${propertyOptions()}
+              </select>
+            </label>
+            <label>
+              <span>Unit</span>
+              <input id="tenant-unit" class="portfolio-input" type="text" placeholder="2B" maxlength="30">
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="tenant-status" class="portfolio-input">
+                <option value="active">Active</option>
+                <option value="applicant">Applicant</option>
+                <option value="notice">On notice</option>
+                <option value="past">Past tenant</option>
+              </select>
+            </label>
+            <label>
+              <span>Phone</span>
+              <input id="tenant-phone" class="portfolio-input" type="tel" placeholder="(555) 000-0000" maxlength="40">
+            </label>
+            <label>
+              <span>Email</span>
+              <input id="tenant-email" class="portfolio-input" type="email" placeholder="tenant@example.com" maxlength="90">
+            </label>
+          </div>
+          <button class="btn btn-primary portfolio-submit" onclick="commitAddTenant()">Add Tenant</button>
         </section>
 
         <section class="portfolio-panel">
@@ -98,6 +155,17 @@ export function renderPortfolioView() {
 
         <section class="portfolio-list-panel">
           <div class="portfolio-list-head">
+            <h3>Tenant Roster</h3>
+            <span>${portfolio.tenants.length} total</span>
+          </div>
+          ${portfolio.tenants.length
+            ? `<div class="portfolio-list">${portfolio.tenants.map(renderTenantCard).join('')}</div>`
+            : '<div class="portfolio-empty">Add the first tenant so maintenance and communication have real unit context.</div>'
+          }
+        </section>
+
+        <section class="portfolio-list-panel">
+          <div class="portfolio-list-head">
             <h3>Vendor Bench</h3>
             <span>${portfolio.vendors.length} total</span>
           </div>
@@ -110,11 +178,16 @@ export function renderPortfolioView() {
     </div>
   `;
 
-  ['property-name', 'property-units', 'property-owner', 'property-notes', 'vendor-name', 'vendor-trade', 'vendor-phone', 'vendor-email'].forEach(id => {
+  [
+    'property-name', 'property-units', 'property-owner', 'property-notes',
+    'tenant-name', 'tenant-property', 'tenant-unit', 'tenant-status', 'tenant-phone', 'tenant-email',
+    'vendor-name', 'vendor-trade', 'vendor-phone', 'vendor-email'
+  ].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.onkeydown = e => {
       if (e.key === 'Enter') {
         if (id.startsWith('property')) commitAddProperty();
+        else if (id.startsWith('tenant')) commitAddTenant();
         else commitAddVendor();
       }
     };
@@ -140,6 +213,30 @@ export function commitAddProperty() {
   });
   savePortfolio();
   logAudit('portfolio_property_added', { title: name });
+  renderPortfolioView();
+  renderLaunchPlan();
+}
+
+export function commitAddTenant() {
+  const nameEl = document.getElementById('tenant-name');
+  const name = nameEl?.value.trim();
+  if (!name) {
+    shakeInput(nameEl);
+    nameEl?.focus();
+    return;
+  }
+  portfolio.tenants.unshift({
+    id: `tenant-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    name,
+    propertyId: document.getElementById('tenant-property')?.value || '',
+    unit: document.getElementById('tenant-unit')?.value.trim() || '',
+    status: document.getElementById('tenant-status')?.value || 'active',
+    phone: document.getElementById('tenant-phone')?.value.trim() || '',
+    email: document.getElementById('tenant-email')?.value.trim() || '',
+    createdAt: new Date().toISOString(),
+  });
+  savePortfolio();
+  logAudit('portfolio_tenant_added', { title: name });
   renderPortfolioView();
   renderLaunchPlan();
 }
@@ -176,6 +273,20 @@ export function deleteProperty(id) {
   });
   savePortfolio();
   logAudit('portfolio_property_deleted', { title: property.name });
+  renderPortfolioView();
+  renderLaunchPlan();
+}
+
+export function deleteTenant(id) {
+  const tenant = portfolio.tenants.find(t => t.id === id);
+  if (!tenant) return;
+  if (!confirm(`Delete tenant?\n\n${tenant.name}`)) return;
+  setPortfolio({
+    ...portfolio,
+    tenants: portfolio.tenants.filter(t => t.id !== id),
+  });
+  savePortfolio();
+  logAudit('portfolio_tenant_deleted', { title: tenant.name });
   renderPortfolioView();
   renderLaunchPlan();
 }
@@ -217,6 +328,21 @@ function renderVendorCard(vendor) {
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
       </div>
       <button class="portfolio-delete-btn" onclick="deleteVendor('${vendor.id}')" aria-label="Delete ${escapeHtml(vendor.name)}">Delete</button>
+    </article>
+  `;
+}
+
+function renderTenantCard(tenant) {
+  const contact = [tenant.phone, tenant.email].filter(Boolean).join(' / ');
+  const unitLabel = tenant.unit ? `Unit ${tenant.unit}` : 'No unit recorded';
+  return `
+    <article class="portfolio-card">
+      <div>
+        <strong>${escapeHtml(tenant.name)}</strong>
+        <span>${escapeHtml(propertyName(tenant.propertyId))} / ${escapeHtml(unitLabel)} / ${escapeHtml(tenant.status || 'active')}</span>
+        ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
+      </div>
+      <button class="portfolio-delete-btn" onclick="deleteTenant('${tenant.id}')" aria-label="Delete ${escapeHtml(tenant.name)}">Delete</button>
     </article>
   `;
 }
