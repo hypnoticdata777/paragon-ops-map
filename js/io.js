@@ -1,10 +1,10 @@
 // Export / Import / Clipboard sync / Undo stack.
 import {
   orgData, teamData, setTeamData, workOrders, setWorkOrders,
-  _undoSnapshot, setUndoSnapshot, currentView,
+  portfolio, setPortfolio, _undoSnapshot, setUndoSnapshot, currentView,
 } from './state.js';
 import {
-  saveToStorage, saveTeamData, saveWorkOrders, logAudit,
+  saveToStorage, saveTeamData, saveWorkOrders, savePortfolio, logAudit,
   getCompanyName, applyCompanyName, COMPANY_KEY,
   _showActionToast, _fileSlug,
 } from './storage.js';
@@ -13,6 +13,7 @@ import { updateStats } from './ui.js';
 import { renderTrackingView, populateOwnerFilter } from './views/tracking.js';
 import { renderMapControls, renderFlowMap } from './views/map.js';
 import { renderTeamView, renderLegend } from './views/team.js';
+import { renderPortfolioView } from './views/portfolio.js';
 
 // ── Undo stack (single-level, before bulk ops) ────────────────────────────────
 export function _saveUndoSnapshot() {
@@ -89,12 +90,21 @@ function _applyImportedState(data) {
     saveWorkOrders();
   }
 
+  if (data.portfolio) {
+    setPortfolio({
+      properties: Array.isArray(data.portfolio.properties) ? data.portfolio.properties : [],
+      vendors:    Array.isArray(data.portfolio.vendors)    ? data.portfolio.vendors    : [],
+    });
+    savePortfolio();
+  }
+
   saveToStorage();
   renderTrackingView();
   updateStats();
   document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
   populateOwnerFilter();
   renderLegend();
+  renderPortfolioView();
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
@@ -112,7 +122,10 @@ export function exportJSON() {
         priority: t.priority || 'medium',
         dueDate:  t.dueDate  || null
       }))
-    }))
+    })),
+    team:       teamData,
+    workOrders: workOrders,
+    portfolio:  portfolio
   };
   _downloadBlob(
     JSON.stringify(payload, null, 2),
@@ -192,7 +205,8 @@ export function copyStateToClipboard() {
       }))
     })),
     team:       teamData,
-    workOrders: workOrders
+    workOrders: workOrders,
+    portfolio:  portfolio
   }, null, 2);
 
   if (!navigator.clipboard) {
