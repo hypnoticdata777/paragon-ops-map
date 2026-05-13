@@ -2345,12 +2345,14 @@ body {
   line-height: 1.35;
 }
 
-.wo-vendor-label {
+.wo-vendor-label,
+.wo-resident-label {
   font-size: 11px;
   color: #78909c;
 }
 
-.wo-vendor-label strong {
+.wo-vendor-label strong,
+.wo-resident-label strong {
   color: #546e7a;
   font-weight: 600;
 }
