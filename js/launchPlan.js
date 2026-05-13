@@ -173,6 +173,93 @@ const CRITICAL_COVERAGE_AREAS = [
   },
 ];
 
+const SEVEN_DAY_PLAN = [
+  {
+    day: 1,
+    title: 'Build the source of truth',
+    base: 'Add your first properties, units, tenants, owner/client context, and vendor bench.',
+    focus: {
+      stability: 'Keep the registry simple and complete before assigning more work.',
+      maintenance: 'Prioritize emergency vendors and access notes for every property.',
+      growth: 'Separate active doors from upcoming doors so growth work does not blur current operations.',
+      compliance: 'Capture owner/client and tenant contact context cleanly for notices and recordkeeping.',
+    },
+    action: { label: 'Open Portfolio', onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))" },
+  },
+  {
+    day: 2,
+    title: 'Replace sample roles with real people',
+    base: 'Add the team, choose department affinities, and confirm who should own each operating lane.',
+    focus: {
+      stability: 'Make sure no critical lane depends on one overloaded person.',
+      maintenance: 'Name who watches intake, dispatches vendors, and follows up daily.',
+      growth: 'Separate leasing capacity from daily operations capacity.',
+      compliance: 'Name who owns notices, records, insurance, and compliance review.',
+    },
+    action: { label: 'Open Team', onclick: 'startTeamSetup()' },
+  },
+  {
+    day: 3,
+    title: 'Close ownership gaps',
+    base: 'Work through UNOWNED tasks and assign the highest-risk responsibilities first.',
+    focus: {
+      stability: 'Start with tenant communication, rent collection, maintenance, and owner updates.',
+      maintenance: 'Start with emergency response, work order triage, vendor dispatch, and access coordination.',
+      growth: 'Start with showings, applications, move-ins, and owner onboarding.',
+      compliance: 'Start with notices, inspections, fair housing controls, and reporting.',
+    },
+    action: { label: 'Show Gaps', onclick: 'showUnownedTasks()' },
+  },
+  {
+    day: 4,
+    title: 'Test maintenance intake',
+    base: 'Create one realistic work order with property, tenant, vendor, assignee, cost, priority, due date, and notes.',
+    focus: {
+      stability: 'Use a routine tenant request to prove the daily workflow.',
+      maintenance: 'Use a high-priority repair and walk it from submitted to scheduled.',
+      growth: 'Use a move-in or make-ready issue so leasing handoff is visible.',
+      compliance: 'Use a repair with documentation or owner approval risk.',
+    },
+    action: { label: 'Create Work Order', onclick: 'startWorkOrderSetup()' },
+  },
+  {
+    day: 5,
+    title: 'Review critical coverage',
+    base: 'Check leasing, rent collection, inspections, maintenance, compliance, renewals, and emergencies.',
+    focus: {
+      stability: 'Confirm every critical lane is at least 70% covered.',
+      maintenance: 'Confirm maintenance and emergencies have named primary and backup coverage.',
+      growth: 'Confirm leasing, applications, and move-ins can absorb new doors.',
+      compliance: 'Confirm compliance, inspections, reporting, and collections are covered.',
+    },
+    action: { label: 'Review Coverage', onclick: "focusCoverageArea('maintenance')" },
+  },
+  {
+    day: 6,
+    title: 'Set the weekly operating rhythm',
+    base: 'Decide what gets reviewed daily, weekly, and monthly so the map stays alive.',
+    focus: {
+      stability: 'Create a daily gaps review and weekly owner update rhythm.',
+      maintenance: 'Create a daily open-repair review and weekly vendor follow-up review.',
+      growth: 'Create a weekly leasing pipeline and onboarding capacity review.',
+      compliance: 'Create a weekly notices, inspections, and reporting review.',
+    },
+    action: { label: 'Open Tracking', onclick: "switchView('tracking', document.querySelector('.nav-tab'))" },
+  },
+  {
+    day: 7,
+    title: 'Export the operating manual',
+    base: 'Download the handbook and launch plan, then review them with the team as the first SOP draft.',
+    focus: {
+      stability: 'Use the handbook as the team baseline before adding more process.',
+      maintenance: 'Use the handbook to document escalation, vendor dispatch, and repair closeout.',
+      growth: 'Use the handbook to document leasing-to-operations handoffs.',
+      compliance: 'Use the handbook to document evidence, notices, and owner reporting expectations.',
+    },
+    action: { label: 'Download Handbook', onclick: 'downloadLaunchHandbook()' },
+  },
+];
+
 export function renderLaunchPlan() {
   // Called by app init, ui.updateStats(), onboarding submit, checklist changes,
   // and guided action handlers. Keep this render idempotent and derived from
@@ -193,6 +280,7 @@ export function renderLaunchPlan() {
   const commandModules = getCommandModules(snapshot);
   const riskQueue = getRiskQueue(snapshot);
   const coverageAreas = getCriticalCoverageAreas();
+  const sevenDayPlan = getSevenDayPlan(profile);
   const blueprintDepts = blueprint.departments
     .map(id => orgData.departments.find(dept => dept.id === id))
     .filter(Boolean);
@@ -266,6 +354,18 @@ export function renderLaunchPlan() {
       <div class="launch-score" aria-label="${completeCount} of ${checklist.length} launch steps complete">
         <strong>${completeCount}/${checklist.length}</strong>
         <span>ready steps</span>
+      </div>
+    </div>
+    <div class="launch-week-panel" aria-label="First seven days launch plan">
+      <div class="launch-week-head">
+        <div>
+          <div class="launch-kicker">First 7 Days</div>
+          <h3>${escapeHtml(sevenDayPlan.heading)}</h3>
+          <p>${escapeHtml(sevenDayPlan.summary)}</p>
+        </div>
+      </div>
+      <div class="launch-week-grid">
+        ${sevenDayPlan.days.map(renderSevenDayItem).join('')}
       </div>
     </div>
     <div class="launch-plan-grid">
@@ -366,6 +466,7 @@ export function downloadLaunchPlan() {
   const checklist = getLaunchChecklist(focus);
   const gaps = getLaunchGaps();
   const coverage = getCriticalCoverageAreas();
+  const sevenDayPlan = getSevenDayPlan(profile);
   const company = getCompanyName();
   const lines = [
     `# ${company} Launch Plan`,
@@ -376,6 +477,9 @@ export function downloadLaunchPlan() {
     '',
     '## First-Week Checklist',
     ...checklist.map(item => `- [${saved[item.id] || item.metric() ? 'x' : ' '}] ${item.label} - ${item.detail}`),
+    '',
+    '## First 7 Days',
+    ...sevenDayPlan.days.map(item => `- Day ${item.day}: ${item.title} - ${item.detail}`),
     '',
     '## Critical Coverage',
     ...coverage.map(area => `- ${area.label}: ${area.coveragePct}% covered (${area.unownedCount} unowned / ${area.taskCount} tasks). Owners: ${area.primaryOwners}`),
@@ -457,8 +561,40 @@ function renderCoverageArea(area) {
   `;
 }
 
+function renderSevenDayItem(item) {
+  return `
+    <article class="launch-day-card">
+      <div class="launch-day-num">Day ${item.day}</div>
+      <h4>${escapeHtml(item.title)}</h4>
+      <p>${escapeHtml(item.detail)}</p>
+      <button class="btn btn-secondary launch-day-action" onclick="${item.action.onclick}">
+        ${escapeHtml(item.action.label)}
+      </button>
+    </article>
+  `;
+}
+
 function getLaunchChecklist(focus) {
   return [...BASE_CHECKLIST, ...(FOCUS_CHECKLIST[focus] || [])];
+}
+
+function getSevenDayPlan(profile) {
+  const focus = profile.focus || 'stability';
+  const portfolioSize = profile.portfolioSize || 'mid';
+  const sizeGuidance = {
+    small: 'Keep it lean: one owner per lane, one backup for maintenance and emergencies, and a simple weekly review.',
+    mid: 'Balance coverage: identify primary owners, backup owners, and daily review points before volume spreads out.',
+    large: 'Control handoffs early: split primary, backup, and escalation ownership before work crosses teams.',
+  };
+
+  return {
+    heading: `${PROFILE_LABELS[portfolioSize] || PROFILE_LABELS.mid} / ${PROFILE_LABELS[focus] || PROFILE_LABELS.stability}`,
+    summary: sizeGuidance[portfolioSize] || sizeGuidance.mid,
+    days: SEVEN_DAY_PLAN.map(day => ({
+      ...day,
+      detail: day.focus[focus] || day.base,
+    })),
+  };
 }
 
 function getReadinessScore(checklist, saved) {
