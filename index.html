@@ -260,11 +260,18 @@
     <div class="wo-form-grid">
       <div class="wo-form-group">
         <label class="wo-form-label" for="wo-property">Property *</label>
-        <input id="wo-property" type="text" class="wo-form-input" placeholder="e.g. 123 Main St" maxlength="80" autocomplete="off">
+        <input id="wo-property" type="text" class="wo-form-input" placeholder="e.g. 123 Main St" maxlength="80" autocomplete="off" list="wo-property-options">
+        <datalist id="wo-property-options"></datalist>
       </div>
       <div class="wo-form-group">
         <label class="wo-form-label" for="wo-unit">Unit</label>
-        <input id="wo-unit" type="text" class="wo-form-input" placeholder="e.g. 2B" maxlength="20" autocomplete="off">
+        <input id="wo-unit" type="text" class="wo-form-input" placeholder="e.g. 2B" maxlength="20" autocomplete="off" list="wo-unit-options">
+        <datalist id="wo-unit-options"></datalist>
+      </div>
+      <div class="wo-form-group">
+        <label class="wo-form-label" for="wo-tenant">Tenant / Resident</label>
+        <input id="wo-tenant" type="text" class="wo-form-input" placeholder="e.g. Maya Chen" maxlength="80" autocomplete="off" list="wo-tenant-options">
+        <datalist id="wo-tenant-options"></datalist>
       </div>
       <div class="wo-form-group wo-form-group--full">
         <label class="wo-form-label" for="wo-title">Issue *</label>
@@ -294,7 +301,8 @@
       </div>
       <div class="wo-form-group">
         <label class="wo-form-label" for="wo-vendor">Vendor</label>
-        <input id="wo-vendor" type="text" class="wo-form-input" placeholder="e.g. Ace Plumbing" maxlength="60" autocomplete="off">
+        <input id="wo-vendor" type="text" class="wo-form-input" placeholder="e.g. Ace Plumbing" maxlength="60" autocomplete="off" list="wo-vendor-options">
+        <datalist id="wo-vendor-options"></datalist>
       </div>
       <div class="wo-form-group">
         <label class="wo-form-label" for="wo-cost">Est. Cost ($)</label>

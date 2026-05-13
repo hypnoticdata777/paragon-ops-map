@@ -1,6 +1,6 @@
 // Work Orders kanban: 4-column pipeline (Submitted → Scheduled → In Progress → Completed).
 import {
-  workOrders, setWorkOrders,
+  workOrders, setWorkOrders, portfolio,
   WO_STATUS_CYCLE, WO_STATUS_LABELS, WO_STATUS_COLORS,
   PRIORITY_LABELS, getEmployeeHex, getEmployeeNames,
 } from '../state.js';
@@ -10,6 +10,13 @@ import { updateWorkOrderBeacon } from '../ui.js';
 
 // ── Beacon ────────────────────────────────────────────────────────────────────
 export { updateWorkOrderBeacon };
+
+function setDatalistOptions(id, values) {
+  const list = document.getElementById(id);
+  if (!list) return;
+  const unique = [...new Set(values.filter(Boolean).map(value => String(value).trim()).filter(Boolean))];
+  list.innerHTML = unique.map(value => `<option value="${escapeHtml(value)}"></option>`).join('');
+}
 
 // ── Card builder ──────────────────────────────────────────────────────────────
 function buildWorkOrderCard(wo) {
@@ -33,6 +40,7 @@ function buildWorkOrderCard(wo) {
       </div>
       <div class="wo-card-title">${escapeHtml(wo.title)}</div>
       ${wo.notes  ? `<div class="wo-card-notes">${escapeHtml(wo.notes)}</div>` : ''}
+      ${wo.tenant ? `<div class="wo-resident-label">Resident: <strong>${escapeHtml(wo.tenant)}</strong></div>` : ''}
       ${wo.vendor ? `<div class="wo-vendor-label">&#128295; <strong>${escapeHtml(wo.vendor)}</strong></div>` : ''}
       <div class="wo-card-footer">
         <span class="wo-assignee-badge${isUnassigned ? ' owner-unowned' : ''}"
@@ -115,7 +123,12 @@ export function showNewWorkOrderModal() {
     sel.appendChild(opt);
   });
 
-  ['wo-property','wo-unit','wo-title','wo-notes','wo-duedate','wo-vendor','wo-cost'].forEach(id => {
+  setDatalistOptions('wo-property-options', portfolio.properties.map(property => property.name));
+  setDatalistOptions('wo-tenant-options', portfolio.tenants.map(tenant => tenant.name));
+  setDatalistOptions('wo-unit-options', portfolio.tenants.map(tenant => tenant.unit));
+  setDatalistOptions('wo-vendor-options', portfolio.vendors.map(vendor => vendor.name));
+
+  ['wo-property','wo-unit','wo-tenant','wo-title','wo-notes','wo-duedate','wo-vendor','wo-cost'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = '';
@@ -162,6 +175,7 @@ export function commitNewWorkOrder() {
     id:        `wo-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
     property,
     unit:      document.getElementById('wo-unit').value.trim(),
+    tenant:    document.getElementById('wo-tenant')?.value.trim() || '',
     title,
     notes:     document.getElementById('wo-notes').value.trim(),
     priority:  document.getElementById('wo-priority').value,
