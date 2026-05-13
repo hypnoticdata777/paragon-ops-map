@@ -70,6 +70,7 @@ import {
   renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
   focusLaunchDepartment, downloadLaunchPlan,
   startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
+  focusCoverageArea,
 } from './launchPlan.js';
 import { downloadOperationsHandbook } from './handbook.js';
 
@@ -296,6 +297,7 @@ Object.assign(window, {
   toggleLaunchChecklistItem,
   resetLaunchChecklist,
   focusLaunchDepartment,
+  focusCoverageArea,
   downloadLaunchPlan,
   startTeamSetup,
   showUnownedTasks,

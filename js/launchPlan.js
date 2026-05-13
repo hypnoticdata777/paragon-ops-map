@@ -62,6 +62,12 @@ const BASE_CHECKLIST = [
     metric: () => countUnowned() === 0,
   },
   {
+    id: 'critical-coverage',
+    label: 'Cover the seven critical PM responsibility lanes',
+    detail: 'Confirm leasing, rent collection, inspections, maintenance, compliance, renewals, and emergencies have named owners.',
+    metric: () => getCriticalCoverageAreas().every(area => area.coveragePct >= 70),
+  },
+  {
     id: 'maintenance',
     label: 'Define maintenance intake and escalation',
     detail: 'Name who monitors the queue, who dispatches vendors, and who handles after-hours emergencies.',
@@ -122,6 +128,51 @@ const FOCUS_CHECKLIST = {
   ],
 };
 
+const CRITICAL_COVERAGE_AREAS = [
+  {
+    id: 'leasing',
+    label: 'Leasing',
+    detail: 'Listings, showings, applications, and move-in handoff.',
+    departments: ['leasing', 'applications', 'move-ins'],
+  },
+  {
+    id: 'rent',
+    label: 'Rent Collection',
+    detail: 'Delinquencies, ledgers, notices, and payment follow-up.',
+    departments: ['delinquency', 'accounting'],
+  },
+  {
+    id: 'inspections',
+    label: 'Inspections',
+    detail: 'Move-ins, move-outs, turns, field visits, and condition reports.',
+    departments: ['move-ins', 'move-outs', 'unit-turns', 'field-services'],
+  },
+  {
+    id: 'maintenance',
+    label: 'Maintenance',
+    detail: 'Intake, triage, vendors, emergency dispatch, and closeout.',
+    departments: ['maintenance', 'vendors'],
+  },
+  {
+    id: 'compliance',
+    label: 'Compliance',
+    detail: 'Fair housing, notices, insurance, records, and risk controls.',
+    departments: ['compliance', 'reporting'],
+  },
+  {
+    id: 'renewals',
+    label: 'Renewals',
+    detail: 'Rent increases, lease questions, move-outs, and owner alignment.',
+    departments: ['tenant-comms', 'owner-relations', 'leasing'],
+  },
+  {
+    id: 'emergencies',
+    label: 'Emergencies',
+    detail: 'After-hours repair response, access, vendors, and tenant updates.',
+    departments: ['maintenance', 'vendors', 'field-services', 'tenant-comms'],
+  },
+];
+
 export function renderLaunchPlan() {
   // Called by app init, ui.updateStats(), onboarding submit, checklist changes,
   // and guided action handlers. Keep this render idempotent and derived from
@@ -141,6 +192,7 @@ export function renderLaunchPlan() {
   const snapshot = getOperationsSnapshot();
   const commandModules = getCommandModules(snapshot);
   const riskQueue = getRiskQueue(snapshot);
+  const coverageAreas = getCriticalCoverageAreas();
   const blueprintDepts = blueprint.departments
     .map(id => orgData.departments.find(dept => dept.id === id))
     .filter(Boolean);
@@ -176,6 +228,22 @@ export function renderLaunchPlan() {
     </div>
     <div class="launch-command-grid" aria-label="Beginner property manager modules">
       ${commandModules.map(renderCommandModule).join('')}
+    </div>
+    <div class="launch-coverage-panel" aria-label="Critical responsibility coverage">
+      <div class="launch-coverage-head">
+        <div>
+          <div class="launch-kicker">Task Ownership Map</div>
+          <h3>Critical PM coverage</h3>
+          <p>These are the seven responsibility lanes a beginner property manager needs named before the work gets noisy.</p>
+        </div>
+        <div class="launch-coverage-score">
+          <strong>${coverageAreas.filter(area => area.coveragePct === 100).length}/${coverageAreas.length}</strong>
+          <span>fully covered</span>
+        </div>
+      </div>
+      <div class="launch-coverage-grid">
+        ${coverageAreas.map(renderCoverageArea).join('')}
+      </div>
     </div>
     <div class="launch-risk-panel">
       <div>
@@ -297,6 +365,7 @@ export function downloadLaunchPlan() {
   const saved = readChecklistState();
   const checklist = getLaunchChecklist(focus);
   const gaps = getLaunchGaps();
+  const coverage = getCriticalCoverageAreas();
   const company = getCompanyName();
   const lines = [
     `# ${company} Launch Plan`,
@@ -307,6 +376,9 @@ export function downloadLaunchPlan() {
     '',
     '## First-Week Checklist',
     ...checklist.map(item => `- [${saved[item.id] || item.metric() ? 'x' : ' '}] ${item.label} - ${item.detail}`),
+    '',
+    '## Critical Coverage',
+    ...coverage.map(area => `- ${area.label}: ${area.coveragePct}% covered (${area.unownedCount} unowned / ${area.taskCount} tasks). Owners: ${area.primaryOwners}`),
     '',
     '## Setup Gaps',
     ...(gaps.length ? gaps.map(gap => `- ${gap.title}: ${gap.detail}`) : ['- No major setup gaps detected.']),
@@ -373,6 +445,18 @@ function renderRiskItem(risk) {
   `;
 }
 
+function renderCoverageArea(area) {
+  const tone = area.coveragePct === 100 ? 'good' : area.coveragePct >= 70 ? 'warn' : 'danger';
+  return `
+    <button class="launch-coverage-card launch-coverage-card--${tone}" onclick="focusCoverageArea('${area.id}')">
+      <span>${escapeHtml(area.label)}</span>
+      <strong>${area.coveragePct}%</strong>
+      <small>${area.unownedCount} unowned / ${area.taskCount} tasks</small>
+      <em>${escapeHtml(area.primaryOwners)}</em>
+    </button>
+  `;
+}
+
 function getLaunchChecklist(focus) {
   return [...BASE_CHECKLIST, ...(FOCUS_CHECKLIST[focus] || [])];
 }
@@ -433,6 +517,33 @@ function getOperationsSnapshot() {
   };
 }
 
+function getCriticalCoverageAreas() {
+  return CRITICAL_COVERAGE_AREAS.map(area => {
+    const depts = area.departments
+      .map(id => orgData.departments.find(dept => dept.id === id))
+      .filter(Boolean);
+    const tasks = depts.flatMap(dept => dept.tasks);
+    const unownedCount = tasks.filter(task => task.owner === 'UNOWNED').length;
+    const ownerCounts = new Map();
+    tasks.forEach(task => {
+      if (task.owner !== 'UNOWNED') ownerCounts.set(task.owner, (ownerCounts.get(task.owner) || 0) + 1);
+    });
+    const primaryOwners = [...ownerCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name)
+      .join(', ') || 'No named owner';
+
+    return {
+      ...area,
+      taskCount: tasks.length,
+      unownedCount,
+      primaryOwners,
+      coveragePct: tasks.length ? Math.round(((tasks.length - unownedCount) / tasks.length) * 100) : 0,
+    };
+  });
+}
+
 function getCommandModules(snapshot) {
   return [
     {
@@ -485,6 +596,16 @@ function getCommandModules(snapshot) {
 
 function getRiskQueue(snapshot) {
   const risks = [];
+  const weakCoverage = getCriticalCoverageAreas().filter(area => area.coveragePct < 70);
+  if (weakCoverage.length) {
+    risks.push({
+      label: 'Ownership Map',
+      title: `${weakCoverage.length} critical coverage lane${weakCoverage.length === 1 ? '' : 's'} under 70%`,
+      detail: `${weakCoverage.map(area => area.label).slice(0, 3).join(', ')} need clearer ownership.`,
+      tone: 'danger',
+      onclick: `focusCoverageArea('${weakCoverage[0].id}')`,
+    });
+  }
   if (!snapshot.propertyCount) {
     risks.push({
       label: 'Portfolio',
@@ -613,6 +734,23 @@ function getNextAction() {
 function switchToView(view, tabRef) {
   const tabEl = typeof tabRef === 'string' ? document.getElementById(tabRef) : tabRef;
   if (window.switchView && tabEl) window.switchView(view, tabEl);
+}
+
+export function focusCoverageArea(areaId) {
+  const area = CRITICAL_COVERAGE_AREAS.find(item => item.id === areaId);
+  if (!area) return;
+  switchToView('tracking', document.querySelector('.nav-tab'));
+  area.departments.forEach(deptId => {
+    const deptEl = document.querySelector(`.department[data-id="${deptId}"]`);
+    if (!deptEl) return;
+    deptEl.style.display = '';
+    deptEl.classList.add('expanded', 'launch-highlight');
+    setTimeout(() => deptEl.classList.remove('launch-highlight'), 1600);
+  });
+  const firstDept = area.departments
+    .map(deptId => document.querySelector(`.department[data-id="${deptId}"]`))
+    .find(Boolean);
+  firstDept?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function isStarterTeam() {
