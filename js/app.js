@@ -62,7 +62,8 @@ import {
   deleteProperty, deleteTenant, deleteVendor,
 } from './views/portfolio.js';
 import {
-  exportJSON, exportCSV, importJSON,
+  exportJSON, exportCSV, exportPropertiesCSV, exportTenantsCSV,
+  exportVendorsCSV, exportWorkOrdersCSV, importJSON,
   copyStateToClipboard, pasteStateFromClipboard,
   _saveUndoSnapshot, undoLastAction,
 } from './io.js';
@@ -275,6 +276,10 @@ Object.assign(window, {
   // or clipboard transfer instead of needing a hosted database.
   exportJSON,
   exportCSV,
+  exportPropertiesCSV,
+  exportTenantsCSV,
+  exportVendorsCSV,
+  exportWorkOrdersCSV,
   importJSON,
   copyStateToClipboard,
   pasteStateFromClipboard,
