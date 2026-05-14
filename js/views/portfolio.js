@@ -1,5 +1,5 @@
-import { portfolio, setPortfolio } from '../state.js';
-import { savePortfolio, logAudit } from '../storage.js';
+import { portfolio, setPortfolio, workOrders } from '../state.js';
+import { savePortfolio, saveWorkOrders, logAudit, _showActionToast } from '../storage.js';
 import { escapeHtml, shakeInput } from '../utils.js';
 import { renderLaunchPlan } from '../launchPlan.js';
 
@@ -39,6 +39,8 @@ export function renderPortfolioView() {
           <div><strong>${portfolio.vendors.length}</strong><span>vendors</span></div>
         </div>
       </div>
+
+      ${renderStarterExampleStrip()}
 
       <div class="portfolio-grid">
         <section class="portfolio-panel">
@@ -194,6 +196,74 @@ export function renderPortfolioView() {
   });
 }
 
+export function addStarterExample() {
+  const hasExistingData = portfolio.properties.length || portfolio.tenants.length || portfolio.vendors.length || workOrders.length;
+  if (hasExistingData && !confirm('Add one editable starter example to your current setup?\n\nThis creates a property, tenant, vendor, and work order you can change or delete.')) {
+    return;
+  }
+
+  const stamp = Date.now();
+  const propertyId = `property-example-${stamp}`;
+  const property = {
+    id: propertyId,
+    name: 'Oak Street Duplex',
+    units: 2,
+    owner: 'Rivera Family LLC',
+    notes: 'Lockbox on side gate. Owner prefers text before non-urgent repairs.',
+    createdAt: new Date().toISOString(),
+  };
+  const tenant = {
+    id: `tenant-example-${stamp}`,
+    name: 'Maya Chen',
+    propertyId,
+    unit: '2B',
+    status: 'active',
+    phone: '(555) 010-2040',
+    email: 'maya.chen@example.com',
+    createdAt: new Date().toISOString(),
+  };
+  const vendor = {
+    id: `vendor-example-${stamp}`,
+    name: 'Ace Plumbing',
+    trade: 'Plumbing',
+    phone: '(555) 010-1188',
+    email: 'dispatch@aceplumbing.example',
+    createdAt: new Date().toISOString(),
+  };
+  const workOrder = {
+    id: `wo-example-${stamp}`,
+    property: property.name,
+    unit: tenant.unit,
+    tenant: tenant.name,
+    title: 'Kitchen sink leak',
+    notes: 'Tenant reports slow drip under sink. Confirm access window before dispatch.',
+    priority: 'high',
+    status: 'submitted',
+    assignee: 'UNASSIGNED',
+    vendor: vendor.name,
+    dueDate: null,
+    cost: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  setPortfolio({
+    properties: [property, ...portfolio.properties],
+    tenants: [tenant, ...portfolio.tenants],
+    vendors: [vendor, ...portfolio.vendors],
+  });
+  workOrders.unshift(workOrder);
+  savePortfolio();
+  saveWorkOrders();
+  logAudit('starter_example_added', { title: property.name });
+  renderPortfolioView();
+  renderLaunchPlan();
+
+  const workOrderBeacon = document.getElementById('wo-tab-beacon');
+  if (workOrderBeacon) workOrderBeacon.hidden = false;
+  _showActionToast('Starter example added', 'save-toast--success');
+}
+
 export function commitAddProperty() {
   const nameEl = document.getElementById('property-name');
   const name = nameEl?.value.trim();
@@ -344,5 +414,20 @@ function renderTenantCard(tenant) {
       </div>
       <button class="portfolio-delete-btn" onclick="deleteTenant('${tenant.id}')" aria-label="Delete ${escapeHtml(tenant.name)}">Delete</button>
     </article>
+  `;
+}
+
+function renderStarterExampleStrip() {
+  const setupIncomplete = !portfolio.properties.length || !portfolio.tenants.length || !portfolio.vendors.length || !workOrders.length;
+  if (!setupIncomplete) return '';
+
+  return `
+    <section class="portfolio-example-strip">
+      <div>
+        <strong>Want a realistic starter setup?</strong>
+        <span>Add an editable duplex, tenant, plumbing vendor, and first repair request to see how the pieces connect.</span>
+      </div>
+      <button class="btn btn-secondary" onclick="addStarterExample()">Add Starter Example</button>
+    </section>
   `;
 }
