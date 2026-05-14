@@ -280,6 +280,7 @@ export function renderLaunchPlan() {
   const commandModules = getCommandModules(snapshot);
   const riskQueue = getRiskQueue(snapshot);
   const coverageAreas = getCriticalCoverageAreas();
+  const dataQuality = getDataQualityChecks();
   const sevenDayPlan = getSevenDayPlan(profile);
   const blueprintDepts = blueprint.departments
     .map(id => orgData.departments.find(dept => dept.id === id))
@@ -343,6 +344,22 @@ export function renderLaunchPlan() {
           ? riskQueue.map(renderRiskItem).join('')
           : '<div class="launch-risk-empty">No major launch risks detected. Keep adding real properties, vendors, dates, and SOP detail as work comes in.</div>'
         }
+      </div>
+    </div>
+    <div class="launch-quality-panel" aria-label="Data quality checks">
+      <div class="launch-quality-head">
+        <div>
+          <div class="launch-kicker">Data Quality</div>
+          <h3>Can this setup be trusted outside the app?</h3>
+          <p>These checks look for incomplete records before a beginner exports CSVs, shares the handbook, or starts operating from the map.</p>
+        </div>
+        <div class="launch-quality-score">
+          <strong>${dataQuality.passed}/${dataQuality.total}</strong>
+          <span>checks clear</span>
+        </div>
+      </div>
+      <div class="launch-quality-grid">
+        ${dataQuality.checks.map(renderDataQualityCheck).join('')}
       </div>
     </div>
     <div class="launch-plan-header">
@@ -574,6 +591,16 @@ function renderSevenDayItem(item) {
   `;
 }
 
+function renderDataQualityCheck(check) {
+  return `
+    <button class="launch-quality-card launch-quality-card--${check.tone}" onclick="${check.onclick}">
+      <span>${escapeHtml(check.label)}</span>
+      <strong>${escapeHtml(check.title)}</strong>
+      <small>${escapeHtml(check.detail)}</small>
+    </button>
+  `;
+}
+
 function getLaunchChecklist(focus) {
   return [...BASE_CHECKLIST, ...(FOCUS_CHECKLIST[focus] || [])];
 }
@@ -599,6 +626,7 @@ function getSevenDayPlan(profile) {
 
 function getReadinessScore(checklist, saved) {
   const snapshot = getOperationsSnapshot();
+  const dataQuality = getDataQualityChecks();
   const checklistComplete = checklist.filter(item => saved[item.id] || item.metric()).length / Math.max(checklist.length, 1);
   const ownershipScore = snapshot.totalTasks ? snapshot.assignedTasks / snapshot.totalTasks : 0;
   const teamScore = snapshot.employeeCount && !snapshot.isStarterTeam ? 1 : 0.35;
@@ -606,9 +634,10 @@ function getReadinessScore(checklist, saved) {
   const maintenanceScore = snapshot.workOrderCount
     ? Math.max(0.25, 1 - (snapshot.unassignedWorkOrders / Math.max(snapshot.openWorkOrders, 1)))
     : 0.25;
+  const qualityScore = dataQuality.total ? dataQuality.passed / dataQuality.total : 1;
   const riskPenalty = Math.min(0.25, ((snapshot.blockedTasks + snapshot.overdueTasks) / Math.max(snapshot.totalTasks, 1)) * 2);
   const score = Math.max(0, Math.min(100, Math.round(
-    ((ownershipScore * 0.3) + (teamScore * 0.2) + (portfolioScore * 0.16) + (maintenanceScore * 0.16) + (checklistComplete * 0.18) - riskPenalty) * 100
+    ((ownershipScore * 0.28) + (teamScore * 0.18) + (portfolioScore * 0.15) + (maintenanceScore * 0.15) + (checklistComplete * 0.16) + (qualityScore * 0.08) - riskPenalty) * 100
   )));
 
   let label = 'Needs setup';
@@ -733,6 +762,7 @@ function getCommandModules(snapshot) {
 function getRiskQueue(snapshot) {
   const risks = [];
   const weakCoverage = getCriticalCoverageAreas().filter(area => area.coveragePct < 70);
+  const failingQualityChecks = getDataQualityChecks().checks.filter(check => check.tone !== 'good');
   if (weakCoverage.length) {
     risks.push({
       label: 'Ownership Map',
@@ -811,6 +841,15 @@ function getRiskQueue(snapshot) {
       detail: 'Review blocked or late responsibilities before the operating map becomes stale.',
       tone: 'danger',
       onclick: "switchView('tracking', document.querySelector('.nav-tab'))",
+    });
+  }
+  if (failingQualityChecks.length) {
+    risks.push({
+      label: 'Data Quality',
+      title: `${failingQualityChecks.length} setup data check${failingQualityChecks.length === 1 ? '' : 's'} need cleanup`,
+      detail: `${failingQualityChecks[0].label}: ${failingQualityChecks[0].detail}`,
+      tone: 'warn',
+      onclick: failingQualityChecks[0].onclick,
     });
   }
   return risks.slice(0, 4);
@@ -938,11 +977,75 @@ function getOverloadedOwners() {
     .map(([name]) => name);
 }
 
+function getDataQualityChecks() {
+  const propertiesMissingOwner = portfolio.properties.filter(property => !(property.owner || '').trim()).length;
+  const propertiesMissingUnits = portfolio.properties.filter(property => Number(property.units || 0) <= 0).length;
+  const tenantsMissingContext = portfolio.tenants.filter(tenant =>
+    !tenant.propertyId || !(tenant.unit || '').trim()
+  ).length;
+  const tenantsMissingContact = portfolio.tenants.filter(tenant =>
+    !(tenant.phone || '').trim() && !(tenant.email || '').trim()
+  ).length;
+  const vendorsMissingContext = portfolio.vendors.filter(vendor =>
+    !(vendor.trade || '').trim() || (!(vendor.phone || '').trim() && !(vendor.email || '').trim())
+  ).length;
+  const openWorkOrders = workOrders.filter(wo => wo.status !== 'completed');
+  const openWorkOrdersMissingDetail = openWorkOrders.filter(wo =>
+    wo.assignee === 'UNASSIGNED' || !(wo.vendor || '').trim() || !wo.dueDate || !(wo.property || '').trim()
+  ).length;
+
+  const checks = [
+    {
+      label: 'Properties',
+      title: propertiesMissingOwner || propertiesMissingUnits ? 'Property records need detail' : 'Property records look usable',
+      detail: propertiesMissingOwner || propertiesMissingUnits
+        ? `${propertiesMissingOwner} missing owner/client, ${propertiesMissingUnits} missing unit count.`
+        : 'Every property has owner/client context and a unit count.',
+      tone: propertiesMissingOwner || propertiesMissingUnits ? 'warn' : 'good',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Tenants',
+      title: tenantsMissingContext || tenantsMissingContact ? 'Tenant roster needs cleanup' : 'Tenant roster is export-ready',
+      detail: tenantsMissingContext || tenantsMissingContact
+        ? `${tenantsMissingContext} missing property/unit, ${tenantsMissingContact} missing contact info.`
+        : 'Every tenant has property, unit, and at least one contact method.',
+      tone: tenantsMissingContext || tenantsMissingContact ? 'warn' : 'good',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Vendors',
+      title: vendorsMissingContext ? 'Vendor bench needs contact detail' : 'Vendor bench is dispatch-ready',
+      detail: vendorsMissingContext
+        ? `${vendorsMissingContext} vendor${vendorsMissingContext === 1 ? '' : 's'} missing trade or contact info.`
+        : 'Every vendor has a trade and at least one contact method.',
+      tone: vendorsMissingContext ? 'warn' : 'good',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Work Orders',
+      title: openWorkOrdersMissingDetail ? 'Open repairs need operating detail' : 'Open repairs are trackable',
+      detail: openWorkOrdersMissingDetail
+        ? `${openWorkOrdersMissingDetail} open work order${openWorkOrdersMissingDetail === 1 ? '' : 's'} missing owner, vendor, target date, or property.`
+        : 'Every open repair has enough detail for follow-up.',
+      tone: openWorkOrdersMissingDetail ? 'danger' : 'good',
+      onclick: "switchView('workorders', document.getElementById('wo-tab'))",
+    },
+  ];
+
+  return {
+    checks,
+    total: checks.length,
+    passed: checks.filter(check => check.tone === 'good').length,
+  };
+}
+
 function getLaunchGaps() {
   const gaps = [];
   const unowned = countUnowned();
   const overloaded = getOverloadedOwners();
   const unassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+  const qualityIssues = getDataQualityChecks().checks.filter(check => check.tone !== 'good');
 
   if (unowned > 0) {
     gaps.push({
@@ -972,6 +1075,12 @@ function getLaunchGaps() {
     gaps.push({
       title: 'Potential role overload',
       detail: `${overloaded.slice(0, 3).join(', ')} may need backup coverage or reassignment.`,
+    });
+  }
+  if (qualityIssues.length > 0) {
+    gaps.push({
+      title: 'Incomplete setup records',
+      detail: `${qualityIssues.map(check => check.label).slice(0, 3).join(', ')} need cleanup before export or handoff.`,
     });
   }
 

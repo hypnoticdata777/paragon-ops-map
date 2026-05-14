@@ -18,7 +18,7 @@
 
 1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/)
 2. Complete the setup screen
-3. Start assigning owners, tracking work orders, and exporting your handbook
+3. Add your first portfolio records, assign owners, track work orders, and export your handbook
 
 ### Option B — Download the Release ZIP
 
@@ -54,7 +54,7 @@ If you are developing with Node installed, `npm start` also works (see [Developm
 
 PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 260+ standard tasks** — all fully editable to match your company.
 
-It answers eight questions at a glance:
+It answers nine questions at a glance:
 
 1. **What work exists?** — Every task across every department, organized and documented
 2. **Who owns it?** — Every task assigned to a named team member or flagged UNOWNED
@@ -64,6 +64,7 @@ It answers eight questions at a glance:
 6. **What maintenance is in progress?** — The Work Orders board tracks every repair and service request from intake to completion
 7. **What should a new company set up first?** — The Launch Plan recommends a first-week operating blueprint, checklist, and setup gaps
 8. **How do we document this for the team?** — The Handbook export turns the configured map into a Markdown SOP starter pack
+9. **Can we trust this data outside the app?** — Data Quality checks flag incomplete properties, tenants, vendors, and open repairs before export
 
 On first launch, the setup screen captures company name, portfolio size, and primary operations focus. That profile stays in `localStorage` and adjusts the app's tone automatically for stability, maintenance, growth, or compliance workflows.
 
@@ -74,11 +75,13 @@ On first launch, the setup screen captures company name, portfolio size, and pri
 1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/) or a downloaded release ZIP
 2. Enter your company name, portfolio size, and primary operations focus
 3. Review the **Launch Plan** on the Tracking view
-4. Add your real team members in **Team Manager**
-5. Assign every UNOWNED responsibility or run **Auto-Assign**
-6. Create one starter work order to validate maintenance intake and closeout
-7. Download the **Handbook** to get a shareable operations SOP starter pack
-8. Re-export JSON or copy state whenever you want a backup or device transfer
+4. Open **Portfolio** and add properties, tenants, vendors, or the editable **Starter Example**
+5. Add your real team members in **Team Manager**
+6. Assign every UNOWNED responsibility or run **Auto-Assign**
+7. Create one starter work order to validate maintenance intake and closeout
+8. Review **Data Quality** before exporting CSVs or sharing the handbook
+9. Download the **Handbook** to get a shareable operations SOP starter pack
+10. Re-export JSON, CSV, or copy state whenever you want a backup or device transfer
 
 ---
 
@@ -108,7 +111,30 @@ It includes:
 - Department shortcuts that jump directly to the most important operating areas
 - A first-week checklist for ownership, maintenance intake, rent collection, vendors, owner reporting, and backup coverage
 - Live setup gaps based on the current map, team roster, and work orders
+- A **Data Quality** panel that checks whether portfolio and maintenance records are complete enough to export or hand off
 - A Markdown **Download Launch Plan** action for sharing or onboarding
+
+---
+
+### Portfolio Starter and Data Quality
+
+The **Portfolio tab** tracks the beginner registry a property management company needs before heavier systems are worth adopting:
+
+- Managed properties with unit counts, owner/client context, and operating notes
+- Tenant roster with property, unit, status, phone, and email
+- Vendor bench with trade, phone, and email
+- An optional **Starter Example** that adds an editable duplex, tenant, vendor, and first repair request so new users can see the workflow in context
+
+The Launch dashboard includes four data-quality checks:
+
+| Check | What it flags |
+|-------|---------------|
+| Properties | Missing owner/client or unit count |
+| Tenants | Missing property, unit, phone, or email |
+| Vendors | Missing trade, phone, or email |
+| Work Orders | Open repairs missing assignee, vendor, target date, or property |
+
+These checks feed the readiness score, setup gaps, and risk queue so incomplete data is visible before the user exports CSVs or shares the handbook.
 
 ---
 
@@ -120,8 +146,10 @@ The handbook includes:
 
 - Company profile and operating focus
 - Operating snapshot with assignment, blocker, overdue, team, and work order counts
+- Portfolio registry with properties, tenants, and vendors
 - First-week operating rhythm
 - Setup gaps to close
+- Critical PM coverage across leasing, rent collection, inspections, maintenance, compliance, renewals, and emergencies
 - Team roster and workload
 - Department-by-department SOP checklist
 - Maintenance work order summary
@@ -214,7 +242,7 @@ Click **→ Next Status** on any card to advance it one step. Cards show their p
 
 #### Work order fields
 
-Each work order captures: property address, unit number, issue title, notes, priority, assignee (pulled from your team roster), vendor name, and estimated cost.
+Each work order captures: property address, unit number, tenant/resident, issue title, notes, priority, assignee (pulled from your team roster), vendor name, target date, and estimated cost.
 
 #### Beacon
 
@@ -344,9 +372,9 @@ Persistent across all views, updates whenever any task changes:
 | ⚠ Unowned | Tasks with no assigned owner (red) |
 | Departments | Total department count |
 
-Also contains: Export to JSON or CSV · Download Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
+Also contains: Export to JSON, task CSV, Properties CSV, Tenants CSV, Vendors CSV, Work Orders CSV · Download Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
 
-> **Export/Import note:** JSON and CSV exports include `status` and `priority` alongside `name` and `owner`. Old exports without those fields import cleanly — they default to `To Do` / `Medium` on load.
+> **Export/Import note:** JSON exports include the full workspace. CSV exports are spreadsheet-friendly slices for tasks, properties, tenants, vendors, and work orders. Old exports without newer fields import cleanly and fall back to sensible defaults.
 
 ---
 
@@ -414,8 +442,8 @@ pm-ops-map/
 │   ├── state.js            Shared mutable state, constants, setters, and employee helpers
 │   ├── storage.js          localStorage persistence, toast notifications, company profile helpers
 │   ├── ui.js               Stats bar, beacons, onboarding modal, welcome guide, notifications
-│   ├── io.js               Export / Import (JSON + CSV), clipboard sync, undo stack
-│   ├── launchPlan.js       Guided first-week setup plan, launch checklist, setup gap detection
+│   ├── io.js               Export / Import (JSON + task/portfolio/work-order CSV), clipboard sync, undo stack
+│   ├── launchPlan.js       Guided setup plan, launch checklist, setup gaps, data-quality checks
 │   ├── handbook.js         Markdown operations handbook generator
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
 │   ├── utils.js            Pure utility functions for browser modules
@@ -425,6 +453,7 @@ pm-ops-map/
 │   │   │                   due dates, task dependencies
 │   │   ├── map.js          SVG flow map, department panel, tooltips, SVG helpers
 │   │   ├── team.js         Team Manager, auto-assign engine, role playbooks, audit log
+│   │   ├── portfolio.js    Property, tenant, vendor registry and starter example
 │   │   └── workorders.js   Work Orders kanban board
 │   └── __tests__/
 │       ├── data.test.js    Unit tests for config.json structure (10 tests)
@@ -452,10 +481,11 @@ ui.js             ← state, storage, utils
 views/tracking.js ← state, storage, utils, ui, views/map
 views/map.js      ← state, storage, utils
 views/team.js     ← state, storage, utils, ui, views/tracking, views/map, views/workorders
+views/portfolio.js ← state, storage, utils, launchPlan
 views/workorders.js ← state, storage, utils, ui
 launchPlan.js     ← state, storage, utils
 handbook.js       ← state, storage, utils
-io.js             ← state, storage, utils, ui, views/tracking, views/map, views/team
+io.js             ← state, storage, utils, ui, views/tracking, views/map, views/team, views/portfolio
 app.js            ← everything above
 ```
 
