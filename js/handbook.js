@@ -1,5 +1,5 @@
 import {
-  orgData, teamData, workOrders,
+  orgData, teamData, workOrders, portfolio,
   STATUS_LABELS, PRIORITY_LABELS, WO_STATUS_LABELS,
   buildWorkloadMap, countUnowned,
 } from './state.js';
@@ -24,6 +24,26 @@ const PROFILE_LABELS = {
   growth: 'Scale team capacity',
   compliance: 'Reduce compliance risk',
 };
+
+const CRITICAL_COVERAGE_AREAS = [
+  { label: 'Leasing', departments: ['leasing', 'applications', 'move-ins'] },
+  { label: 'Rent Collection', departments: ['delinquency', 'accounting'] },
+  { label: 'Inspections', departments: ['move-ins', 'move-outs', 'unit-turns', 'field-services'] },
+  { label: 'Maintenance', departments: ['maintenance', 'vendors'] },
+  { label: 'Compliance', departments: ['compliance', 'reporting'] },
+  { label: 'Renewals', departments: ['tenant-comms', 'owner-relations', 'leasing'] },
+  { label: 'Emergencies', departments: ['maintenance', 'vendors', 'field-services', 'tenant-comms'] },
+];
+
+const SEVEN_DAY_PLAN = [
+  ['Build the source of truth', 'Add properties, units, tenants, owners/clients, and vendor bench.'],
+  ['Replace sample roles with real people', 'Add the team, choose department affinities, and confirm who owns each operating lane.'],
+  ['Close ownership gaps', 'Assign UNOWNED work, starting with tenant communication, rent, maintenance, compliance, and owner updates.'],
+  ['Test maintenance intake', 'Create one realistic work order with property, tenant, vendor, assignee, priority, due date, cost, and notes.'],
+  ['Review critical coverage', 'Check leasing, rent collection, inspections, maintenance, compliance, renewals, and emergencies.'],
+  ['Set the weekly operating rhythm', 'Decide what gets reviewed daily, weekly, and monthly so the map stays alive.'],
+  ['Export the operating manual', 'Review this handbook with the team and treat it as the first SOP draft.'],
+];
 
 export function downloadOperationsHandbook() {
   _downloadBlob(
@@ -56,13 +76,27 @@ export function buildOperationsHandbookMarkdown() {
     `- Blocked responsibilities: ${summary.blockedTasks}`,
     `- Overdue responsibilities: ${summary.overdueTasks}`,
     `- Team members: ${teamData.employees.length}`,
+    `- Properties: ${portfolio.properties.length}`,
+    `- Units: ${getTotalUnits()}`,
+    `- Tenants: ${portfolio.tenants.length}`,
+    `- Vendors: ${portfolio.vendors.length}`,
     `- Open work orders: ${summary.openWorkOrders}`,
+    '',
+    '## Portfolio Registry',
+    '',
+    buildPortfolioSection(),
+    '',
+    '## Critical Coverage',
+    '',
+    buildCriticalCoverageSection(),
     '',
     '## First-Week Operating Rhythm',
     '',
-    '- Daily: review unowned, blocked, overdue, and open maintenance work.',
-    '- Weekly: review workload balance, owner communications, delinquency, and compliance tasks.',
-    '- Monthly: update department owners, remove stale tasks, and export a fresh handbook.',
+    buildOperatingRhythmSection(profile),
+    '',
+    '## First 7 Days',
+    '',
+    buildSevenDaySection(),
     '',
     '## Setup Gaps To Close',
     '',
@@ -71,6 +105,10 @@ export function buildOperationsHandbookMarkdown() {
     '## Team Roster And Workload',
     '',
     buildTeamSection(),
+    '',
+    '## Maintenance Intake SOP',
+    '',
+    buildMaintenanceSOPSection(),
     '',
     '## Department SOPs',
     '',
@@ -101,6 +139,96 @@ function getOperatingSummary() {
     overdueTasks: tasks.filter(isTaskOverdue).length,
     openWorkOrders: workOrders.filter(wo => wo.status !== 'completed').length,
   };
+}
+
+function getTotalUnits() {
+  return portfolio.properties.reduce((sum, property) => sum + Number(property.units || 0), 0);
+}
+
+function buildPortfolioSection() {
+  return [
+    '### Properties',
+    '',
+    buildPropertyList(),
+    '',
+    '### Tenants',
+    '',
+    buildTenantList(),
+    '',
+    '### Vendor Bench',
+    '',
+    buildVendorList(),
+  ].join('\n');
+}
+
+function buildPropertyList() {
+  if (!portfolio.properties.length) {
+    return '- No properties recorded yet. Add at least one managed property, unit count, and owner/client.';
+  }
+  return portfolio.properties.map(property => {
+    const units = Number(property.units || 0);
+    const owner = property.owner ? ` | Owner/client: ${property.owner}` : '';
+    const notes = property.notes ? ` | Notes: ${property.notes}` : '';
+    return `- ${property.name} | Units: ${units}${owner}${notes}`;
+  }).join('\n');
+}
+
+function buildTenantList() {
+  if (!portfolio.tenants.length) {
+    return '- No tenants recorded yet. Add at least one tenant so maintenance and communication have unit context.';
+  }
+  return portfolio.tenants.map(tenant => {
+    const property = getPropertyName(tenant.propertyId);
+    const unit = tenant.unit ? `, Unit ${tenant.unit}` : '';
+    const status = tenant.status || 'active';
+    const contact = [tenant.phone, tenant.email].filter(Boolean).join(' / ');
+    return `- ${tenant.name} | ${property}${unit} | Status: ${status}${contact ? ` | Contact: ${contact}` : ''}`;
+  }).join('\n');
+}
+
+function buildVendorList() {
+  if (!portfolio.vendors.length) {
+    return '- No vendors recorded yet. Add emergency and routine maintenance vendors before real repair volume starts.';
+  }
+  return portfolio.vendors.map(vendor => {
+    const trade = vendor.trade || 'General vendor';
+    const contact = [vendor.phone, vendor.email].filter(Boolean).join(' / ');
+    return `- ${vendor.name} | Trade: ${trade}${contact ? ` | Contact: ${contact}` : ''}`;
+  }).join('\n');
+}
+
+function buildCriticalCoverageSection() {
+  return getCriticalCoverageAreas().map(area => [
+    `### ${area.label}`,
+    '',
+    `- Coverage: ${area.coveragePct}%`,
+    `- Responsibilities: ${area.taskCount}`,
+    `- Unowned: ${area.unownedCount}`,
+    `- Primary owners: ${area.primaryOwners}`,
+    `- Departments: ${area.departmentNames.join(', ')}`,
+  ].join('\n')).join('\n\n');
+}
+
+function buildOperatingRhythmSection(profile) {
+  const focus = profile.focus || 'stability';
+  const focusLine = {
+    stability: 'Daily: close gaps and review tenant, rent, maintenance, and owner-update risk.',
+    maintenance: 'Daily: review open repairs, emergency readiness, vendor follow-up, and aging work orders.',
+    growth: 'Daily: review leasing pipeline, applications, make-ready status, and team capacity.',
+    compliance: 'Daily: review notices, inspections, records, delinquencies, and documentation risk.',
+  }[focus] || 'Daily: review unowned, blocked, overdue, and open maintenance work.';
+
+  return [
+    `- ${focusLine}`,
+    '- Weekly: review workload balance, critical coverage, open work orders, owner communications, delinquency, and compliance tasks.',
+    '- Monthly: update department owners, refresh vendor bench, archive stale work, and export a fresh handbook.',
+  ].join('\n');
+}
+
+function buildSevenDaySection() {
+  return SEVEN_DAY_PLAN
+    .map(([title, detail], idx) => `- Day ${idx + 1}: ${title} - ${detail}`)
+    .join('\n');
 }
 
 function buildTeamSection() {
@@ -154,11 +282,38 @@ function buildWorkOrderSection() {
     const status = WO_STATUS_LABELS[wo.status] || wo.status || 'Submitted';
     const priority = PRIORITY_LABELS[wo.priority || 'medium'] || wo.priority || 'Medium';
     const assignee = wo.assignee === 'UNASSIGNED' ? 'Unassigned' : wo.assignee;
+    const tenant = wo.tenant ? ` | Tenant: ${wo.tenant}` : '';
     const vendor = wo.vendor ? ` | Vendor: ${wo.vendor}` : '';
     const target = wo.dueDate ? ` | Target: ${wo.dueDate}` : '';
     const unit = wo.unit ? `, Unit ${wo.unit}` : '';
-    return `- ${wo.property}${unit}: ${wo.title} | ${status} | ${priority} | Owner: ${assignee}${vendor}${target}`;
+    return `- ${wo.property}${unit}: ${wo.title} | ${status} | ${priority} | Owner: ${assignee}${tenant}${vendor}${target}`;
   }).join('\n');
+}
+
+function buildMaintenanceSOPSection() {
+  const openOrders = workOrders.filter(wo => wo.status !== 'completed');
+  const unassigned = openOrders.filter(wo => wo.assignee === 'UNASSIGNED').length;
+  const emergencyCoverage = getCriticalCoverageAreas().find(area => area.label === 'Emergencies');
+  const maintenanceCoverage = getCriticalCoverageAreas().find(area => area.label === 'Maintenance');
+
+  return [
+    '### Intake Standard',
+    '',
+    '- Every request should include property, unit, tenant/resident, issue, priority, assignee, vendor, target date, notes, and estimated cost when known.',
+    '- High-priority or emergency work should have a named internal owner before vendor dispatch.',
+    '- Vendor and tenant communication should be updated before moving a work order forward.',
+    '',
+    '### Current Flow Health',
+    '',
+    `- Open work orders: ${openOrders.length}`,
+    `- Unassigned open work orders: ${unassigned}`,
+    `- Maintenance coverage: ${maintenanceCoverage ? `${maintenanceCoverage.coveragePct}%` : 'Not available'}`,
+    `- Emergency coverage: ${emergencyCoverage ? `${emergencyCoverage.coveragePct}%` : 'Not available'}`,
+    '',
+    '### Closeout Standard',
+    '',
+    '- Confirm work completed, collect invoice or cost, document notes/photos outside this tool if needed, and move the work order to completed.',
+  ].join('\n');
 }
 
 function formatTaskLine(task) {
@@ -179,13 +334,53 @@ function getPrimaryOwner(tasks) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
+function getPropertyName(propertyId) {
+  return portfolio.properties.find(property => property.id === propertyId)?.name || 'Unassigned property';
+}
+
+function getCriticalCoverageAreas() {
+  return CRITICAL_COVERAGE_AREAS.map(area => {
+    const depts = area.departments
+      .map(id => orgData.departments.find(dept => dept.id === id))
+      .filter(Boolean);
+    const tasks = depts.flatMap(dept => dept.tasks);
+    const unownedCount = tasks.filter(task => task.owner === 'UNOWNED').length;
+    const ownerCounts = new Map();
+
+    tasks.forEach(task => {
+      if (task.owner !== 'UNOWNED') ownerCounts.set(task.owner, (ownerCounts.get(task.owner) || 0) + 1);
+    });
+
+    const primaryOwners = [...ownerCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name)
+      .join(', ') || 'No named owner';
+
+    return {
+      ...area,
+      departmentNames: depts.map(dept => dept.name),
+      taskCount: tasks.length,
+      unownedCount,
+      primaryOwners,
+      coveragePct: tasks.length ? Math.round(((tasks.length - unownedCount) / tasks.length) * 100) : 0,
+    };
+  });
+}
+
 function getHandbookGaps() {
   const summary = getOperatingSummary();
   const gaps = [];
+  if (!portfolio.properties.length) gaps.push('Add managed properties with unit counts and owner/client context.');
+  if (!portfolio.tenants.length) gaps.push('Add tenants so maintenance and communication have resident context.');
+  if (!portfolio.vendors.length) gaps.push('Add vendors so repair dispatch has a starter bench.');
   if (!teamData.employees.length) gaps.push('Add team members so the handbook can name real owners.');
   if (summary.unownedTasks > 0) gaps.push(`Assign ${summary.unownedTasks} unowned responsibilities.`);
   if (summary.blockedTasks > 0) gaps.push(`Resolve or document ${summary.blockedTasks} blocked responsibilities.`);
   if (summary.overdueTasks > 0) gaps.push(`Review ${summary.overdueTasks} overdue responsibilities.`);
   if (!workOrders.length) gaps.push('Create one starter work order to document maintenance flow.');
+  getCriticalCoverageAreas()
+    .filter(area => area.coveragePct < 70)
+    .forEach(area => gaps.push(`Improve ${area.label} coverage (${area.coveragePct}% covered).`));
   return gaps;
 }
