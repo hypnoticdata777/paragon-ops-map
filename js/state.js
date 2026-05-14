@@ -95,6 +95,7 @@ export const AUDIT_LABELS = {
   portfolio_tenant_deleted:   'Tenant Deleted',
   portfolio_vendor_added:     'Vendor Added',
   portfolio_vendor_deleted:   'Vendor Deleted',
+  starter_example_added:      'Starter Example Added',
   dependency_set:     'Dependency Set',
   dependency_cleared: 'Dependency Cleared',
 };
