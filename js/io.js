@@ -149,10 +149,88 @@ export function exportCSV() {
       ]);
     });
   });
-  const csv = rows.map(r =>
-    r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+  downloadCSV(rows, `pm-ops-${_fileSlug()}.csv`);
+}
+
+export function exportPropertiesCSV() {
+  const rows = [['Property', 'Units', 'Owner / Client', 'Notes', 'Created At']];
+  portfolio.properties.forEach(property => {
+    rows.push([
+      property.name,
+      Number(property.units || 0),
+      property.owner || '',
+      property.notes || '',
+      property.createdAt || '',
+    ]);
+  });
+  downloadCSV(rows, `pm-ops-${_fileSlug()}-properties.csv`);
+}
+
+export function exportTenantsCSV() {
+  const rows = [['Tenant', 'Property', 'Unit', 'Status', 'Phone', 'Email', 'Created At']];
+  portfolio.tenants.forEach(tenant => {
+    rows.push([
+      tenant.name,
+      getPortfolioPropertyName(tenant.propertyId),
+      tenant.unit || '',
+      tenant.status || 'active',
+      tenant.phone || '',
+      tenant.email || '',
+      tenant.createdAt || '',
+    ]);
+  });
+  downloadCSV(rows, `pm-ops-${_fileSlug()}-tenants.csv`);
+}
+
+export function exportVendorsCSV() {
+  const rows = [['Vendor', 'Trade', 'Phone', 'Email', 'Created At']];
+  portfolio.vendors.forEach(vendor => {
+    rows.push([
+      vendor.name,
+      vendor.trade || '',
+      vendor.phone || '',
+      vendor.email || '',
+      vendor.createdAt || '',
+    ]);
+  });
+  downloadCSV(rows, `pm-ops-${_fileSlug()}-vendors.csv`);
+}
+
+export function exportWorkOrdersCSV() {
+  const rows = [[
+    'Property', 'Unit', 'Tenant', 'Issue', 'Status', 'Priority', 'Assignee',
+    'Vendor', 'Target Date', 'Estimated Cost', 'Notes', 'Created At', 'Updated At'
+  ]];
+  workOrders.forEach(wo => {
+    rows.push([
+      wo.property || '',
+      wo.unit || '',
+      wo.tenant || '',
+      wo.title || '',
+      wo.status || 'submitted',
+      wo.priority || 'medium',
+      wo.assignee || 'UNASSIGNED',
+      wo.vendor || '',
+      wo.dueDate || '',
+      Number(wo.cost || 0),
+      wo.notes || '',
+      wo.createdAt || '',
+      wo.updatedAt || '',
+    ]);
+  });
+  downloadCSV(rows, `pm-ops-${_fileSlug()}-work-orders.csv`);
+}
+
+function getPortfolioPropertyName(propertyId) {
+  if (!propertyId) return '';
+  return portfolio.properties.find(property => property.id === propertyId)?.name || '';
+}
+
+function downloadCSV(rows, filename) {
+  const csv = rows.map(row =>
+    row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')
   ).join('\r\n');
-  _downloadBlob(csv, 'text/csv', `pm-ops-${_fileSlug()}.csv`);
+  _downloadBlob(csv, 'text/csv', filename);
 }
 
 // ── Import ────────────────────────────────────────────────────────────────────
