@@ -11,6 +11,8 @@ import { updateWorkOrderBeacon } from '../ui.js';
 // ── Beacon ────────────────────────────────────────────────────────────────────
 export { updateWorkOrderBeacon };
 
+let editingWorkOrderId = null;
+
 function setDatalistOptions(id, values) {
   const list = document.getElementById(id);
   if (!list) return;
@@ -49,6 +51,9 @@ function buildWorkOrderCard(wo) {
         </span>
         ${wo.cost > 0 ? `<span class="wo-cost">$${Number(wo.cost).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : ''}
         <div class="wo-card-actions">
+          <button class="wo-edit-btn"
+                  onclick="showEditWorkOrderModal('${wo.id}')"
+                  title="Edit work order">Edit</button>
           ${canAdvance
             ? `<button class="wo-advance-btn"
                        onclick="advanceWorkOrder('${wo.id}')"
@@ -112,8 +117,25 @@ export function renderWorkOrdersView() {
 
 // ── Modal — open / close / submit ─────────────────────────────────────────────
 export function showNewWorkOrderModal() {
+  editingWorkOrderId = null;
+  openWorkOrderModal();
+}
+
+export function showEditWorkOrderModal(id) {
+  const wo = workOrders.find(w => w.id === id);
+  if (!wo) return;
+  editingWorkOrderId = id;
+  openWorkOrderModal(wo);
+}
+
+function openWorkOrderModal(wo = null) {
   const modal = document.getElementById('wo-modal');
   if (!modal) return;
+  const isEditing = Boolean(wo);
+
+  document.getElementById('wo-modal-title').textContent = isEditing ? 'Edit Work Order' : 'New Work Order';
+  const submitBtn = document.getElementById('wo-submit-btn');
+  if (submitBtn) submitBtn.textContent = isEditing ? 'Update Work Order \u2192' : 'Create Work Order \u2192';
 
   const sel = document.getElementById('wo-assignee');
   sel.innerHTML = '<option value="UNASSIGNED">&#8212; Unassigned &#8212;</option>';
@@ -131,7 +153,7 @@ export function showNewWorkOrderModal() {
   ['wo-property','wo-unit','wo-tenant','wo-title','wo-notes','wo-duedate','wo-vendor','wo-cost'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.value = '';
+    el.value = getWorkOrderFieldValue(wo, id);
     if (el.tagName !== 'TEXTAREA') {
       el.onkeydown = e => {
         if (e.key === 'Enter')  commitNewWorkOrder();
@@ -139,8 +161,8 @@ export function showNewWorkOrderModal() {
       };
     }
   });
-  document.getElementById('wo-priority').value = 'medium';
-  document.getElementById('wo-assignee').value = 'UNASSIGNED';
+  document.getElementById('wo-priority').value = wo?.priority || 'medium';
+  document.getElementById('wo-assignee').value = wo?.assignee || 'UNASSIGNED';
 
   modal.classList.add('visible');
   setTimeout(() => document.getElementById('wo-property').focus(), 50);
@@ -149,6 +171,7 @@ export function showNewWorkOrderModal() {
 export function closeWorkOrderModal() {
   const modal = document.getElementById('wo-modal');
   if (modal) modal.classList.remove('visible');
+  editingWorkOrderId = null;
 }
 
 export function commitNewWorkOrder() {
@@ -171,28 +194,53 @@ export function commitNewWorkOrder() {
   }
 
   const rawCost = parseFloat(document.getElementById('wo-cost').value);
-  const wo = {
-    id:        `wo-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+  const existing = workOrders.find(w => w.id === editingWorkOrderId);
+  const payload = {
     property,
     unit:      document.getElementById('wo-unit').value.trim(),
     tenant:    document.getElementById('wo-tenant')?.value.trim() || '',
     title,
     notes:     document.getElementById('wo-notes').value.trim(),
     priority:  document.getElementById('wo-priority').value,
-    status:    'submitted',
+    status:    existing?.status || 'submitted',
     assignee:  document.getElementById('wo-assignee').value,
     vendor:    document.getElementById('wo-vendor').value.trim(),
     dueDate:   document.getElementById('wo-duedate')?.value || null,
     cost:      isNaN(rawCost) || rawCost < 0 ? 0 : rawCost,
-    createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
-  workOrders.push(wo);
+  if (existing) {
+    Object.assign(existing, payload);
+    logAudit('wo_updated', { title });
+  } else {
+    workOrders.push({
+      id:        `wo-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
   saveWorkOrders();
   closeWorkOrderModal();
   renderWorkOrdersView();
   updateWorkOrderBeacon();
+}
+
+function getWorkOrderFieldValue(wo, id) {
+  if (!wo) return '';
+  const fieldMap = {
+    'wo-property': 'property',
+    'wo-unit': 'unit',
+    'wo-tenant': 'tenant',
+    'wo-title': 'title',
+    'wo-notes': 'notes',
+    'wo-duedate': 'dueDate',
+    'wo-vendor': 'vendor',
+    'wo-cost': 'cost',
+  };
+  const value = wo[fieldMap[id]];
+  return value == null ? '' : value;
 }
 
 // ── CRUD helpers ──────────────────────────────────────────────────────────────
@@ -214,6 +262,7 @@ export function deleteWorkOrder(id) {
   const wo = workOrders.find(w => w.id === id);
   if (!wo) return;
   if (!confirm(`Delete this work order?\n\n"${wo.title}"\n${wo.property}${wo.unit ? ` · Unit ${wo.unit}` : ''}`)) return;
+  if (editingWorkOrderId === id) editingWorkOrderId = null;
   logAudit('wo_deleted', { title: wo.title });
   setWorkOrders(workOrders.filter(w => w.id !== id));
   saveWorkOrders();

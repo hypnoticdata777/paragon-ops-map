@@ -55,7 +55,7 @@ import {
 import {
   renderWorkOrdersView,
   showNewWorkOrderModal, closeWorkOrderModal, commitNewWorkOrder,
-  advanceWorkOrder, deleteWorkOrder,
+  advanceWorkOrder, deleteWorkOrder, showEditWorkOrderModal,
 } from './views/workorders.js';
 import {
   renderPortfolioView, commitAddProperty, commitAddTenant, commitAddVendor,
@@ -261,6 +261,7 @@ Object.assign(window, {
   // Work Orders tab: intake modal and work order lifecycle actions.
   renderWorkOrdersView,
   showNewWorkOrderModal,
+  showEditWorkOrderModal,
   closeWorkOrderModal,
   commitNewWorkOrder,
   advanceWorkOrder,

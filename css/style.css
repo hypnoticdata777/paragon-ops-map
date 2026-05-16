@@ -2692,6 +2692,7 @@ body {
 }
 
 /* "→ Next Status" advance button */
+.wo-edit-btn,
 .wo-advance-btn {
   background: none;
   border: 1px solid #b0bec5;
@@ -2704,6 +2705,7 @@ body {
   transition: background 0.1s, color 0.1s;
 }
 
+.wo-edit-btn:hover,
 .wo-advance-btn:hover {
   background: #eceff1;
   color: #263238;
