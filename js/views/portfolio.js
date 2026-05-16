@@ -3,15 +3,21 @@ import { savePortfolio, saveWorkOrders, logAudit, _showActionToast } from '../st
 import { escapeHtml, shakeInput } from '../utils.js';
 import { renderLaunchPlan } from '../launchPlan.js';
 
+const editState = {
+  propertyId: null,
+  tenantId: null,
+  vendorId: null,
+};
+
 function totalUnits() {
   return portfolio.properties.reduce((sum, property) => sum + Number(property.units || 0), 0);
 }
 
-function propertyOptions() {
+function propertyOptions(selectedId = '') {
   return [
     '<option value="">Select property</option>',
     ...portfolio.properties.map(property => (
-      `<option value="${escapeHtml(property.id)}">${escapeHtml(property.name)}</option>`
+      `<option value="${escapeHtml(property.id)}" ${property.id === selectedId ? 'selected' : ''}>${escapeHtml(property.name)}</option>`
     ))
   ].join('');
 }
@@ -20,9 +26,23 @@ function propertyName(propertyId) {
   return portfolio.properties.find(property => property.id === propertyId)?.name || 'Unassigned property';
 }
 
+function tenantStatusOptions(selectedStatus = 'active') {
+  return [
+    ['active', 'Active'],
+    ['applicant', 'Applicant'],
+    ['notice', 'On notice'],
+    ['past', 'Past tenant'],
+  ].map(([value, label]) => (
+    `<option value="${value}" ${value === selectedStatus ? 'selected' : ''}>${label}</option>`
+  )).join('');
+}
+
 export function renderPortfolioView() {
   const inner = document.getElementById('portfolio-view-inner');
   if (!inner) return;
+  const editingProperty = portfolio.properties.find(property => property.id === editState.propertyId);
+  const editingTenant = portfolio.tenants.find(tenant => tenant.id === editState.tenantId);
+  const editingVendor = portfolio.vendors.find(vendor => vendor.id === editState.vendorId);
 
   inner.innerHTML = `
     <div class="portfolio-shell">
@@ -46,100 +66,106 @@ export function renderPortfolioView() {
         <section class="portfolio-panel">
           <div class="portfolio-panel-head">
             <div>
-              <h3>Add Property</h3>
-              <p>Track the minimum context needed to run early operations.</p>
+              <h3>${editingProperty ? 'Edit Property' : 'Add Property'}</h3>
+              <p>${editingProperty ? 'Update owner/client context, units, or operating notes.' : 'Track the minimum context needed to run early operations.'}</p>
             </div>
           </div>
           <div class="portfolio-form-grid">
             <label>
               <span>Property name</span>
-              <input id="property-name" class="portfolio-input" type="text" placeholder="e.g. Oak Street Duplex" maxlength="80">
+              <input id="property-name" class="portfolio-input" type="text" placeholder="e.g. Oak Street Duplex" maxlength="80" value="${escapeHtml(editingProperty?.name || '')}">
             </label>
             <label>
               <span>Units</span>
-              <input id="property-units" class="portfolio-input" type="number" min="0" step="1" placeholder="2">
+              <input id="property-units" class="portfolio-input" type="number" min="0" step="1" placeholder="2" value="${editingProperty ? Number(editingProperty.units || 0) : ''}">
             </label>
             <label>
               <span>Owner / client</span>
-              <input id="property-owner" class="portfolio-input" type="text" placeholder="e.g. Rivera Family LLC" maxlength="80">
+              <input id="property-owner" class="portfolio-input" type="text" placeholder="e.g. Rivera Family LLC" maxlength="80" value="${escapeHtml(editingProperty?.owner || '')}">
             </label>
             <label>
               <span>Notes</span>
-              <input id="property-notes" class="portfolio-input" type="text" placeholder="Gate code, special terms, risk notes..." maxlength="140">
+              <input id="property-notes" class="portfolio-input" type="text" placeholder="Gate code, special terms, risk notes..." maxlength="140" value="${escapeHtml(editingProperty?.notes || '')}">
             </label>
           </div>
-          <button class="btn btn-primary portfolio-submit" onclick="commitAddProperty()">Add Property</button>
+          <div class="portfolio-form-actions">
+            <button class="btn btn-primary portfolio-submit" onclick="commitAddProperty()">${editingProperty ? 'Update Property' : 'Add Property'}</button>
+            ${editingProperty ? '<button class="btn btn-secondary portfolio-submit" onclick="cancelPortfolioEdit(\'property\')">Cancel</button>' : ''}
+          </div>
         </section>
 
         <section class="portfolio-panel">
           <div class="portfolio-panel-head">
             <div>
-              <h3>Add Tenant</h3>
-              <p>Know who is connected to each unit before requests and renewals arrive.</p>
+              <h3>${editingTenant ? 'Edit Tenant' : 'Add Tenant'}</h3>
+              <p>${editingTenant ? 'Keep resident contact and unit context ready for maintenance and communication.' : 'Know who is connected to each unit before requests and renewals arrive.'}</p>
             </div>
           </div>
           <div class="portfolio-form-grid">
             <label>
               <span>Tenant name</span>
-              <input id="tenant-name" class="portfolio-input" type="text" placeholder="e.g. Maya Chen" maxlength="80">
+              <input id="tenant-name" class="portfolio-input" type="text" placeholder="e.g. Maya Chen" maxlength="80" value="${escapeHtml(editingTenant?.name || '')}">
             </label>
             <label>
               <span>Property</span>
               <select id="tenant-property" class="portfolio-input">
-                ${propertyOptions()}
+                ${propertyOptions(editingTenant?.propertyId || '')}
               </select>
             </label>
             <label>
               <span>Unit</span>
-              <input id="tenant-unit" class="portfolio-input" type="text" placeholder="2B" maxlength="30">
+              <input id="tenant-unit" class="portfolio-input" type="text" placeholder="2B" maxlength="30" value="${escapeHtml(editingTenant?.unit || '')}">
             </label>
             <label>
               <span>Status</span>
               <select id="tenant-status" class="portfolio-input">
-                <option value="active">Active</option>
-                <option value="applicant">Applicant</option>
-                <option value="notice">On notice</option>
-                <option value="past">Past tenant</option>
+                ${tenantStatusOptions(editingTenant?.status || 'active')}
               </select>
             </label>
             <label>
               <span>Phone</span>
-              <input id="tenant-phone" class="portfolio-input" type="tel" placeholder="(555) 000-0000" maxlength="40">
+              <input id="tenant-phone" class="portfolio-input" type="tel" placeholder="(555) 000-0000" maxlength="40" value="${escapeHtml(editingTenant?.phone || '')}">
             </label>
             <label>
               <span>Email</span>
-              <input id="tenant-email" class="portfolio-input" type="email" placeholder="tenant@example.com" maxlength="90">
+              <input id="tenant-email" class="portfolio-input" type="email" placeholder="tenant@example.com" maxlength="90" value="${escapeHtml(editingTenant?.email || '')}">
             </label>
           </div>
-          <button class="btn btn-primary portfolio-submit" onclick="commitAddTenant()">Add Tenant</button>
+          <div class="portfolio-form-actions">
+            <button class="btn btn-primary portfolio-submit" onclick="commitAddTenant()">${editingTenant ? 'Update Tenant' : 'Add Tenant'}</button>
+            ${editingTenant ? '<button class="btn btn-secondary portfolio-submit" onclick="cancelPortfolioEdit(\'tenant\')">Cancel</button>' : ''}
+          </div>
         </section>
 
         <section class="portfolio-panel">
           <div class="portfolio-panel-head">
             <div>
-              <h3>Add Vendor</h3>
-              <p>Build the emergency bench before the first urgent repair.</p>
+              <h3>${editingVendor ? 'Edit Vendor' : 'Add Vendor'}</h3>
+              <p>${editingVendor ? 'Keep dispatch information complete before urgent repairs arrive.' : 'Build the emergency bench before the first urgent repair.'}</p>
             </div>
           </div>
           <div class="portfolio-form-grid">
             <label>
               <span>Vendor name</span>
-              <input id="vendor-name" class="portfolio-input" type="text" placeholder="e.g. Ace Plumbing" maxlength="80">
+              <input id="vendor-name" class="portfolio-input" type="text" placeholder="e.g. Ace Plumbing" maxlength="80" value="${escapeHtml(editingVendor?.name || '')}">
             </label>
             <label>
               <span>Trade</span>
-              <input id="vendor-trade" class="portfolio-input" type="text" placeholder="Plumbing" maxlength="60">
+              <input id="vendor-trade" class="portfolio-input" type="text" placeholder="Plumbing" maxlength="60" value="${escapeHtml(editingVendor?.trade || '')}">
             </label>
             <label>
               <span>Phone</span>
-              <input id="vendor-phone" class="portfolio-input" type="tel" placeholder="(555) 000-0000" maxlength="40">
+              <input id="vendor-phone" class="portfolio-input" type="tel" placeholder="(555) 000-0000" maxlength="40" value="${escapeHtml(editingVendor?.phone || '')}">
             </label>
             <label>
               <span>Email</span>
-              <input id="vendor-email" class="portfolio-input" type="email" placeholder="dispatch@example.com" maxlength="90">
+              <input id="vendor-email" class="portfolio-input" type="email" placeholder="dispatch@example.com" maxlength="90" value="${escapeHtml(editingVendor?.email || '')}">
             </label>
           </div>
-          <button class="btn btn-primary portfolio-submit" onclick="commitAddVendor()">Add Vendor</button>
+          <div class="portfolio-form-actions">
+            <button class="btn btn-primary portfolio-submit" onclick="commitAddVendor()">${editingVendor ? 'Update Vendor' : 'Add Vendor'}</button>
+            ${editingVendor ? '<button class="btn btn-secondary portfolio-submit" onclick="cancelPortfolioEdit(\'vendor\')">Cancel</button>' : ''}
+          </div>
         </section>
       </div>
 
@@ -273,16 +299,26 @@ export function commitAddProperty() {
     return;
   }
   const rawUnits = parseInt(document.getElementById('property-units')?.value, 10);
-  portfolio.properties.unshift({
-    id: `property-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+  const payload = {
     name,
     units: Number.isFinite(rawUnits) && rawUnits >= 0 ? rawUnits : 0,
     owner: document.getElementById('property-owner')?.value.trim() || '',
     notes: document.getElementById('property-notes')?.value.trim() || '',
-    createdAt: new Date().toISOString(),
-  });
+  };
+  const existing = portfolio.properties.find(property => property.id === editState.propertyId);
+  if (existing) {
+    Object.assign(existing, payload, { updatedAt: new Date().toISOString() });
+    editState.propertyId = null;
+    logAudit('portfolio_property_updated', { title: name });
+  } else {
+    portfolio.properties.unshift({
+      id: `property-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+    logAudit('portfolio_property_added', { title: name });
+  }
   savePortfolio();
-  logAudit('portfolio_property_added', { title: name });
   renderPortfolioView();
   renderLaunchPlan();
 }
@@ -295,18 +331,28 @@ export function commitAddTenant() {
     nameEl?.focus();
     return;
   }
-  portfolio.tenants.unshift({
-    id: `tenant-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+  const payload = {
     name,
     propertyId: document.getElementById('tenant-property')?.value || '',
     unit: document.getElementById('tenant-unit')?.value.trim() || '',
     status: document.getElementById('tenant-status')?.value || 'active',
     phone: document.getElementById('tenant-phone')?.value.trim() || '',
     email: document.getElementById('tenant-email')?.value.trim() || '',
-    createdAt: new Date().toISOString(),
-  });
+  };
+  const existing = portfolio.tenants.find(tenant => tenant.id === editState.tenantId);
+  if (existing) {
+    Object.assign(existing, payload, { updatedAt: new Date().toISOString() });
+    editState.tenantId = null;
+    logAudit('portfolio_tenant_updated', { title: name });
+  } else {
+    portfolio.tenants.unshift({
+      id: `tenant-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+    logAudit('portfolio_tenant_added', { title: name });
+  }
   savePortfolio();
-  logAudit('portfolio_tenant_added', { title: name });
   renderPortfolioView();
   renderLaunchPlan();
 }
@@ -319,16 +365,26 @@ export function commitAddVendor() {
     nameEl?.focus();
     return;
   }
-  portfolio.vendors.unshift({
-    id: `vendor-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+  const payload = {
     name,
     trade: document.getElementById('vendor-trade')?.value.trim() || '',
     phone: document.getElementById('vendor-phone')?.value.trim() || '',
     email: document.getElementById('vendor-email')?.value.trim() || '',
-    createdAt: new Date().toISOString(),
-  });
+  };
+  const existing = portfolio.vendors.find(vendor => vendor.id === editState.vendorId);
+  if (existing) {
+    Object.assign(existing, payload, { updatedAt: new Date().toISOString() });
+    editState.vendorId = null;
+    logAudit('portfolio_vendor_updated', { title: name });
+  } else {
+    portfolio.vendors.unshift({
+      id: `vendor-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+    logAudit('portfolio_vendor_added', { title: name });
+  }
   savePortfolio();
-  logAudit('portfolio_vendor_added', { title: name });
   renderPortfolioView();
   renderLaunchPlan();
 }
@@ -337,6 +393,7 @@ export function deleteProperty(id) {
   const property = portfolio.properties.find(p => p.id === id);
   if (!property) return;
   if (!confirm(`Delete property?\n\n${property.name}`)) return;
+  if (editState.propertyId === id) editState.propertyId = null;
   setPortfolio({
     ...portfolio,
     properties: portfolio.properties.filter(p => p.id !== id),
@@ -351,6 +408,7 @@ export function deleteTenant(id) {
   const tenant = portfolio.tenants.find(t => t.id === id);
   if (!tenant) return;
   if (!confirm(`Delete tenant?\n\n${tenant.name}`)) return;
+  if (editState.tenantId === id) editState.tenantId = null;
   setPortfolio({
     ...portfolio,
     tenants: portfolio.tenants.filter(t => t.id !== id),
@@ -365,6 +423,7 @@ export function deleteVendor(id) {
   const vendor = portfolio.vendors.find(v => v.id === id);
   if (!vendor) return;
   if (!confirm(`Delete vendor?\n\n${vendor.name}`)) return;
+  if (editState.vendorId === id) editState.vendorId = null;
   setPortfolio({
     ...portfolio,
     vendors: portfolio.vendors.filter(v => v.id !== id),
@@ -375,6 +434,34 @@ export function deleteVendor(id) {
   renderLaunchPlan();
 }
 
+export function startEditProperty(id) {
+  if (!portfolio.properties.some(property => property.id === id)) return;
+  editState.propertyId = id;
+  renderPortfolioView();
+  focusPortfolioInput('property-name');
+}
+
+export function startEditTenant(id) {
+  if (!portfolio.tenants.some(tenant => tenant.id === id)) return;
+  editState.tenantId = id;
+  renderPortfolioView();
+  focusPortfolioInput('tenant-name');
+}
+
+export function startEditVendor(id) {
+  if (!portfolio.vendors.some(vendor => vendor.id === id)) return;
+  editState.vendorId = id;
+  renderPortfolioView();
+  focusPortfolioInput('vendor-name');
+}
+
+export function cancelPortfolioEdit(type) {
+  if (type === 'property') editState.propertyId = null;
+  else if (type === 'tenant') editState.tenantId = null;
+  else if (type === 'vendor') editState.vendorId = null;
+  renderPortfolioView();
+}
+
 function renderPropertyCard(property) {
   return `
     <article class="portfolio-card">
@@ -383,7 +470,10 @@ function renderPropertyCard(property) {
         <span>${Number(property.units || 0)} unit${Number(property.units || 0) === 1 ? '' : 's'}${property.owner ? ` / ${escapeHtml(property.owner)}` : ''}</span>
         ${property.notes ? `<small>${escapeHtml(property.notes)}</small>` : ''}
       </div>
-      <button class="portfolio-delete-btn" onclick="deleteProperty('${property.id}')" aria-label="Delete ${escapeHtml(property.name)}">Delete</button>
+      <div class="portfolio-card-actions">
+        <button class="portfolio-edit-btn" onclick="startEditProperty('${property.id}')" aria-label="Edit ${escapeHtml(property.name)}">Edit</button>
+        <button class="portfolio-delete-btn" onclick="deleteProperty('${property.id}')" aria-label="Delete ${escapeHtml(property.name)}">Delete</button>
+      </div>
     </article>
   `;
 }
@@ -397,7 +487,10 @@ function renderVendorCard(vendor) {
         <span>${escapeHtml(vendor.trade || 'General vendor')}</span>
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
       </div>
-      <button class="portfolio-delete-btn" onclick="deleteVendor('${vendor.id}')" aria-label="Delete ${escapeHtml(vendor.name)}">Delete</button>
+      <div class="portfolio-card-actions">
+        <button class="portfolio-edit-btn" onclick="startEditVendor('${vendor.id}')" aria-label="Edit ${escapeHtml(vendor.name)}">Edit</button>
+        <button class="portfolio-delete-btn" onclick="deleteVendor('${vendor.id}')" aria-label="Delete ${escapeHtml(vendor.name)}">Delete</button>
+      </div>
     </article>
   `;
 }
@@ -412,7 +505,10 @@ function renderTenantCard(tenant) {
         <span>${escapeHtml(propertyName(tenant.propertyId))} / ${escapeHtml(unitLabel)} / ${escapeHtml(tenant.status || 'active')}</span>
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
       </div>
-      <button class="portfolio-delete-btn" onclick="deleteTenant('${tenant.id}')" aria-label="Delete ${escapeHtml(tenant.name)}">Delete</button>
+      <div class="portfolio-card-actions">
+        <button class="portfolio-edit-btn" onclick="startEditTenant('${tenant.id}')" aria-label="Edit ${escapeHtml(tenant.name)}">Edit</button>
+        <button class="portfolio-delete-btn" onclick="deleteTenant('${tenant.id}')" aria-label="Delete ${escapeHtml(tenant.name)}">Delete</button>
+      </div>
     </article>
   `;
 }
@@ -430,4 +526,12 @@ function renderStarterExampleStrip() {
       <button class="btn btn-secondary" onclick="addStarterExample()">Add Starter Example</button>
     </section>
   `;
+}
+
+function focusPortfolioInput(id) {
+  setTimeout(() => {
+    const input = document.getElementById(id);
+    input?.focus();
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
 }
