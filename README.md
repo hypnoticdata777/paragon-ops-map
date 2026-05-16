@@ -245,6 +245,8 @@ Click **→ Next Status** on any card to advance it one step. Cards show their p
 
 Each work order captures: property address, unit number, tenant/resident, issue title, notes, priority, assignee (pulled from your team roster), vendor name, target date, and estimated cost.
 
+Existing work orders can be edited from their card, so missing assignee, vendor, target date, property, or resident details can be fixed without deleting the request.
+
 #### Beacon
 
 A pulsing red dot appears on the Work Orders tab whenever an open work order has no assignee — so nothing slips through the cracks.

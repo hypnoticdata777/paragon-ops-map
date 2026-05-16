@@ -89,6 +89,7 @@ export const AUDIT_LABELS = {
   import_clipboard:   'Imported from Clipboard',
   wo_advanced:        'Work Order Advanced',
   wo_deleted:         'Work Order Deleted',
+  wo_updated:         'Work Order Updated',
   portfolio_property_added:   'Property Added',
   portfolio_property_deleted: 'Property Deleted',
   portfolio_property_updated: 'Property Updated',
