@@ -123,6 +123,7 @@ The **Portfolio tab** tracks the beginner registry a property management company
 - Managed properties with unit counts, owner/client context, and operating notes
 - Tenant roster with property, unit, status, phone, and email
 - Vendor bench with trade, phone, and email
+- Edit and delete actions on portfolio cards so incomplete records can be cleaned up without rebuilding them
 - An optional **Starter Example** that adds an editable duplex, tenant, vendor, and first repair request so new users can see the workflow in context
 
 The Launch dashboard includes four data-quality checks:

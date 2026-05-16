@@ -3015,7 +3015,10 @@ body {
   border-color: var(--danger, #c62828);
 }
 
-.portfolio-submit {
+.portfolio-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 12px;
 }
 
@@ -3051,8 +3054,14 @@ body {
   line-height: 1.4;
 }
 
-.portfolio-delete-btn {
+.portfolio-card-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.portfolio-edit-btn,
+.portfolio-delete-btn {
   padding: 6px 9px;
   border: 1px solid var(--line-strong, #c5d0d8);
   border-radius: 7px;
@@ -3062,6 +3071,12 @@ body {
   font: inherit;
   font-size: 12px;
   font-weight: 700;
+}
+
+.portfolio-edit-btn:hover {
+  background: #e8f5f3;
+  border-color: var(--accent, #00897b);
+  color: var(--accent-strong, #00695c);
 }
 
 .portfolio-delete-btn:hover {
