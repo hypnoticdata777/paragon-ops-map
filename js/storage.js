@@ -17,6 +17,7 @@ export const PORTFOLIO_KEY   = 'pm-ops-portfolio-v1';
 export const AUDIT_KEY       = 'pm-ops-audit-v1';
 export const GUIDE_KEY       = 'pm-ops-guide-dismissed';
 export const NOTIF_DATE_KEY  = 'pm-ops-notif-date';
+export const LAUNCH_CHECKLIST_KEY = 'pm-ops-launch-checklist-v1';
 
 // ── Toast notifications ───────────────────────────────────────────────────────
 let _toastTimer = null;
@@ -96,8 +97,20 @@ export function loadFromStorage() {
 }
 
 export function resetStorage() {
-  if (!confirm('Reset all task names and owner assignments to defaults?')) return;
-  localStorage.removeItem(STORAGE_KEY);
+  if (!confirm('Reset PM Ops Map to a fresh starter workspace?\n\nThis clears saved tasks, team roster, work orders, portfolio records, audit log, company setup, checklist progress, and guide preferences on this device.')) return;
+  [
+    STORAGE_KEY,
+    COMPANY_KEY,
+    OPS_PROFILE_KEY,
+    NAV_COMPACT_KEY,
+    TEAM_KEY,
+    WORKORDERS_KEY,
+    PORTFOLIO_KEY,
+    AUDIT_KEY,
+    GUIDE_KEY,
+    NOTIF_DATE_KEY,
+    LAUNCH_CHECKLIST_KEY,
+  ].forEach(key => localStorage.removeItem(key));
   location.reload();
 }
 

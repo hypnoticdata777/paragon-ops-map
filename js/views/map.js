@@ -1,6 +1,6 @@
 // Map view: SVG flow diagram, dept panel, tooltips, and map controls.
 import {
-  orgData, ownerColors, mapState, getEmployeeHex,
+  orgData, mapState, getEmployeeHex,
 } from '../state.js';
 import { getCompanyName } from '../storage.js';
 import { escapeHtml } from '../utils.js';
@@ -244,7 +244,7 @@ export function renderFlowMap() {
       const x2   = op.x - OWNER_R;
       const y2   = op.y;
       const midX = x1 + (x2 - x1) * 0.55;
-      const color   = ownerColors[owner]?.hex || '#d32f2f';
+      const color   = getEmployeeHex(owner);
       const strokeW = Math.max(2, Math.min(count * 1.0, 8));
       const dash    = owner === 'UNOWNED' ? '6,4' : null;
 
@@ -332,7 +332,7 @@ export function renderFlowMap() {
   // Layer 5: Owner circles (interactive)
   uniqueOwners.forEach((owner) => {
     const { x, y } = ownerPos[owner];
-    const color   = ownerColors[owner]?.hex || '#d32f2f';
+    const color   = getEmployeeHex(owner);
     const opacity = ownerGroupOpacity(owner);
 
     const g = svgGroup(boxLayer);

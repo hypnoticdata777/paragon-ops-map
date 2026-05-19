@@ -117,11 +117,13 @@ export function exportJSON() {
       id:    dept.id,
       name:  dept.name,
       tasks: dept.tasks.map(t => ({
+        _configName: t._configName || t.name,
         name:     t.name,
         owner:    t.owner,
         status:   t.status   || 'todo',
         priority: t.priority || 'medium',
-        dueDate:  t.dueDate  || null
+        dueDate:  t.dueDate  || null,
+        blockedBy: t.blockedBy || null
       }))
     })),
     team:       teamData,
