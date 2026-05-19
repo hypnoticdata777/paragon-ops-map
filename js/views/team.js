@@ -15,6 +15,7 @@ import {
 import {
   escapeHtml, jsonAttr, isTaskOverdue, _downloadBlob, _slugify,
 } from '../utils.js';
+import { ROLE_TEMPLATES } from '../templates.js';
 import { updateStats, updateBeacons } from '../ui.js';
 import { renderTrackingView, populateOwnerFilter } from './tracking.js';
 import { renderFlowMap, renderMapControls } from './map.js';
@@ -72,6 +73,20 @@ export function renderTeamView() {
             `).join('')}
           </div>
           <button class="btn-add-employee" onclick="commitAddEmployee()">+ Add Employee</button>
+        </div>
+
+        <div class="role-template-panel">
+          <div>
+            <strong>Role templates</strong>
+            <span>Start with a common beginner team shape, then edit names and affinities.</span>
+          </div>
+          <div class="role-template-actions">
+            ${Object.entries(ROLE_TEMPLATES).map(([id, template]) => `
+              <button class="role-template-btn" onclick="applyRoleTemplate(${jsonAttr(id)})" title="${escapeHtml(template.description)}">
+                ${escapeHtml(template.label)}
+              </button>
+            `).join('')}
+          </div>
         </div>
 
         <div class="employee-list">
@@ -242,6 +257,45 @@ export function toggleAffinity(empName, deptId) {
 
   saveTeamData();
   renderTeamView();
+}
+
+export function applyRoleTemplate(templateId) {
+  const template = ROLE_TEMPLATES[templateId];
+  if (!template) return;
+  if (!confirm(`Apply the "${template.label}" role template?\n\nThis replaces the current roster and marks tasks owned by removed people as UNOWNED. You can run Auto-Assign after reviewing affinities.`)) return;
+
+  const nextEmployees = template.employees.map(emp => ({
+    name: emp.name,
+    hex: emp.hex,
+    affinities: [...emp.affinities],
+  }));
+  const nextNames = new Set(nextEmployees.map(emp => emp.name));
+
+  orgData.departments.forEach(dept => {
+    dept.tasks.forEach(task => {
+      if (task.owner !== 'UNOWNED' && !nextNames.has(task.owner)) {
+        task.owner = 'UNOWNED';
+      }
+    });
+  });
+
+  workOrders.forEach(wo => {
+    if (wo.assignee !== 'UNASSIGNED' && !nextNames.has(wo.assignee)) {
+      wo.assignee = 'UNASSIGNED';
+    }
+  });
+
+  setTeamData({ employees: nextEmployees });
+  saveTeamData();
+  saveToStorage();
+  saveWorkOrders();
+  renderTeamView();
+  renderTrackingView();
+  updateStats();
+  renderLegend();
+  populateOwnerFilter();
+  updateWorkOrderBeacon();
+  _showActionToast(`${template.label} template applied`, 'save-toast--success');
 }
 
 // ── Dynamic legend ────────────────────────────────────────────────────────────

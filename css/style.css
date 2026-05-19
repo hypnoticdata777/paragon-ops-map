@@ -1257,6 +1257,51 @@ body {
 
 .affinity-tag:not(.active):hover { opacity: 0.7; }
 
+.role-template-panel {
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 1px solid #d7e3ea;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.role-template-panel strong {
+  display: block;
+  color: #263238;
+  font-size: 13px;
+}
+
+.role-template-panel span {
+  display: block;
+  margin-top: 3px;
+  color: #78909c;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.role-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.role-template-btn {
+  padding: 8px 10px;
+  border: 1px solid #b0bec5;
+  border-radius: 7px;
+  background: white;
+  color: #37474f;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.role-template-btn:hover {
+  border-color: #00897b;
+  color: #00695c;
+}
+
 /* ==========================================================================
    WORKLOAD DASHBOARD — Horizontal Bar Chart
    One row per employee sorted by task count descending.
@@ -2315,6 +2360,110 @@ body {
   margin-top: 14px;
 }
 
+.setup-wizard-panel {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #d7e3ea;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.setup-wizard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.setup-wizard-head h3 {
+  margin: 3px 0 5px;
+  color: #263238;
+  font-size: 18px;
+}
+
+.setup-wizard-head p {
+  color: #647482;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.setup-wizard-score {
+  min-width: 82px;
+  padding: 10px;
+  text-align: center;
+  background: white;
+  border: 1px solid #cfd8dc;
+  border-radius: 8px;
+}
+
+.setup-wizard-score strong {
+  display: block;
+  color: #00897b;
+  font-size: 22px;
+}
+
+.setup-wizard-score span {
+  display: block;
+  color: #78909c;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.setup-wizard-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.setup-wizard-step {
+  min-height: 110px;
+  padding: 12px;
+  border: 1px solid #cfd8dc;
+  border-radius: 8px;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.setup-wizard-step span {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eceff1;
+  color: #546e7a;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.setup-wizard-step strong {
+  display: block;
+  margin-top: 10px;
+  color: #263238;
+  font-size: 13px;
+}
+
+.setup-wizard-step small {
+  display: block;
+  margin-top: 4px;
+  color: #78909c;
+  line-height: 1.35;
+}
+
+.setup-wizard-step.is-complete {
+  border-color: #80cbc4;
+  background: #f0fdfa;
+}
+
+.setup-wizard-step.is-complete span {
+  background: #00897b;
+  color: white;
+}
+
 .department.launch-highlight {
   outline: 3px solid var(--accent, #00897b);
   outline-offset: 4px;
@@ -2346,9 +2495,14 @@ body {
   .launch-coverage-head,
   .launch-quality-head,
   .launch-start,
+  .setup-wizard-head,
   .launch-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .setup-wizard-steps {
+    grid-template-columns: 1fr;
   }
 
   .launch-score {

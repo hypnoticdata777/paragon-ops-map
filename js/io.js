@@ -8,7 +8,8 @@ import {
   getCompanyName, applyCompanyName, COMPANY_KEY,
   _showActionToast, _fileSlug,
 } from './storage.js';
-import { isValidISODate, _downloadBlob, _slugify } from './utils.js';
+import { isValidISODate, _downloadBlob } from './utils.js';
+import { buildStatePayload, validateImportedState, formatImportReport } from './stateSchema.js';
 import { updateStats } from './ui.js';
 import { renderTrackingView, populateOwnerFilter } from './views/tracking.js';
 import { renderMapControls, renderFlowMap } from './views/map.js';
@@ -25,7 +26,8 @@ export function _saveUndoSnapshot() {
       owner:       t.owner,
       status:      t.status   || 'todo',
       priority:    t.priority || 'medium',
-      dueDate:     t.dueDate  || null
+      dueDate:     t.dueDate  || null,
+      blockedBy:   t.blockedBy || null
     }))
   })));
 }
@@ -43,6 +45,7 @@ export function undoLastAction() {
       task.status   = snapTask.status;
       task.priority = snapTask.priority;
       task.dueDate  = snapTask.dueDate;
+      task.blockedBy = snapTask.blockedBy || null;
     });
   });
   setUndoSnapshot(null);
@@ -110,26 +113,13 @@ function _applyImportedState(data) {
 
 // ── Export ────────────────────────────────────────────────────────────────────
 export function exportJSON() {
-  const payload = {
+  const payload = buildStatePayload({
     company:    getCompanyName(),
-    exported:   new Date().toISOString(),
-    departments: orgData.departments.map(dept => ({
-      id:    dept.id,
-      name:  dept.name,
-      tasks: dept.tasks.map(t => ({
-        _configName: t._configName || t.name,
-        name:     t.name,
-        owner:    t.owner,
-        status:   t.status   || 'todo',
-        priority: t.priority || 'medium',
-        dueDate:  t.dueDate  || null,
-        blockedBy: t.blockedBy || null
-      }))
-    })),
+    departments: orgData.departments,
     team:       teamData,
     workOrders: workOrders,
     portfolio:  portfolio
-  };
+  });
   _downloadBlob(
     JSON.stringify(payload, null, 2),
     'application/json',
@@ -243,14 +233,18 @@ export function importJSON(inputEl) {
   reader.onload = (ev) => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (!Array.isArray(data.departments)) throw new Error('Missing departments');
+      const report = validateImportedState(data, orgData);
+      if (!report.ok) {
+        alert(formatImportReport(report));
+        return;
+      }
 
       const hasExistingData = orgData.departments.some(dept =>
         dept.tasks.some(t => t.owner !== 'UNOWNED' || (t.status && t.status !== 'todo') || t.dueDate)
       );
-      if (hasExistingData) {
+      if (hasExistingData || report.warnings.length > 0) {
         const fromLabel = data.company ? ` from "${data.company}"` : '';
-        if (!confirm(`Importing${fromLabel} will overwrite your current task assignments, statuses, and due dates.\n\nContinue?`)) {
+        if (!confirm(`${formatImportReport(report)}\n\nImporting${fromLabel} will overwrite matching task assignments, statuses, due dates, dependencies, team data, work orders, and portfolio data.\n\nContinue?`)) {
           inputEl.value = '';
           return;
         }
@@ -270,25 +264,13 @@ export function importJSON(inputEl) {
 
 // ── Clipboard sync ────────────────────────────────────────────────────────────
 export function copyStateToClipboard() {
-  const payload = JSON.stringify({
+  const payload = JSON.stringify(buildStatePayload({
     company:    getCompanyName(),
-    exported:   new Date().toISOString(),
-    departments: orgData.departments.map(dept => ({
-      id: dept.id,
-      tasks: dept.tasks.map(t => ({
-        _configName: t._configName,
-        name:        t.name,
-        owner:       t.owner,
-        status:      t.status   || 'todo',
-        priority:    t.priority || 'medium',
-        dueDate:     t.dueDate  || null,
-        blockedBy:   t.blockedBy || null
-      }))
-    })),
+    departments: orgData.departments,
     team:       teamData,
     workOrders: workOrders,
     portfolio:  portfolio
-  }, null, 2);
+  }), null, 2);
 
   if (!navigator.clipboard) {
     alert('Clipboard API not available. Use Export JSON instead.');
@@ -307,14 +289,18 @@ export async function pasteStateFromClipboard() {
   try {
     const text = await navigator.clipboard.readText();
     const data = JSON.parse(text);
-    if (!Array.isArray(data.departments)) throw new Error('not a PM Ops state');
+    const report = validateImportedState(data, orgData);
+    if (!report.ok) throw new Error(formatImportReport(report));
     const fromLabel = data.company ? ` from "${data.company}"` : '';
-    if (!confirm(`Paste state${fromLabel} and replace current data on this device?`)) return;
+    if (!confirm(`${formatImportReport(report)}\n\nPaste state${fromLabel} and replace matching data on this device?`)) return;
     _saveUndoSnapshot();
     _applyImportedState(data);
     logAudit('import_clipboard');
     _showActionToast('✓ State pasted from clipboard', 'save-toast--success');
   } catch (e) {
-    alert('Could not read PM Ops state from clipboard.\nMake sure you copied a valid export first.');
+    const detail = e?.message && e.message.includes('Import validation report')
+      ? `\n\n${e.message}`
+      : '\nMake sure you copied a valid export first.';
+    alert(`Could not read PM Ops state from clipboard.${detail}`);
   }
 }

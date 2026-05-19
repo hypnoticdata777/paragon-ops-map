@@ -7,6 +7,7 @@ import {
   getCompanyName, getOpsProfile, _fileSlug, _showActionToast,
 } from './storage.js';
 import { _downloadBlob, isTaskOverdue } from './utils.js';
+import { SOP_TEMPLATES } from './templates.js';
 
 // Maintainer note:
 // This module is read-only against app state. It generates the Markdown
@@ -52,6 +53,20 @@ export function downloadOperationsHandbook() {
     `pm-ops-${_fileSlug()}-operations-handbook.md`
   );
   _showActionToast('Operations handbook downloaded', 'save-toast--success');
+}
+
+export function printOperationsHandbook() {
+  const markdown = buildOperationsHandbookMarkdown();
+  const html = markdownToPrintHtml(markdown, `${getCompanyName()} Operations Handbook`);
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Popup blocked. Allow popups to print the handbook.');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 
 export function buildOperationsHandbookMarkdown() {
@@ -110,6 +125,10 @@ export function buildOperationsHandbookMarkdown() {
     '',
     buildMaintenanceSOPSection(),
     '',
+    '## Starter SOP Template Library',
+    '',
+    buildStarterSOPSection(),
+    '',
     '## Department SOPs',
     '',
     orgData.departments.map(buildDepartmentSection).join('\n\n'),
@@ -127,6 +146,16 @@ export function buildOperationsHandbookMarkdown() {
   ];
 
   return lines.join('\n');
+}
+
+function buildStarterSOPSection() {
+  return SOP_TEMPLATES.map(template => [
+    `### ${template.title}`,
+    '',
+    `Cadence: ${template.cadence}`,
+    '',
+    ...template.steps.map(step => `- ${step}`),
+  ].join('\n')).join('\n\n');
 }
 
 function getOperatingSummary() {
@@ -383,4 +412,41 @@ function getHandbookGaps() {
     .filter(area => area.coveragePct < 70)
     .forEach(area => gaps.push(`Improve ${area.label} coverage (${area.coveragePct}% covered).`));
   return gaps;
+}
+
+function markdownToPrintHtml(markdown, title) {
+  const body = markdown
+    .split('\n')
+    .map(line => {
+      if (line.startsWith('# ')) return `<h1>${escapeLine(line.slice(2))}</h1>`;
+      if (line.startsWith('## ')) return `<h2>${escapeLine(line.slice(3))}</h2>`;
+      if (line.startsWith('### ')) return `<h3>${escapeLine(line.slice(4))}</h3>`;
+      if (line.startsWith('- ')) return `<li>${escapeLine(line.slice(2))}</li>`;
+      if (!line.trim()) return '';
+      return `<p>${escapeLine(line)}</p>`;
+    })
+    .join('\n')
+    .replace(/(<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`);
+
+  return `
+    <html>
+      <head>
+        <title>${escapeLine(title)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #263238; padding: 28px; line-height: 1.45; }
+          h1 { font-size: 28px; margin-bottom: 4px; }
+          h2 { margin-top: 28px; border-bottom: 1px solid #cfd8dc; padding-bottom: 4px; }
+          h3 { margin-top: 18px; }
+          ul { padding-left: 22px; }
+          li { margin: 4px 0; }
+          h2, h3, ul { break-inside: avoid; }
+        </style>
+      </head>
+      <body>${body}</body>
+    </html>
+  `;
+}
+
+function escapeLine(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

@@ -100,6 +100,7 @@ export const AUDIT_LABELS = {
   portfolio_vendor_deleted:   'Vendor Deleted',
   portfolio_vendor_updated:   'Vendor Updated',
   starter_example_added:      'Starter Example Added',
+  demo_company_loaded:        'Demo Company Loaded',
   dependency_set:     'Dependency Set',
   dependency_cleared: 'Dependency Cleared',
 };

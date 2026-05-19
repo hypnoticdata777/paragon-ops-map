@@ -97,20 +97,54 @@ export function loadFromStorage() {
 }
 
 export function resetStorage() {
-  if (!confirm('Reset PM Ops Map to a fresh starter workspace?\n\nThis clears saved tasks, team roster, work orders, portfolio records, audit log, company setup, checklist progress, and guide preferences on this device.')) return;
-  [
-    STORAGE_KEY,
-    COMPANY_KEY,
-    OPS_PROFILE_KEY,
-    NAV_COMPACT_KEY,
-    TEAM_KEY,
-    WORKORDERS_KEY,
-    PORTFOLIO_KEY,
-    AUDIT_KEY,
-    GUIDE_KEY,
-    NOTIF_DATE_KEY,
-    LAUNCH_CHECKLIST_KEY,
-  ].forEach(key => localStorage.removeItem(key));
+  const choice = prompt(
+    'Reset options:\n\n' +
+    '1 = Tasks only\n' +
+    '2 = Operating workspace (tasks, team, portfolio, work orders, audit, checklist)\n' +
+    '3 = Company setup and preferences only\n' +
+    '4 = Everything on this device\n\n' +
+    'Type 1, 2, 3, or 4.'
+  );
+  if (!choice) return;
+
+  const resetGroups = {
+    '1': {
+      label: 'task names, owners, statuses, due dates, and dependencies',
+      keys: [STORAGE_KEY],
+    },
+    '2': {
+      label: 'operating workspace data',
+      keys: [STORAGE_KEY, TEAM_KEY, WORKORDERS_KEY, PORTFOLIO_KEY, AUDIT_KEY, LAUNCH_CHECKLIST_KEY],
+    },
+    '3': {
+      label: 'company setup and preferences',
+      keys: [COMPANY_KEY, OPS_PROFILE_KEY, NAV_COMPACT_KEY, GUIDE_KEY, NOTIF_DATE_KEY],
+    },
+    '4': {
+      label: 'all PM Ops Map data on this device',
+      keys: [
+        STORAGE_KEY,
+        COMPANY_KEY,
+        OPS_PROFILE_KEY,
+        NAV_COMPACT_KEY,
+        TEAM_KEY,
+        WORKORDERS_KEY,
+        PORTFOLIO_KEY,
+        AUDIT_KEY,
+        GUIDE_KEY,
+        NOTIF_DATE_KEY,
+        LAUNCH_CHECKLIST_KEY,
+      ],
+    },
+  };
+
+  const selected = resetGroups[choice.trim()];
+  if (!selected) {
+    alert('Reset canceled. Please choose 1, 2, 3, or 4.');
+    return;
+  }
+  if (!confirm(`Reset ${selected.label}?\n\nThis only affects local data stored in this browser.`)) return;
+  selected.keys.forEach(key => localStorage.removeItem(key));
   location.reload();
 }
 
