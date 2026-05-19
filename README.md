@@ -65,6 +65,7 @@ It answers nine questions at a glance:
 7. **What should a new company set up first?** — The Launch Plan recommends a first-week operating blueprint, checklist, and setup gaps
 8. **How do we document this for the team?** — The Handbook export turns the configured map into a Markdown SOP starter pack
 9. **Can we trust this data outside the app?** — Data Quality checks flag incomplete properties, tenants, vendors, and open repairs before export
+10. **Can a beginner see the whole flow before entering real data?** — The setup wizard, role templates, and demo company show the first operating loop end to end
 
 On first launch, the setup screen captures company name, portfolio size, and primary operations focus. That profile stays in `localStorage` and adjusts the app's tone automatically for stability, maintenance, growth, or compliance workflows.
 
@@ -75,13 +76,14 @@ On first launch, the setup screen captures company name, portfolio size, and pri
 1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/) or a downloaded release ZIP
 2. Enter your company name, portfolio size, and primary operations focus
 3. Review the **Launch Plan** on the Tracking view
-4. Open **Portfolio** and add properties, tenants, vendors, or the editable **Starter Example**
-5. Add your real team members in **Team Manager**
-6. Assign every UNOWNED responsibility or run **Auto-Assign**
-7. Create one starter work order to validate maintenance intake and closeout
-8. Review **Data Quality** before exporting CSVs or sharing the handbook
-9. Download the **Handbook** to get a shareable operations SOP starter pack
-10. Re-export JSON, CSV, or copy state whenever you want a backup or device transfer
+4. Follow the **Setup Wizard**: property -> tenant -> vendor -> team -> first work order
+5. Open **Portfolio** and add properties, tenants, vendors, or the editable **Starter Example**
+6. Add your real team members in **Team Manager**, or start from a role template
+7. Assign every UNOWNED responsibility or run **Auto-Assign**
+8. Create one starter work order to validate maintenance intake and closeout
+9. Review **Data Quality** before exporting CSVs or sharing the handbook
+10. Download or print the **Handbook** to get a shareable operations SOP starter pack
+11. Re-export JSON, CSV, or copy state whenever you want a backup or device transfer
 
 ---
 
@@ -107,12 +109,15 @@ It includes:
 
 - A **Start Here** panel that recommends the single next best action
 - Plain-language setup steps for adding people, closing unowned gaps, and exporting the handbook
+- A **Setup Wizard** that walks new users through property -> tenant -> vendor -> team -> first work order
 - A focus-specific starter blueprint for stability, maintenance, growth, or compliance
 - Department shortcuts that jump directly to the most important operating areas
 - A first-week checklist for ownership, maintenance intake, rent collection, vendors, owner reporting, and backup coverage
 - Live setup gaps based on the current map, team roster, and work orders
 - A **Data Quality** panel that checks whether portfolio and maintenance records are complete enough to export or hand off
 - A Markdown **Download Launch Plan** action for sharing or onboarding
+- A **Print Launch Plan** action for a clean handoff/meeting copy
+- A **Load Demo Company** action for exploring a realistic sample workspace before entering real data
 
 ---
 
@@ -154,9 +159,12 @@ The handbook includes:
 - Team roster and workload
 - Department-by-department SOP checklist
 - Maintenance work order summary
+- Starter SOP templates for daily huddles, maintenance intake, owner updates, and move-in handoffs
 - Handoff notes for the next manager or new hire
 
 This turns PM Ops Map from a live dashboard into a starter operating manual for a new property management company.
+
+Use **Print Handbook** for a print-friendly version without needing to copy Markdown into another tool.
 
 ---
 
@@ -165,9 +173,11 @@ This turns PM Ops Map from a live dashboard into a starter operating manual for 
 Use the **Copy State** and **Paste State** buttons in the stats bar to transfer your full data set between devices without a backend.
 
 - **Copy State** — serializes all tasks, team members, and work orders to your clipboard as a single JSON blob
-- **Paste State** — reads from the clipboard and restores the full state (prompts for confirmation before overwriting)
+- **Paste State** — reads from the clipboard, validates the schema, shows an import report, and restores matching state after confirmation
 
 Works across any two browsers that share clipboard access (e.g. paste into a colleague's machine via a chat tool, or sync between your laptop and tablet).
+
+JSON exports include schema metadata (`pm-ops-map-state`, currently version 2), task identity keys, dependencies, team data, portfolio records, work orders, and company context. Imports show matched departments/tasks, skipped records, invalid due dates, and included portfolio/team/work-order counts before overwrite.
 
 ---
 
@@ -265,6 +275,19 @@ Add employees by name and pick their badge color from the palette. Each employee
 - A **Playbook** panel for that employee's owned tasks, priorities, blockers, affinities, and active work orders
 
 Affinities tell the auto-assign engine which departments this person covers.
+
+#### Role Templates
+
+Team Manager includes four starter team shapes:
+
+| Template | Best for |
+|----------|----------|
+| **Solo PM** | One operator covering every lane |
+| **2-Person Team** | Splitting front-office and back-office work |
+| **Maintenance-Heavy** | Teams where repair intake, vendors, and turns dominate |
+| **Leasing-Heavy** | Teams focused on pipeline, applications, and move-ins |
+
+Applying a template replaces the current roster, keeps matching assigned owners where possible, and marks removed owners' work as UNOWNED so Auto-Assign can rebalance cleanly.
 
 #### Role Playbooks
 
@@ -375,9 +398,20 @@ Persistent across all views, updates whenever any task changes:
 | ⚠ Unowned | Tasks with no assigned owner (red) |
 | Departments | Total department count |
 
-Also contains: Export to JSON, task CSV, Properties CSV, Tenants CSV, Vendors CSV, Work Orders CSV · Download Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset to defaults
+Also contains: Export to JSON, task CSV, Properties CSV, Tenants CSV, Vendors CSV, Work Orders CSV · Download Handbook · Print Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset options
 
-> **Export/Import note:** JSON exports include the full workspace. CSV exports are spreadsheet-friendly slices for tasks, properties, tenants, vendors, and work orders. Old exports without newer fields import cleanly and fall back to sensible defaults.
+> **Export/Import note:** JSON exports include the full versioned workspace. CSV exports are spreadsheet-friendly slices for tasks, properties, tenants, vendors, and work orders. Old exports without newer fields import cleanly and fall back to sensible defaults.
+
+#### Reset Options
+
+The Reset button lets you choose what to clear from this browser:
+
+| Option | Clears |
+|--------|--------|
+| **1 - Tasks only** | Task names, owners, statuses, due dates, and dependencies |
+| **2 - Operating workspace** | Tasks, team, portfolio, work orders, audit log, and launch checklist |
+| **3 - Company setup and preferences** | Company profile, nav state, guide state, and notification date |
+| **4 - Everything** | All PM Ops Map data stored on this device |
 
 ---
 
@@ -448,6 +482,10 @@ pm-ops-map/
 │   ├── io.js               Export / Import (JSON + task/portfolio/work-order CSV), clipboard sync, undo stack
 │   ├── launchPlan.js       Guided setup plan, launch checklist, setup gaps, data-quality checks
 │   ├── handbook.js         Markdown operations handbook generator
+│   ├── stateSchema.js      Versioned JSON export/import schema and validation report
+│   ├── stateSchema.cjs     CommonJS mirror for schema tests
+│   ├── templates.js        Role templates, SOP templates, and demo workspace seed data
+│   ├── templates.cjs       CommonJS mirror for template tests
 │   ├── data.js             Jest-only shim — reads config.json for test assertions
 │   ├── utils.js            Pure utility functions for browser modules
 │   ├── utils.cjs           CommonJS mirror for Jest tests
@@ -460,7 +498,10 @@ pm-ops-map/
 │   │   └── workorders.js   Work Orders kanban board
 │   └── __tests__/
 │       ├── data.test.js    Unit tests for config.json structure (10 tests)
-│       └── utils.test.js   Unit tests for utility functions (37 tests)
+│       ├── utils.test.js   Unit tests for utility functions (37 tests)
+│       ├── stateSchema.test.js
+│       └── templates.test.js
+├── .github/workflows/ci.yml CI for install, tests, audit, and production build
 ├── CONTRIBUTING.md         How to contribute
 ├── LICENSE.txt             MIT License
 └── webpack.config.*.js     Optional build configs (not needed to run the app)
@@ -487,16 +528,20 @@ views/team.js     ← state, storage, utils, ui, views/tracking, views/map, view
 views/portfolio.js ← state, storage, utils, launchPlan
 views/workorders.js ← state, storage, utils, ui
 launchPlan.js     ← state, storage, utils
-handbook.js       ← state, storage, utils
-io.js             ← state, storage, utils, ui, views/tracking, views/map, views/team, views/portfolio
+handbook.js       ← state, storage, utils, templates
+templates.js      ← no dependencies
+stateSchema.js    ← no dependencies
+io.js             ← state, storage, utils, stateSchema, ui, views/tracking, views/map, views/team, views/portfolio
 app.js            ← everything above
 ```
 
 There are **no circular dependencies** in this graph. Each arrow points only downward.
 
-### Why `utils.cjs` exists
+### Why `.cjs` mirrors exist
 
 The browser app uses ES module `import/export` syntax so GitHub Pages can serve the source directly. Jest still runs in CommonJS mode, so `utils.cjs` mirrors `utils.js` for the unit tests without requiring Babel or `--experimental-vm-modules`.
+
+The same pattern is used for `stateSchema.cjs` and `templates.cjs`, keeping schema and template tests simple while the browser app stays native ES modules.
 
 ### Global function assignments
 
@@ -546,8 +591,18 @@ Works in all modern browsers: Chrome 80+, Firefox 74+, Safari 13.1+, Edge 80+.
 npm install
 npm start          # webpack-dev-server with live reload at localhost:8080
 npm test           # Jest unit test suite
+npm audit --audit-level=moderate
 npm run build      # Production bundle → dist/
 ```
+
+Requires Node.js 20.9 or newer for the current build toolchain.
+
+GitHub Actions runs the same core checks on push and pull request:
+
+- `npm ci`
+- `npm test -- --runInBand`
+- `npm audit --audit-level=moderate`
+- `npm run build`
 
 ---
 
