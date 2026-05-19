@@ -5,7 +5,7 @@ Thanks for your interest in contributing. PM Ops Map is built to be simple — t
 ## Ways to Contribute
 
 ### 1. Share Your Department Templates
-If you've customized `js/data.js` for your company and built something useful — a new department, a better task breakdown, a department specific to HOA or commercial PM — open a PR. Other companies benefit directly.
+If you've customized `config.json` for your company and built something useful — a new department, a better task breakdown, or a department specific to HOA or commercial PM — open a PR. Other companies benefit directly.
 
 ### 2. Report Issues
 Found a bug or something that doesn't work in your browser? [Open an issue](https://github.com/hypnoticdata777/paragon-ops-map/issues) with:
@@ -31,7 +31,9 @@ git clone https://github.com/hypnoticdata777/paragon-ops-map.git
 cd paragon-ops-map
 
 # Option A — no build step (quickest)
-open index.html
+python -m http.server 8000
+
+# then open http://localhost:8000
 
 # Option B — dev server with live reload
 npm install
@@ -42,21 +44,29 @@ npm start       # runs at localhost:8080
 
 ```
 pm-ops-map/
-├── index.html          Main layout and navigation
-├── css/style.css       All styles
+├── config.json         Starter departments, tasks, owners, colors, and affinities
+├── index.html          Main layout, modals, navigation, and inline handlers
+├── css/style.css       Application styles
 ├── js/
-│   ├── data.js         All data — departments, tasks, owners, strategic content
-│   └── app.js          All rendering — views, SVG map, editing, filters
+│   ├── app.js          Browser entry point and window handler registration
+│   ├── state.js        Shared in-memory state and constants
+│   ├── storage.js      localStorage, profile, audit, and reset helpers
+│   ├── io.js           JSON/CSV export, import, clipboard sync, and undo
+│   ├── launchPlan.js   Beginner setup dashboard and readiness checks
+│   ├── handbook.js     Markdown handbook export
+│   ├── data.js         Jest-only config.json shim
+│   └── views/          Tracking, map, team, portfolio, and work order screens
 ```
 
-All data lives in `data.js`. All rendering lives in `app.js`. Keep it that way.
+Starter operating data lives in `config.json`. Runtime state is loaded by `app.js`, kept in `state.js`, and persisted by `storage.js`. Feature rendering lives in the relevant `js/views/` module.
 
 ## Pull Request Guidelines
 
 - Keep PRs focused — one change per PR
-- If you're editing `data.js`, make sure the data structure matches the existing schema exactly
-- If you're editing `app.js`, test in Chrome and Firefox before submitting
-- No new runtime dependencies — if it needs `npm install` to work, it won't be merged
+- If you're editing `config.json`, make sure the data structure matches the existing schema exactly
+- If you're editing an HTML-called handler, update both `index.html` and the `Object.assign(window, ...)` block in `js/app.js`
+- If you're editing a view, keep changes in the relevant `js/views/` module when possible
+- No new runtime dependencies — the published app should keep working as browser-native HTML, CSS, and JavaScript
 - Run `npm test` before submitting — tests must pass
 
 ## Code Style
