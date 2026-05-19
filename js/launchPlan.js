@@ -1,8 +1,14 @@
 import {
-  orgData, teamData, workOrders, portfolio, ownerColors, countUnowned,
+  orgData, teamData, setTeamData, workOrders, setWorkOrders, portfolio, setPortfolio,
+  ownerColors, countUnowned,
 } from './state.js';
-import { getOpsProfile, getCompanyName, _showActionToast } from './storage.js';
+import {
+  getOpsProfile, getCompanyName, _showActionToast,
+  COMPANY_KEY, OPS_PROFILE_KEY, applyCompanyName, applyOpsProfile,
+  saveTeamData, saveWorkOrders, savePortfolio, saveToStorage, logAudit,
+} from './storage.js';
 import { escapeHtml, _slugify } from './utils.js';
+import { ROLE_TEMPLATES, buildDemoWorkspace } from './templates.js';
 
 // Maintainer note:
 // This module powers the top-of-dashboard Launch Plan and "Start Here" next
@@ -315,6 +321,7 @@ export function renderLaunchPlan() {
         ${escapeHtml(nextAction.button)}
       </button>
     </div>
+    ${renderSetupWizard(snapshot)}
     <div class="launch-command-grid" aria-label="Beginner property manager modules">
       ${commandModules.map(renderCommandModule).join('')}
     </div>
@@ -420,6 +427,8 @@ export function renderLaunchPlan() {
     </div>
     <div class="launch-actions">
       <button class="btn btn-secondary" onclick="downloadLaunchPlan()">Download Launch Plan</button>
+      <button class="btn btn-secondary" onclick="printLaunchPlan()">Print Launch Plan</button>
+      <button class="btn btn-secondary" onclick="loadDemoCompany()">Load Demo Company</button>
       <button class="btn btn-secondary" onclick="resetLaunchChecklist()">Reset Checklist</button>
     </div>
   `;
@@ -463,6 +472,40 @@ export function startWorkOrderSetup() {
 export function downloadLaunchHandbook() {
   // Depends on handbook.js exposing downloadOperationsHandbook on window via app.js.
   if (window.downloadOperationsHandbook) window.downloadOperationsHandbook();
+}
+
+export function loadDemoCompany() {
+  if (!confirm('Load the demo company?\n\nThis replaces local portfolio, team, work orders, company profile, and task assignments with a realistic sample workspace.')) return;
+  const demo = buildDemoWorkspace();
+  const template = ROLE_TEMPLATES.maintenanceHeavy;
+  const employees = template.employees.map(emp => ({
+    name: emp.name,
+    hex: emp.hex,
+    affinities: [...emp.affinities],
+  }));
+
+  setTeamData({ employees });
+  setPortfolio(demo.portfolio);
+  setWorkOrders(demo.workOrders);
+  applyDemoAssignments(employees);
+
+  try {
+    localStorage.setItem(COMPANY_KEY, demo.company);
+    localStorage.setItem(OPS_PROFILE_KEY, JSON.stringify(demo.profile));
+  } catch (_) {}
+  applyCompanyName(demo.company);
+  applyOpsProfile(demo.profile);
+  saveTeamData();
+  savePortfolio();
+  saveWorkOrders();
+  saveToStorage();
+  logAudit('demo_company_loaded', { title: demo.company });
+  renderLaunchPlan();
+  if (window.renderTrackingView) window.renderTrackingView();
+  if (window.populateOwnerFilter) window.populateOwnerFilter();
+  if (window.renderLegend) window.renderLegend();
+  if (window.updateStats) window.updateStats();
+  _showActionToast('Demo company loaded', 'save-toast--success');
 }
 
 export function focusLaunchDepartment(deptId) {
@@ -517,6 +560,45 @@ export function downloadLaunchPlan() {
   _showActionToast('Launch plan downloaded', 'save-toast--success');
 }
 
+export function printLaunchPlan() {
+  const profile = getOpsProfile();
+  const focus = profile.focus || 'stability';
+  const blueprint = FOCUS_BLUEPRINTS[focus] || FOCUS_BLUEPRINTS.stability;
+  const saved = readChecklistState();
+  const checklist = getLaunchChecklist(focus);
+  const coverage = getCriticalCoverageAreas();
+  const gaps = getLaunchGaps();
+  const html = `
+    <html>
+      <head>
+        <title>${escapeHtml(getCompanyName())} Launch Plan</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #263238; padding: 28px; line-height: 1.45; }
+          h1, h2 { margin-bottom: 6px; }
+          section { break-inside: avoid; margin-bottom: 24px; }
+          li { margin: 5px 0; }
+          .muted { color: #607d8b; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(getCompanyName())} Launch Plan</h1>
+        <p class="muted">${escapeHtml(blueprint.title)} / ${escapeHtml(PROFILE_LABELS[focus] || PROFILE_LABELS.stability)}</p>
+        <section><h2>Checklist</h2><ul>${checklist.map(item => `<li>${saved[item.id] || item.metric() ? '[x]' : '[ ]'} ${escapeHtml(item.label)} - ${escapeHtml(item.detail)}</li>`).join('')}</ul></section>
+        <section><h2>Critical Coverage</h2><ul>${coverage.map(area => `<li>${escapeHtml(area.label)}: ${area.coveragePct}% covered, ${area.unownedCount} unowned. Owners: ${escapeHtml(area.primaryOwners)}</li>`).join('')}</ul></section>
+        <section><h2>Setup Gaps</h2><ul>${(gaps.length ? gaps : [{ title: 'No major setup gaps detected', detail: 'Keep refreshing real data as work changes.' }]).map(gap => `<li>${escapeHtml(gap.title)}: ${escapeHtml(gap.detail)}</li>`).join('')}</ul></section>
+      </body>
+    </html>`;
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Popup blocked. Allow popups to print the launch plan.');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
 function renderChecklistItem(item, manuallyChecked) {
   const complete = manuallyChecked || item.metric();
   return `
@@ -536,6 +618,63 @@ function renderMetricCard(label, value, detail, tone) {
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value)}</strong>
       <small>${escapeHtml(detail)}</small>
+    </div>
+  `;
+}
+
+function renderSetupWizard(snapshot) {
+  const steps = [
+    {
+      label: 'Property',
+      detail: 'Add what you manage.',
+      done: snapshot.propertyCount > 0,
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Tenant',
+      detail: 'Attach resident context.',
+      done: snapshot.tenantCount > 0,
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Vendor',
+      detail: 'Build the repair bench.',
+      done: snapshot.vendorCount > 0,
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    },
+    {
+      label: 'Team',
+      detail: 'Replace sample roles.',
+      done: snapshot.employeeCount > 0 && !snapshot.isStarterTeam,
+      onclick: 'startTeamSetup()',
+    },
+    {
+      label: 'First work order',
+      detail: 'Test maintenance flow.',
+      done: snapshot.workOrderCount > 0,
+      onclick: 'startWorkOrderSetup()',
+    },
+  ];
+  const complete = steps.filter(step => step.done).length;
+  return `
+    <div class="setup-wizard-panel" aria-label="Beginner setup wizard">
+      <div class="setup-wizard-head">
+        <div>
+          <div class="launch-kicker">Setup Wizard</div>
+          <h3>Property -> tenant -> vendor -> team -> first work order</h3>
+          <p>Walk the first operating loop in order. Each step opens the exact place to complete it.</p>
+        </div>
+        <div class="setup-wizard-score"><strong>${complete}/${steps.length}</strong><span>complete</span></div>
+      </div>
+      <div class="setup-wizard-steps">
+        ${steps.map((step, idx) => `
+          <button class="setup-wizard-step ${step.done ? 'is-complete' : ''}" onclick="${step.onclick}">
+            <span>${idx + 1}</span>
+            <strong>${escapeHtml(step.label)}</strong>
+            <small>${escapeHtml(step.detail)}</small>
+          </button>
+        `).join('')}
+      </div>
     </div>
   `;
 }
@@ -622,6 +761,24 @@ function getSevenDayPlan(profile) {
       detail: day.focus[focus] || day.base,
     })),
   };
+}
+
+function applyDemoAssignments(employees) {
+  const workload = new Map(employees.map(emp => [emp.name, 0]));
+  orgData.departments.forEach(dept => {
+    const candidates = employees.filter(emp => emp.affinities.includes(dept.id));
+    const fallback = candidates.length ? candidates : employees;
+    dept.tasks.forEach(task => {
+      fallback.sort((a, b) => (workload.get(a.name) || 0) - (workload.get(b.name) || 0));
+      const winner = fallback[0];
+      task.owner = winner ? winner.name : 'UNOWNED';
+      task.status = 'todo';
+      task.priority = task.priority || 'medium';
+      task.dueDate = null;
+      task.blockedBy = null;
+      if (winner) workload.set(winner.name, (workload.get(winner.name) || 0) + 1);
+    });
+  });
 }
 
 function getReadinessScore(checklist, saved) {

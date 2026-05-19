@@ -48,7 +48,7 @@ import {
 import {
   renderTeamView, selectPaletteColor,
   commitAddEmployee, removeEmployee, toggleAffinity,
-  runAutoAssign, renderLegend,
+  applyRoleTemplate, runAutoAssign, renderLegend,
   openRolePlaybook, closeRolePlaybook, downloadOpenRolePlaybook,
   openAuditLog, closeAuditLog, clearAuditLog,
 } from './views/team.js';
@@ -72,9 +72,9 @@ import {
   renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
   focusLaunchDepartment, downloadLaunchPlan,
   startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
-  focusCoverageArea,
+  focusCoverageArea, loadDemoCompany, printLaunchPlan,
 } from './launchPlan.js';
-import { downloadOperationsHandbook } from './handbook.js';
+import { downloadOperationsHandbook, printOperationsHandbook } from './handbook.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -250,6 +250,7 @@ Object.assign(window, {
   commitAddEmployee,
   removeEmployee,
   toggleAffinity,
+  applyRoleTemplate,
   runAutoAssign,
   renderLegend,
   openRolePlaybook,
@@ -311,9 +312,12 @@ Object.assign(window, {
   focusLaunchDepartment,
   focusCoverageArea,
   downloadLaunchPlan,
+  printLaunchPlan,
+  loadDemoCompany,
   startTeamSetup,
   showUnownedTasks,
   startWorkOrderSetup,
   downloadLaunchHandbook,
   downloadOperationsHandbook,
+  printOperationsHandbook,
 });
