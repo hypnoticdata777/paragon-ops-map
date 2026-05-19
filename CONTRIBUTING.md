@@ -36,6 +36,7 @@ python -m http.server 8000
 # then open http://localhost:8000
 
 # Option B — dev server with live reload
+# Requires Node.js 20.9 or newer
 npm install
 npm start       # runs at localhost:8080
 ```
