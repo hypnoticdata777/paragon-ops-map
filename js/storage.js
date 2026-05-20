@@ -97,16 +97,20 @@ export function loadFromStorage() {
 }
 
 export function resetStorage() {
-  const choice = prompt(
-    'Reset options:\n\n' +
-    '1 = Tasks only\n' +
-    '2 = Operating workspace (tasks, team, portfolio, work orders, audit, checklist)\n' +
-    '3 = Company setup and preferences only\n' +
-    '4 = Everything on this device\n\n' +
-    'Type 1, 2, 3, or 4.'
-  );
-  if (!choice) return;
+  const modal = document.getElementById('reset-modal');
+  if (modal) {
+    modal.classList.add('visible');
+    return;
+  }
+  const choice = prompt('Reset options:\n\n1 = Tasks only\n2 = Operating workspace\n3 = Company setup and preferences only\n4 = Everything on this device\n\nType 1, 2, 3, or 4.');
+  if (choice) confirmResetStorage(choice);
+}
 
+export function closeResetModal() {
+  document.getElementById('reset-modal')?.classList.remove('visible');
+}
+
+export function confirmResetStorage(choice) {
   const resetGroups = {
     '1': {
       label: 'task names, owners, statuses, due dates, and dependencies',
@@ -144,6 +148,7 @@ export function resetStorage() {
     return;
   }
   if (!confirm(`Reset ${selected.label}?\n\nThis only affects local data stored in this browser.`)) return;
+  closeResetModal();
   selected.keys.forEach(key => localStorage.removeItem(key));
   location.reload();
 }
