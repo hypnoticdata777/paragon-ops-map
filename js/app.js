@@ -25,7 +25,8 @@ import {
   loadFromStorage, loadTeamData, loadWorkOrders, loadAuditLog,
   loadPortfolio,
   applyOpsProfile, applyNavCompactState, applyCompanyName,
-  resetStorage, toggleNavCompact, COMPANY_KEY,
+  resetStorage, closeResetModal, confirmResetStorage,
+  toggleNavCompact, COMPANY_KEY,
 } from './storage.js';
 import {
   updateStats, updateBeacons,
@@ -296,6 +297,8 @@ Object.assign(window, {
   _saveUndoSnapshot,
   // Storage
   resetStorage,
+  closeResetModal,
+  confirmResetStorage,
   toggleNavCompact,
   // App-wide UI: onboarding, guide, notifications, counters, filters, and
   // beginner launch-plan actions.
