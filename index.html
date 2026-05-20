@@ -387,6 +387,23 @@
     </div>
   </div>
 </div>
+<!-- Import Review modal -->
+<div id="import-review-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="import-review-title">
+  <div class="import-review-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Import Review</div>
+        <h2 id="import-review-title">Review workspace import</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="cancelPendingImport()" aria-label="Close">&times;</button>
+    </div>
+    <div id="import-review-body" class="import-review-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="cancelPendingImport()">Cancel</button>
+      <button class="btn btn-export" id="import-confirm-btn" onclick="confirmPendingImport()">Import Workspace</button>
+    </div>
+  </div>
+</div>
 <div id="save-toast" class="save-toast"></div>
 <!-- Must stay type="module": GitHub Pages serves source files directly, and
      js/app.js uses browser-native ES module imports. -->

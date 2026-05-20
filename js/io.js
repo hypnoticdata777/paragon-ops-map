@@ -8,13 +8,15 @@ import {
   getCompanyName, applyCompanyName, COMPANY_KEY,
   _showActionToast, _fileSlug,
 } from './storage.js';
-import { isValidISODate, _downloadBlob } from './utils.js';
+import { escapeHtml, isValidISODate, _downloadBlob } from './utils.js';
 import { buildStatePayload, validateImportedState, formatImportReport } from './stateSchema.js';
 import { updateStats } from './ui.js';
 import { renderTrackingView, populateOwnerFilter } from './views/tracking.js';
 import { renderMapControls, renderFlowMap } from './views/map.js';
 import { renderTeamView, renderLegend } from './views/team.js';
 import { renderPortfolioView } from './views/portfolio.js';
+
+let pendingImport = null;
 
 // ── Undo stack (single-level, before bulk ops) ────────────────────────────────
 export function _saveUndoSnapshot() {
@@ -234,25 +236,7 @@ export function importJSON(inputEl) {
     try {
       const data = JSON.parse(ev.target.result);
       const report = validateImportedState(data, orgData);
-      if (!report.ok) {
-        alert(formatImportReport(report));
-        return;
-      }
-
-      const hasExistingData = orgData.departments.some(dept =>
-        dept.tasks.some(t => t.owner !== 'UNOWNED' || (t.status && t.status !== 'todo') || t.dueDate)
-      );
-      if (hasExistingData || report.warnings.length > 0) {
-        const fromLabel = data.company ? ` from "${data.company}"` : '';
-        if (!confirm(`${formatImportReport(report)}\n\nImporting${fromLabel} will overwrite matching task assignments, statuses, due dates, dependencies, team data, work orders, and portfolio data.\n\nContinue?`)) {
-          inputEl.value = '';
-          return;
-        }
-      }
-
-      _saveUndoSnapshot();
-      _applyImportedState(data);
-      logAudit('import_file');
+      openImportReview(data, report, 'file');
     } catch (e) {
       alert('Import failed: invalid or incompatible file.');
     } finally {
@@ -290,6 +274,8 @@ export async function pasteStateFromClipboard() {
     const text = await navigator.clipboard.readText();
     const data = JSON.parse(text);
     const report = validateImportedState(data, orgData);
+    openImportReview(data, report, 'clipboard');
+    return;
     if (!report.ok) throw new Error(formatImportReport(report));
     const fromLabel = data.company ? ` from "${data.company}"` : '';
     if (!confirm(`${formatImportReport(report)}\n\nPaste state${fromLabel} and replace matching data on this device?`)) return;
@@ -303,4 +289,92 @@ export async function pasteStateFromClipboard() {
       : '\nMake sure you copied a valid export first.';
     alert(`Could not read PM Ops state from clipboard.${detail}`);
   }
+}
+
+export function openImportReview(data, report, source = 'file') {
+  pendingImport = { data, report, source };
+  const modal = document.getElementById('import-review-modal');
+  const body = document.getElementById('import-review-body');
+  const confirmBtn = document.getElementById('import-confirm-btn');
+
+  if (!modal || !body || !confirmBtn) {
+    if (!report.ok) {
+      alert(formatImportReport(report));
+      pendingImport = null;
+      return;
+    }
+    if (!confirm(`${formatImportReport(report)}\n\nContinue with import?`)) {
+      pendingImport = null;
+      return;
+    }
+    confirmPendingImport();
+    return;
+  }
+
+  body.innerHTML = buildImportReviewHTML(report, source);
+  confirmBtn.disabled = !report.ok;
+  confirmBtn.textContent = report.ok ? 'Import Workspace' : 'Cannot Import';
+  modal.classList.add('visible');
+}
+
+export function cancelPendingImport() {
+  pendingImport = null;
+  document.getElementById('import-review-modal')?.classList.remove('visible');
+}
+
+export function confirmPendingImport() {
+  if (!pendingImport || !pendingImport.report.ok) return;
+  const { data, source } = pendingImport;
+  _saveUndoSnapshot();
+  _applyImportedState(data);
+  logAudit(source === 'clipboard' ? 'import_clipboard' : 'import_file');
+  cancelPendingImport();
+  _showActionToast(source === 'clipboard' ? 'State pasted from clipboard' : 'Workspace imported', 'save-toast--success');
+}
+
+function buildImportReviewHTML(report, source) {
+  return `
+    <p class="import-review-note">
+      ${source === 'clipboard' ? 'Clipboard state' : 'JSON file'} will replace matching task assignments, statuses, due dates, dependencies, team data, work orders, and portfolio data on this device.
+    </p>
+    <div class="import-review-summary">
+      ${buildImportMetric('Schema', String(report.schemaVersion))}
+      ${buildImportMetric('Company', report.company || 'None')}
+      ${buildImportMetric('Tasks', String(report.matchedTasks))}
+      ${buildImportMetric('Work orders', String(report.workOrders))}
+      ${buildImportMetric('Properties', String(report.properties))}
+      ${buildImportMetric('Tenants', String(report.tenants))}
+      ${buildImportMetric('Vendors', String(report.vendors))}
+      ${buildImportMetric('Team', String(report.teamMembers))}
+    </div>
+    ${report.warnings.length ? buildImportList('Warnings', report.warnings, 'warn') : ''}
+    ${report.errors.length ? buildImportList('Errors', report.errors, 'error') : ''}
+    <div class="import-review-section">
+      <h3>Matching summary</h3>
+      <ul>
+        <li>${report.matchedDepartments} departments matched.</li>
+        <li>${report.skippedDepartments} departments skipped.</li>
+        <li>${report.skippedTasks} tasks skipped.</li>
+        <li>${report.invalidDueDates} invalid due dates will be cleared.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildImportMetric(label, value) {
+  return `
+    <div class="import-review-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function buildImportList(title, items, tone) {
+  return `
+    <div class="import-review-section import-review-section--${tone}">
+      <h3>${escapeHtml(title)}</h3>
+      <ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+    </div>
+  `;
 }

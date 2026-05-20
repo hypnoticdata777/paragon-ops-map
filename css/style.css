@@ -1359,6 +1359,86 @@ body {
   box-shadow: 0 8px 20px rgba(198,40,40,0.12);
 }
 
+.import-review-panel {
+  width: min(780px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 32px));
+  overflow: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+}
+
+.import-review-body {
+  padding: 18px;
+}
+
+.import-review-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.import-review-metric {
+  padding: 12px;
+  background: #f8fbfc;
+  border: 1px solid #d7e3ea;
+  border-radius: 8px;
+}
+
+.import-review-metric span {
+  display: block;
+  color: #78909c;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.import-review-metric strong {
+  display: block;
+  margin-top: 5px;
+  color: #263238;
+  font-size: 20px;
+}
+
+.import-review-section {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d7e3ea;
+  background: white;
+}
+
+.import-review-section h3 {
+  margin-bottom: 8px;
+  color: #263238;
+  font-size: 14px;
+}
+
+.import-review-section ul {
+  margin-left: 18px;
+  color: #546e7a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.import-review-section--warn {
+  border-color: #ffe0b2;
+  background: #fffaf2;
+}
+
+.import-review-section--error {
+  border-color: #ffcdd2;
+  background: #fff8f8;
+}
+
+.import-review-note {
+  color: #607d8b;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
 /* ==========================================================================
    WORKLOAD DASHBOARD — Horizontal Bar Chart
    One row per employee sorted by task count descending.
@@ -2564,6 +2644,10 @@ body {
 
   .reset-body {
     grid-template-columns: 1fr;
+  }
+
+  .import-review-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .launch-score {
