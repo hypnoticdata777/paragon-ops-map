@@ -49,6 +49,7 @@ import {
 import {
   renderTeamView, selectPaletteColor,
   commitAddEmployee, removeEmployee, toggleAffinity,
+  openRoleTemplatePreview, closeRoleTemplatePreview, applyPreviewedRoleTemplate,
   applyRoleTemplate, runAutoAssign, renderLegend,
   openRolePlaybook, closeRolePlaybook, downloadOpenRolePlaybook,
   openAuditLog, closeAuditLog, clearAuditLog,
@@ -252,6 +253,9 @@ Object.assign(window, {
   commitAddEmployee,
   removeEmployee,
   toggleAffinity,
+  openRoleTemplatePreview,
+  closeRoleTemplatePreview,
+  applyPreviewedRoleTemplate,
   applyRoleTemplate,
   runAutoAssign,
   renderLegend,

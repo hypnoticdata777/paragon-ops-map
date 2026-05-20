@@ -21,6 +21,8 @@ import { renderTrackingView, populateOwnerFilter } from './tracking.js';
 import { renderFlowMap, renderMapControls } from './map.js';
 import { renderWorkOrdersView, updateWorkOrderBeacon } from './workorders.js';
 
+let _previewTemplateId = null;
+
 // ── Team Manager view ─────────────────────────────────────────────────────────
 export function renderTeamView() {
   const container = document.getElementById('team-view-inner');
@@ -82,7 +84,7 @@ export function renderTeamView() {
           </div>
           <div class="role-template-actions">
             ${Object.entries(ROLE_TEMPLATES).map(([id, template]) => `
-              <button class="role-template-btn" onclick="applyRoleTemplate(${jsonAttr(id)})" title="${escapeHtml(template.description)}">
+              <button class="role-template-btn" onclick="openRoleTemplatePreview(${jsonAttr(id)})" title="${escapeHtml(template.description)}">
                 ${escapeHtml(template.label)}
               </button>
             `).join('')}
@@ -259,10 +261,82 @@ export function toggleAffinity(empName, deptId) {
   renderTeamView();
 }
 
-export function applyRoleTemplate(templateId) {
+export function openRoleTemplatePreview(templateId) {
   const template = ROLE_TEMPLATES[templateId];
   if (!template) return;
-  if (!confirm(`Apply the "${template.label}" role template?\n\nThis replaces the current roster and marks tasks owned by removed people as UNOWNED. You can run Auto-Assign after reviewing affinities.`)) return;
+
+  const modal = document.getElementById('role-template-modal');
+  const title = document.getElementById('role-template-title');
+  const body = document.getElementById('role-template-preview-body');
+  const applyBtn = document.getElementById('role-template-apply-btn');
+
+  if (!modal || !title || !body || !applyBtn) {
+    applyRoleTemplate(templateId);
+    return;
+  }
+
+  _previewTemplateId = templateId;
+  title.textContent = template.label;
+  applyBtn.textContent = `Apply ${template.label}`;
+  body.innerHTML = buildRoleTemplatePreviewHTML(template);
+  modal.classList.add('visible');
+}
+
+export function closeRoleTemplatePreview() {
+  const modal = document.getElementById('role-template-modal');
+  if (modal) modal.classList.remove('visible');
+  _previewTemplateId = null;
+}
+
+export function applyPreviewedRoleTemplate() {
+  if (!_previewTemplateId) return;
+  const templateId = _previewTemplateId;
+  closeRoleTemplatePreview();
+  applyRoleTemplate(templateId, true);
+}
+
+function buildRoleTemplatePreviewHTML(template) {
+  const rosterSize = template.employees.length;
+
+  return `
+    <div class="role-template-preview-intro">
+      <p>${escapeHtml(template.description)}</p>
+      <div class="role-template-preview-metrics">
+        <span><strong>${rosterSize}</strong> role${rosterSize !== 1 ? 's' : ''}</span>
+        <span>Replaces current roster</span>
+        <span>Preserves tasks for matching names</span>
+      </div>
+    </div>
+    <div class="role-template-preview-grid">
+      ${template.employees.map(emp => {
+        const affinities = emp.affinities
+          .map(deptId => orgData.departments.find(dept => dept.id === deptId)?.name || deptId)
+          .map(name => `<span>${escapeHtml(name)}</span>`)
+          .join('');
+
+        return `
+          <div class="role-template-preview-card">
+            <div class="role-template-preview-card-header">
+              <span class="role-template-preview-dot" style="background:${emp.hex}"></span>
+              <strong>${escapeHtml(emp.name)}</strong>
+            </div>
+            <div class="role-template-preview-affinities">
+              ${affinities || '<span>No starting affinities</span>'}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <p class="role-template-preview-note">
+      Applying this template marks tasks and work orders assigned to removed people as unowned or unassigned. Run Auto-Assign after reviewing the roster.
+    </p>
+  `;
+}
+
+export function applyRoleTemplate(templateId, skipConfirm = false) {
+  const template = ROLE_TEMPLATES[templateId];
+  if (!template) return;
+  if (!skipConfirm && !confirm(`Apply the "${template.label}" role template?\n\nThis replaces the current roster and marks tasks owned by removed people as UNOWNED. You can run Auto-Assign after reviewing affinities.`)) return;
 
   const nextEmployees = template.employees.map(emp => ({
     name: emp.name,

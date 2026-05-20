@@ -337,6 +337,23 @@
     </div>
   </div>
 </div>
+<!-- Role Template Preview modal -->
+<div id="role-template-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="role-template-title">
+  <div class="role-template-preview-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Role Template</div>
+        <h2 id="role-template-title">Preview template</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeRoleTemplatePreview()" aria-label="Close role template preview">&times;</button>
+    </div>
+    <div id="role-template-preview-body" class="role-template-preview-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeRoleTemplatePreview()">Cancel</button>
+      <button class="btn btn-export" id="role-template-apply-btn" onclick="applyPreviewedRoleTemplate()">Apply Template</button>
+    </div>
+  </div>
+</div>
 <!-- Audit Log modal -->
 <div id="audit-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="audit-modal-title">
   <div class="audit-panel">
