@@ -67,6 +67,7 @@ import {
   exportJSON, exportCSV, exportPropertiesCSV, exportTenantsCSV,
   exportVendorsCSV, exportWorkOrdersCSV, importJSON,
   copyStateToClipboard, pasteStateFromClipboard,
+  cancelPendingImport, confirmPendingImport,
   _saveUndoSnapshot, undoLastAction,
 } from './io.js';
 import {
@@ -292,6 +293,8 @@ Object.assign(window, {
   importJSON,
   copyStateToClipboard,
   pasteStateFromClipboard,
+  cancelPendingImport,
+  confirmPendingImport,
   undoLastAction,
   // Undo snapshot (called from team.js runAutoAssign via window)
   _saveUndoSnapshot,
