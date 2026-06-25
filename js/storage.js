@@ -3,6 +3,7 @@ import {
   orgData, teamData, setTeamData, workOrders, setWorkOrders,
   auditLog, setAuditLog, portfolio, setPortfolio,
   ownerColors, defaultAffinities, AUDIT_LABELS,
+  STATUS_CYCLE, PRIORITY_CYCLE,
 } from './state.js';
 import { _isQuotaError, _slugify } from './utils.js';
 
@@ -76,23 +77,28 @@ export function loadFromStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return;
     saved.forEach(savedDept => {
+      if (!savedDept || typeof savedDept.id !== 'string') return;
       const dept = orgData.departments.find(d => d.id === savedDept.id);
-      if (!dept) return;
+      if (!dept || !Array.isArray(savedDept.tasks)) return;
       savedDept.tasks.forEach((savedTask) => {
+        if (!savedTask || typeof savedTask.name !== 'string' || !savedTask.name.trim()) return;
+        if (typeof savedTask.owner !== 'string') return;
         const key  = savedTask._configName || savedTask.name;
         const task = dept.tasks.find(t => t._configName === key);
         if (!task) return;
-        task.name  = savedTask.name;
+        task.name  = savedTask.name.slice(0, 200);
         task.owner = savedTask.owner;
-        if (savedTask.status)   task.status   = savedTask.status;
-        if (savedTask.priority) task.priority = savedTask.priority;
+        if (savedTask.status   && STATUS_CYCLE.includes(savedTask.status))     task.status   = savedTask.status;
+        if (savedTask.priority && PRIORITY_CYCLE.includes(savedTask.priority)) task.priority = savedTask.priority;
         if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
         if (savedTask.blockedBy !== undefined) task.blockedBy = savedTask.blockedBy || null;
       });
     });
   } catch (e) {
-    localStorage.removeItem(STORAGE_KEY);
+    console.error('Failed to parse saved task data — data preserved in storage:', e);
+    _showActionToast('⚠ Could not load saved data — try exporting a backup', 'save-toast--error', 6000);
   }
 }
 
