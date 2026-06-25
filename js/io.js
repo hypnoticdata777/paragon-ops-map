@@ -275,14 +275,6 @@ export async function pasteStateFromClipboard() {
     const data = JSON.parse(text);
     const report = validateImportedState(data, orgData);
     openImportReview(data, report, 'clipboard');
-    return;
-    if (!report.ok) throw new Error(formatImportReport(report));
-    const fromLabel = data.company ? ` from "${data.company}"` : '';
-    if (!confirm(`${formatImportReport(report)}\n\nPaste state${fromLabel} and replace matching data on this device?`)) return;
-    _saveUndoSnapshot();
-    _applyImportedState(data);
-    logAudit('import_clipboard');
-    _showActionToast('✓ State pasted from clipboard', 'save-toast--success');
   } catch (e) {
     const detail = e?.message && e.message.includes('Import validation report')
       ? `\n\n${e.message}`
