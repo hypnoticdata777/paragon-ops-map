@@ -5,7 +5,7 @@ import {
   PRIORITY_LABELS, getEmployeeHex, getEmployeeNames,
 } from '../state.js';
 import { saveWorkOrders, logAudit } from '../storage.js';
-import { escapeHtml, formatDueChip, formatWODate } from '../utils.js';
+import { escapeHtml, formatDueChip, formatWODate, isValidISODate } from '../utils.js';
 import { updateWorkOrderBeacon } from '../ui.js';
 
 // ── Beacon ────────────────────────────────────────────────────────────────────
@@ -174,38 +174,43 @@ export function closeWorkOrderModal() {
   editingWorkOrderId = null;
 }
 
+const WO_FIELD_LIMITS = { property: 200, unit: 50, tenant: 200, title: 300, notes: 2000, vendor: 200 };
+
+function _shakeField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 400);
+  el.focus();
+}
+
 export function commitNewWorkOrder() {
-  const property = document.getElementById('wo-property').value.trim();
-  const title    = document.getElementById('wo-title').value.trim();
+  const property = document.getElementById('wo-property').value.trim().slice(0, WO_FIELD_LIMITS.property);
+  const title    = document.getElementById('wo-title').value.trim().slice(0, WO_FIELD_LIMITS.title);
 
-  if (!property) {
-    const el = document.getElementById('wo-property');
-    el.classList.add('shake');
-    setTimeout(() => el.classList.remove('shake'), 400);
-    el.focus();
-    return;
-  }
-  if (!title) {
-    const el = document.getElementById('wo-title');
-    el.classList.add('shake');
-    setTimeout(() => el.classList.remove('shake'), 400);
-    el.focus();
-    return;
-  }
+  if (!property) { _shakeField('wo-property'); return; }
+  if (!title)    { _shakeField('wo-title');    return; }
 
-  const rawCost = parseFloat(document.getElementById('wo-cost').value);
+  const rawPriority = document.getElementById('wo-priority').value;
+  const validPriorities = Object.keys(PRIORITY_LABELS);
+  const priority = validPriorities.includes(rawPriority) ? rawPriority : 'medium';
+
+  const rawDate  = document.getElementById('wo-duedate')?.value || '';
+  const dueDate  = rawDate && isValidISODate(rawDate) ? rawDate : null;
+
+  const rawCost  = parseFloat(document.getElementById('wo-cost').value);
   const existing = workOrders.find(w => w.id === editingWorkOrderId);
   const payload = {
     property,
-    unit:      document.getElementById('wo-unit').value.trim(),
-    tenant:    document.getElementById('wo-tenant')?.value.trim() || '',
+    unit:      document.getElementById('wo-unit').value.trim().slice(0, WO_FIELD_LIMITS.unit),
+    tenant:    (document.getElementById('wo-tenant')?.value.trim() || '').slice(0, WO_FIELD_LIMITS.tenant),
     title,
-    notes:     document.getElementById('wo-notes').value.trim(),
-    priority:  document.getElementById('wo-priority').value,
+    notes:     document.getElementById('wo-notes').value.trim().slice(0, WO_FIELD_LIMITS.notes),
+    priority,
     status:    existing?.status || 'submitted',
     assignee:  document.getElementById('wo-assignee').value,
-    vendor:    document.getElementById('wo-vendor').value.trim(),
-    dueDate:   document.getElementById('wo-duedate')?.value || null,
+    vendor:    document.getElementById('wo-vendor').value.trim().slice(0, WO_FIELD_LIMITS.vendor),
+    dueDate,
     cost:      isNaN(rawCost) || rawCost < 0 ? 0 : rawCost,
     updatedAt: new Date().toISOString(),
   };
