@@ -27,6 +27,7 @@ import {
   applyOpsProfile, applyNavCompactState, applyCompanyName,
   resetStorage, closeResetModal, confirmResetStorage,
   toggleNavCompact, COMPANY_KEY,
+  openBackupsModal, closeBackupsModal, restoreBackupSnapshot,
 } from './storage.js';
 import {
   updateStats, updateBeacons,
@@ -316,6 +317,9 @@ Object.assign(window, {
   closeResetModal,
   confirmResetStorage,
   toggleNavCompact,
+  openBackupsModal,
+  closeBackupsModal,
+  restoreBackupSnapshot,
   // App-wide UI: onboarding, guide, notifications, counters, filters, and
   // beginner launch-plan actions.
   showOnboardingModal,

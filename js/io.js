@@ -6,7 +6,7 @@ import {
 import {
   saveToStorage, saveTeamData, saveWorkOrders, savePortfolio, logAudit,
   getCompanyName, applyCompanyName, COMPANY_KEY,
-  _showActionToast, _fileSlug,
+  _showActionToast, _fileSlug, saveBackupSnapshot,
 } from './storage.js';
 import { escapeHtml, isValidISODate, _downloadBlob } from './utils.js';
 import { buildStatePayload, validateImportedState, formatImportReport } from './stateSchema.js';
@@ -317,6 +317,7 @@ export function cancelPendingImport() {
 export function confirmPendingImport() {
   if (!pendingImport || !pendingImport.report.ok) return;
   const { data, source } = pendingImport;
+  saveBackupSnapshot('Before import');
   _saveUndoSnapshot();
   _applyImportedState(data);
   logAudit(source === 'clipboard' ? 'import_clipboard' : 'import_file');

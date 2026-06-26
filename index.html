@@ -214,6 +214,7 @@
       <button class="btn btn-export" onclick="copyStateToClipboard()" title="Copy full state to clipboard to paste on another device">&#128203; Copy State</button>
       <button class="btn btn-export" onclick="pasteStateFromClipboard()" title="Paste a state copied from another device">&#128241; Paste State</button>
       <button class="btn btn-secondary" onclick="openAuditLog()" title="View change history">&#128203; Audit Log</button>
+      <button class="btn btn-secondary" onclick="openBackupsModal()" title="View and restore automatic backups">&#128190; Backups</button>
       <button class="btn btn-secondary" id="notif-btn" onclick="requestNotificationPermission()" title="Enable browser alerts for overdue tasks" hidden>&#128276; Alerts</button>
       <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
     </div>
@@ -419,6 +420,22 @@
     <div class="playbook-actions">
       <button class="btn btn-secondary" onclick="cancelPendingImport()">Cancel</button>
       <button class="btn btn-export" id="import-confirm-btn" onclick="confirmPendingImport()">Import Workspace</button>
+    </div>
+  </div>
+</div>
+<!-- Backups modal -->
+<div id="backups-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="backups-modal-title">
+  <div class="audit-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Auto-Backup</div>
+        <h2 id="backups-modal-title">Restore a Snapshot</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeBackupsModal()" aria-label="Close">&times;</button>
+    </div>
+    <div id="backups-body" class="audit-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeBackupsModal()">Close</button>
     </div>
   </div>
 </div>
