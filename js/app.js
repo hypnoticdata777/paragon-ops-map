@@ -81,6 +81,10 @@ import {
   focusCoverageArea, loadDemoCompany, printLaunchPlan,
 } from './launchPlan.js';
 import { downloadOperationsHandbook, printOperationsHandbook } from './handbook.js';
+import {
+  openRecurringModal, closeRecurringModal,
+  previewRecurringTemplate, applyPendingRecurringTemplate,
+} from './views/recurring.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -343,4 +347,8 @@ Object.assign(window, {
   downloadLaunchHandbook,
   downloadOperationsHandbook,
   printOperationsHandbook,
+  openRecurringModal,
+  closeRecurringModal,
+  previewRecurringTemplate,
+  applyPendingRecurringTemplate,
 });
