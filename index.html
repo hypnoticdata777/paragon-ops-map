@@ -49,7 +49,7 @@
         id="search-input"
         class="search-input"
         placeholder="Search tasks..."
-        oninput="applyFilter()"
+        oninput="debounceApplyFilter()"
         aria-label="Search tasks by keyword"
       >
       <select id="owner-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by owner">

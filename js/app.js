@@ -37,7 +37,7 @@ import {
 import {
   renderTrackingView, toggleDepartment,
   startTaskEdit, showOwnerPicker, closeOwnerPicker, setTaskOwner,
-  populateOwnerFilter, applyFilter, clearFilter,
+  populateOwnerFilter, applyFilter, clearFilter, debounceApplyFilter,
   cycleTaskStatus, cycleTaskPriority,
   openDueDatePicker, setTaskDueDate,
   openDependencyPicker, setTaskDependency, clearTaskDependency,
@@ -235,6 +235,7 @@ Object.assign(window, {
   setTaskOwner,
   applyFilter,
   clearFilter,
+  debounceApplyFilter,
   cycleTaskStatus,
   cycleTaskPriority,
   openDueDatePicker,
