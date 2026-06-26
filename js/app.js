@@ -27,6 +27,7 @@ import {
   applyOpsProfile, applyNavCompactState, applyCompanyName,
   resetStorage, closeResetModal, confirmResetStorage,
   toggleNavCompact, COMPANY_KEY,
+  openBackupsModal, closeBackupsModal, restoreBackupSnapshot,
 } from './storage.js';
 import {
   updateStats, updateBeacons,
@@ -37,10 +38,14 @@ import {
 import {
   renderTrackingView, toggleDepartment,
   startTaskEdit, showOwnerPicker, closeOwnerPicker, setTaskOwner,
-  populateOwnerFilter, applyFilter, clearFilter,
+  populateOwnerFilter, applyFilter, clearFilter, debounceApplyFilter,
   cycleTaskStatus, cycleTaskPriority,
   openDueDatePicker, setTaskDueDate,
   openDependencyPicker, setTaskDependency, clearTaskDependency,
+  toggleBulkMode, cancelBulkMode, toggleTaskCheck,
+  selectAllVisibleTasks, applyBulkAction,
+  openTaskNotes, closeTaskNotes,
+  openCustomFields, closeCustomFields, addCustomField, deleteCustomField,
 } from './views/tracking.js';
 import {
   renderMapControls, renderFlowMap,
@@ -77,7 +82,11 @@ import {
   startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
   focusCoverageArea, loadDemoCompany, printLaunchPlan,
 } from './launchPlan.js';
-import { downloadOperationsHandbook, printOperationsHandbook } from './handbook.js';
+import { downloadOperationsHandbook, downloadOperationsHandbookHTML, printOperationsHandbook } from './handbook.js';
+import {
+  openRecurringModal, closeRecurringModal,
+  previewRecurringTemplate, applyPendingRecurringTemplate,
+} from './views/recurring.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -107,6 +116,7 @@ function switchView(view, tabEl) {
   } else {
     filterBar.style.display = 'none';
     clearFilter();
+    cancelBulkMode();
   }
 
   closeOwnerPicker();
@@ -235,6 +245,7 @@ Object.assign(window, {
   setTaskOwner,
   applyFilter,
   clearFilter,
+  debounceApplyFilter,
   cycleTaskStatus,
   cycleTaskPriority,
   openDueDatePicker,
@@ -242,6 +253,17 @@ Object.assign(window, {
   openDependencyPicker,
   setTaskDependency,
   clearTaskDependency,
+  toggleBulkMode,
+  cancelBulkMode,
+  toggleTaskCheck,
+  selectAllVisibleTasks,
+  applyBulkAction,
+  openTaskNotes,
+  closeTaskNotes,
+  openCustomFields,
+  closeCustomFields,
+  addCustomField,
+  deleteCustomField,
   // Map tab: visual operational flow and department detail panels.
   renderMapControls,
   renderFlowMap,
@@ -307,6 +329,9 @@ Object.assign(window, {
   closeResetModal,
   confirmResetStorage,
   toggleNavCompact,
+  openBackupsModal,
+  closeBackupsModal,
+  restoreBackupSnapshot,
   // App-wide UI: onboarding, guide, notifications, counters, filters, and
   // beginner launch-plan actions.
   showOnboardingModal,
@@ -329,5 +354,10 @@ Object.assign(window, {
   startWorkOrderSetup,
   downloadLaunchHandbook,
   downloadOperationsHandbook,
+  downloadOperationsHandbookHTML,
   printOperationsHandbook,
+  openRecurringModal,
+  closeRecurringModal,
+  previewRecurringTemplate,
+  applyPendingRecurringTemplate,
 });

@@ -5,7 +5,7 @@ import {
   STATUS_LABELS, PRIORITY_LABELS, STATUS_CYCLE, PRIORITY_CYCLE,
   getEmployeeHex, getEmployeeNames,
 } from '../state.js';
-import { saveToStorage, logAudit } from '../storage.js';
+import { saveToStorage, logAudit, _showActionToast } from '../storage.js';
 import {
   escapeHtml, jsonAttr, isTaskOverdue, isValidISODate,
   formatDueChip, buildDeptCompletionText,
@@ -13,6 +13,141 @@ import {
 import { updateStats } from '../ui.js';
 // Imported lazily via dynamic references; map.js does not import tracking.js.
 import { renderFlowMap, renderMapControls } from './map.js';
+
+// ── Bulk-select mode ──────────────────────────────────────────────────────────
+let _bulkMode     = false;
+let _bulkSelected = new Set(); // keys: "deptId:taskIdx"
+
+export function isBulkMode() { return _bulkMode; }
+
+export function toggleBulkMode() {
+  _bulkMode = !_bulkMode;
+  _bulkSelected.clear();
+  renderTrackingView();
+  if (_bulkMode) document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
+  _updateBulkBar();
+
+  const btn = document.getElementById('bulk-toggle-btn');
+  if (btn) {
+    btn.textContent = _bulkMode ? '✕ Cancel Select' : '☑ Bulk Select';
+    btn.classList.toggle('btn-secondary', !_bulkMode);
+    btn.classList.toggle('btn-primary',   _bulkMode);
+  }
+}
+
+export function cancelBulkMode() {
+  if (!_bulkMode) return;
+  _bulkMode = false;
+  _bulkSelected.clear();
+  renderTrackingView();
+  _updateBulkBar();
+
+  const btn = document.getElementById('bulk-toggle-btn');
+  if (btn) {
+    btn.textContent = '☑ Bulk Select';
+    btn.classList.replace('btn-primary', 'btn-secondary');
+  }
+}
+
+export function toggleTaskCheck(deptId, taskIdx) {
+  const key = `${deptId}:${taskIdx}`;
+  if (_bulkSelected.has(key)) _bulkSelected.delete(key);
+  else                         _bulkSelected.add(key);
+
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    const cb = taskEl.querySelector('.task-bulk-check');
+    if (cb) cb.checked = _bulkSelected.has(key);
+    taskEl.classList.toggle('task-bulk-selected', _bulkSelected.has(key));
+  }
+  _updateBulkBar();
+}
+
+export function selectAllVisibleTasks() {
+  document.querySelectorAll('.task-item').forEach(taskEl => {
+    if (taskEl.style.display === 'none') return;
+    const key = `${taskEl.dataset.deptId}:${taskEl.dataset.taskIdx}`;
+    _bulkSelected.add(key);
+    taskEl.classList.add('task-bulk-selected');
+    const cb = taskEl.querySelector('.task-bulk-check');
+    if (cb) cb.checked = true;
+  });
+  _updateBulkBar();
+}
+
+export function applyBulkAction() {
+  const newOwner  = document.getElementById('bulk-owner-select')?.value  || '';
+  const newStatus = document.getElementById('bulk-status-select')?.value || '';
+
+  if (!newOwner && !newStatus) {
+    alert('Choose a new owner or status to apply to the selected tasks.');
+    return;
+  }
+
+  let count = 0;
+  _bulkSelected.forEach(key => {
+    const [deptId, idxStr] = key.split(':');
+    const taskIdx = parseInt(idxStr, 10);
+    const dept = orgData.departments.find(d => d.id === deptId);
+    if (!dept || !dept.tasks[taskIdx]) return;
+    const task = dept.tasks[taskIdx];
+
+    if (newOwner) {
+      logAudit('owner_changed', { dept: dept.name, task: task.name, from: task.owner, to: newOwner });
+      task.owner = newOwner;
+    }
+    if (newStatus && STATUS_CYCLE.includes(newStatus)) {
+      logAudit('status_changed', { dept: dept.name, task: task.name, from: task.status || 'todo', to: newStatus });
+      task.status = newStatus;
+    }
+    count++;
+  });
+
+  saveToStorage();
+  cancelBulkMode();
+  updateStats();
+  populateOwnerFilter();
+  _showActionToast(`✓ ${count} task${count !== 1 ? 's' : ''} updated`, 'save-toast--success');
+}
+
+function _updateBulkBar() {
+  let bar = document.getElementById('bulk-action-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bulk-action-bar';
+    bar.className = 'bulk-action-bar';
+    document.body.appendChild(bar);
+  }
+
+  if (!_bulkMode || _bulkSelected.size === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+
+  const owners = ['UNOWNED', ...getEmployeeNames()];
+  bar.innerHTML = `
+    <span class="bulk-bar-count">${_bulkSelected.size} task${_bulkSelected.size !== 1 ? 's' : ''} selected</span>
+    <label class="bulk-bar-label">Assign to</label>
+    <select id="bulk-owner-select" class="bulk-bar-select">
+      <option value="">— keep current —</option>
+      ${owners.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}
+    </select>
+    <label class="bulk-bar-label">Set status</label>
+    <select id="bulk-status-select" class="bulk-bar-select">
+      <option value="">— keep current —</option>
+      <option value="todo">To Do</option>
+      <option value="in-progress">In Progress</option>
+      <option value="blocked">Blocked</option>
+      <option value="done">Done</option>
+    </select>
+    <button class="btn btn-primary" onclick="applyBulkAction()">Apply</button>
+    <button class="btn btn-secondary" onclick="selectAllVisibleTasks()">Select All</button>
+    <button class="btn btn-secondary" onclick="cancelBulkMode()">Cancel</button>
+  `;
+  bar.classList.add('visible');
+}
 
 // ── Tracking view renderer ────────────────────────────────────────────────────
 export function renderTrackingView() {
@@ -52,7 +187,7 @@ export function renderTrackingView() {
           const priority  = task.priority || 'medium';
           const isDone    = status === 'done';
           return `
-          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''}"
+          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''} ${_bulkMode && _bulkSelected.has(`${dept.id}:${taskIdx}`) ? 'task-bulk-selected' : ''}"
                data-dept-id="${dept.id}"
                data-task-idx="${taskIdx}"
                data-owner="${task.owner}"
@@ -60,6 +195,7 @@ export function renderTrackingView() {
                data-status="${status}"
                data-priority="${priority}">
             <div class="task-left">
+              ${_bulkMode ? `<input type="checkbox" class="task-bulk-check" ${_bulkSelected.has(`${dept.id}:${taskIdx}`) ? 'checked' : ''} onclick="toggleTaskCheck('${dept.id}',${taskIdx});event.stopPropagation()" aria-label="Select task">` : ''}
               <span class="priority-dot priority-${priority}"
                     onclick="cycleTaskPriority('${dept.id}', ${taskIdx})"
                     title="Priority: ${PRIORITY_LABELS[priority]} — click to change"></span>
@@ -81,6 +217,14 @@ export function renderTrackingView() {
                    title="Double-click to rename">${escapeHtml(task.name)}</div>
             </div>
             <div class="task-right">
+              <button class="task-notes-btn${task.notes ? ' task-notes-btn--has-notes' : ''}"
+                      onclick="openTaskNotes('${dept.id}',${taskIdx})"
+                      title="${task.notes ? 'Edit notes' : 'Add notes'}"
+                      aria-label="${task.notes ? 'Edit notes' : 'Add notes'}">&#128221;</button>
+              <button class="task-fields-btn${task.customFields && Object.keys(task.customFields).length > 0 ? ' task-fields-btn--has-fields' : ''}"
+                      onclick="openCustomFields('${dept.id}',${taskIdx})"
+                      title="${task.customFields && Object.keys(task.customFields).length > 0 ? 'Edit custom fields' : 'Add custom fields'}"
+                      aria-label="Custom fields">&#127991;</button>
               <span class="status-pill status-${status}"
                     onclick="cycleTaskStatus('${dept.id}', ${taskIdx})"
                     title="Status: ${STATUS_LABELS[status]} — click to change">
@@ -251,6 +395,12 @@ export function setTaskOwner(deptId, taskIdx, newOwner) {
 }
 
 // ── Search & filter ───────────────────────────────────────────────────────────
+let _filterDebounceTimer = null;
+export function debounceApplyFilter() {
+  clearTimeout(_filterDebounceTimer);
+  _filterDebounceTimer = setTimeout(applyFilter, 200);
+}
+
 export function populateOwnerFilter() {
   const select = document.getElementById('owner-filter');
   while (select.options.length > 1) select.remove(1);
@@ -686,6 +836,157 @@ function _updateDepChip(deptId, taskIdx, task, anchorEl) {
     });
   }
   oldChip.replaceWith(newChip);
+}
+
+// ── Per-task notes ────────────────────────────────────────────────────────────
+export function openTaskNotes(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const modal    = document.getElementById('task-notes-modal');
+  const title    = document.getElementById('task-notes-title');
+  const textarea = document.getElementById('task-notes-textarea');
+  const saveBtn  = document.getElementById('task-notes-save-btn');
+  if (!modal || !textarea) return;
+
+  if (title)   title.textContent = task.name;
+  textarea.value = task.notes || '';
+
+  saveBtn.onclick = () => {
+    task.notes = textarea.value.trim().slice(0, 1000) || null;
+    saveToStorage();
+    _updateNotesIcon(deptId, taskIdx, task);
+    closeTaskNotes();
+    _showActionToast('Notes saved', 'save-toast--success');
+  };
+
+  modal.classList.add('visible');
+  setTimeout(() => textarea.focus(), 50);
+}
+
+export function closeTaskNotes() {
+  document.getElementById('task-notes-modal')?.classList.remove('visible');
+}
+
+function _updateNotesIcon(deptId, taskIdx, task) {
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+  const btn = taskEl.querySelector('.task-notes-btn');
+  if (btn) {
+    btn.classList.toggle('task-notes-btn--has-notes', Boolean(task.notes));
+    btn.title = task.notes ? 'Edit notes' : 'Add notes';
+  }
+}
+
+// ── Custom task fields ────────────────────────────────────────────────────────
+export function openCustomFields(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const modal = document.getElementById('custom-fields-modal');
+  const title = document.getElementById('custom-fields-title');
+  const body  = document.getElementById('custom-fields-body');
+  if (!modal || !body) return;
+
+  if (title) title.textContent = task.name;
+  _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  modal.dataset.deptId   = deptId;
+  modal.dataset.taskIdx  = taskIdx;
+  modal.classList.add('visible');
+}
+
+function _renderCustomFieldsBody(body, deptId, taskIdx, task) {
+  const fields = task.customFields || {};
+  const entries = Object.entries(fields);
+
+  body.innerHTML = `
+    ${entries.length === 0
+      ? '<p class="custom-fields-empty">No custom fields yet. Add a field below.</p>'
+      : `<div class="custom-fields-list">
+          ${entries.map(([k, v]) => `
+            <div class="custom-field-row">
+              <span class="custom-field-key">${escapeHtml(k)}</span>
+              <span class="custom-field-value">${escapeHtml(v)}</span>
+              <button class="custom-field-delete" onclick="deleteCustomField('${escapeHtml(deptId)}',${taskIdx},${escapeHtml(JSON.stringify(k))})" title="Remove field">&times;</button>
+            </div>
+          `).join('')}
+        </div>`
+    }
+    <div class="custom-field-add">
+      <input id="cf-key-input"   type="text" class="cf-input" placeholder="Field name (e.g. Billing Code)" maxlength="40" autocomplete="off">
+      <input id="cf-val-input"   type="text" class="cf-input" placeholder="Value (e.g. BC-001)" maxlength="200" autocomplete="off">
+      <button class="btn btn-primary" onclick="addCustomField('${escapeHtml(deptId)}',${taskIdx})">Add</button>
+    </div>
+  `;
+
+  document.getElementById('cf-val-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addCustomField(deptId, taskIdx);
+  });
+}
+
+export function addCustomField(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const keyEl = document.getElementById('cf-key-input');
+  const valEl = document.getElementById('cf-val-input');
+  const key   = (keyEl?.value || '').trim().slice(0, 40);
+  const val   = (valEl?.value || '').trim().slice(0, 200);
+
+  if (!key) { keyEl?.focus(); return; }
+
+  if (!task.customFields) task.customFields = {};
+  if (Object.keys(task.customFields).length >= 10 && !task.customFields[key]) {
+    alert('Maximum of 10 custom fields per task.');
+    return;
+  }
+  task.customFields[key] = val;
+  saveToStorage();
+
+  const modal = document.getElementById('custom-fields-modal');
+  const body  = document.getElementById('custom-fields-body');
+  if (body) _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  _updateCustomFieldsIcon(deptId, taskIdx, task);
+}
+
+export function deleteCustomField(deptId, taskIdx, key) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task || !task.customFields) return;
+
+  delete task.customFields[key];
+  if (Object.keys(task.customFields).length === 0) task.customFields = null;
+  saveToStorage();
+
+  const body = document.getElementById('custom-fields-body');
+  if (body) _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  _updateCustomFieldsIcon(deptId, taskIdx, task);
+}
+
+export function closeCustomFields() {
+  document.getElementById('custom-fields-modal')?.classList.remove('visible');
+}
+
+function _updateCustomFieldsIcon(deptId, taskIdx, task) {
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+  const btn = taskEl.querySelector('.task-fields-btn');
+  const hasFields = task.customFields && Object.keys(task.customFields).length > 0;
+  if (btn) {
+    btn.classList.toggle('task-fields-btn--has-fields', hasFields);
+    btn.title = hasFields ? 'Edit custom fields' : 'Add custom fields';
+  }
 }
 
 export function isDependencyBlocking(task) {

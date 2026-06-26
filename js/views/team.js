@@ -10,7 +10,7 @@ import {
 import {
   saveToStorage, saveTeamData, saveWorkOrders, logAudit,
   getCompanyName, _showActionToast, showSaveToast, _fileSlug,
-  saveAuditLog,
+  saveAuditLog, saveBackupSnapshot,
 } from '../storage.js';
 import {
   escapeHtml, jsonAttr, isTaskOverdue, _downloadBlob, _slugify,
@@ -186,13 +186,19 @@ export function selectPaletteColor(swatchEl) {
 
 export function commitAddEmployee() {
   const input = document.getElementById('new-emp-name');
-  const name  = (input?.value || '').trim();
+  const name  = (input?.value || '').trim().slice(0, 60);
 
   if (!name) {
     if (input) {
       input.classList.add('shake');
       setTimeout(() => input.classList.remove('shake'), 400);
     }
+    return;
+  }
+
+  if (name.toLowerCase() === 'unowned') {
+    alert('"UNOWNED" is a reserved system name — please choose a different name.');
+    if (input) { input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); }
     return;
   }
 
@@ -404,7 +410,7 @@ export function runAutoAssign() {
     return;
   }
 
-  // Save undo snapshot before bulk change (imported from io.js via app.js binding)
+  saveBackupSnapshot('Before auto-assign');
   window._saveUndoSnapshot && window._saveUndoSnapshot();
 
   const workload = buildWorkloadMap();

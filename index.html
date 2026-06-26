@@ -49,7 +49,7 @@
         id="search-input"
         class="search-input"
         placeholder="Search tasks..."
-        oninput="applyFilter()"
+        oninput="debounceApplyFilter()"
         aria-label="Search tasks by keyword"
       >
       <select id="owner-filter" class="owner-select" onchange="applyFilter()" aria-label="Filter by owner">
@@ -72,6 +72,7 @@
         <option value="low">🟢 Low</option>
       </select>
       <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+      <button class="btn btn-secondary" id="bulk-toggle-btn" onclick="toggleBulkMode()" title="Select multiple tasks to reassign or change status in bulk">&#9745; Bulk Select</button>
       <!-- ★ BEACON: Auto-assign button. The badge inside shows the live UNOWNED count.
            JS keeps this disabled when count = 0 so managers always know the state. -->
       <button
@@ -204,7 +205,8 @@
       <button class="btn btn-export" onclick="exportTenantsCSV()" title="Export tenants as CSV for spreadsheets">&#8595; Tenants CSV</button>
       <button class="btn btn-export" onclick="exportVendorsCSV()" title="Export vendors as CSV for spreadsheets">&#8595; Vendors CSV</button>
       <button class="btn btn-export" onclick="exportWorkOrdersCSV()" title="Export work orders as CSV for spreadsheets">&#8595; Work Orders CSV</button>
-      <button class="btn btn-export" onclick="downloadOperationsHandbook()" title="Download a Markdown SOP starter handbook from the current map">&#8595; Handbook</button>
+      <button class="btn btn-export" onclick="downloadOperationsHandbook()" title="Download a Markdown SOP starter handbook from the current map">&#8595; Handbook .md</button>
+      <button class="btn btn-export" onclick="downloadOperationsHandbookHTML()" title="Download a self-contained HTML version of the handbook">&#8595; Handbook .html</button>
       <button class="btn btn-export" onclick="printOperationsHandbook()" title="Open a print-friendly handbook view">Print Handbook</button>
       <label class="btn btn-import" title="Import a previously exported JSON config">
         &#8593; Import JSON
@@ -213,6 +215,7 @@
       <button class="btn btn-export" onclick="copyStateToClipboard()" title="Copy full state to clipboard to paste on another device">&#128203; Copy State</button>
       <button class="btn btn-export" onclick="pasteStateFromClipboard()" title="Paste a state copied from another device">&#128241; Paste State</button>
       <button class="btn btn-secondary" onclick="openAuditLog()" title="View change history">&#128203; Audit Log</button>
+      <button class="btn btn-secondary" onclick="openBackupsModal()" title="View and restore automatic backups">&#128190; Backups</button>
       <button class="btn btn-secondary" id="notif-btn" onclick="requestNotificationPermission()" title="Enable browser alerts for overdue tasks" hidden>&#128276; Alerts</button>
       <button class="btn btn-secondary stats-reset-btn" onclick="resetStorage()" title="Clear all saved changes and restore defaults">&#8635; Reset</button>
     </div>
@@ -418,6 +421,91 @@
     <div class="playbook-actions">
       <button class="btn btn-secondary" onclick="cancelPendingImport()">Cancel</button>
       <button class="btn btn-export" id="import-confirm-btn" onclick="confirmPendingImport()">Import Workspace</button>
+    </div>
+  </div>
+</div>
+<!-- Custom Task Fields modal -->
+<div id="custom-fields-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="custom-fields-title">
+  <div class="task-notes-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Custom Fields</div>
+        <h2 id="custom-fields-title" class="task-notes-heading">Task</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeCustomFields()" aria-label="Close">&times;</button>
+    </div>
+    <div class="task-notes-body" id="custom-fields-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeCustomFields()">Done</button>
+    </div>
+  </div>
+</div>
+<!-- Per-task Notes modal -->
+<div id="task-notes-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="task-notes-title">
+  <div class="task-notes-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Task Notes</div>
+        <h2 id="task-notes-title" class="task-notes-heading">Task</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeTaskNotes()" aria-label="Close">&times;</button>
+    </div>
+    <div class="task-notes-body">
+      <textarea id="task-notes-textarea" class="task-notes-textarea" placeholder="Add context, blockers, links, or anything the team needs to know about this task..." maxlength="1000" rows="8"></textarea>
+      <p class="task-notes-hint">Max 1000 characters. Saved per-task alongside status and owner.</p>
+    </div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeTaskNotes()">Cancel</button>
+      <button class="btn btn-primary" id="task-notes-save-btn">Save Notes</button>
+    </div>
+  </div>
+</div>
+<!-- Recurring Templates modal -->
+<div id="recurring-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="recurring-modal-title">
+  <div class="recurring-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Work Orders</div>
+        <h2 id="recurring-modal-title">Recurring Templates</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeRecurringModal()" aria-label="Close">&times;</button>
+    </div>
+    <div id="recurring-body" class="recurring-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeRecurringModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- Recurring confirm/detail modal -->
+<div id="recurring-confirm-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="recurring-confirm-title">
+  <div class="import-review-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Create Work Orders</div>
+        <h2 id="recurring-confirm-title">Template</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeRecurringModal()" aria-label="Close">&times;</button>
+    </div>
+    <div id="recurring-confirm-body" class="import-review-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeRecurringModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyPendingRecurringTemplate()">Create Work Orders &rarr;</button>
+    </div>
+  </div>
+</div>
+<!-- Backups modal -->
+<div id="backups-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="backups-modal-title">
+  <div class="audit-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Auto-Backup</div>
+        <h2 id="backups-modal-title">Restore a Snapshot</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeBackupsModal()" aria-label="Close">&times;</button>
+    </div>
+    <div id="backups-body" class="audit-body"></div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeBackupsModal()">Close</button>
     </div>
   </div>
 </div>
