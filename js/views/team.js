@@ -186,13 +186,19 @@ export function selectPaletteColor(swatchEl) {
 
 export function commitAddEmployee() {
   const input = document.getElementById('new-emp-name');
-  const name  = (input?.value || '').trim();
+  const name  = (input?.value || '').trim().slice(0, 60);
 
   if (!name) {
     if (input) {
       input.classList.add('shake');
       setTimeout(() => input.classList.remove('shake'), 400);
     }
+    return;
+  }
+
+  if (name.toLowerCase() === 'unowned') {
+    alert('"UNOWNED" is a reserved system name — please choose a different name.');
+    if (input) { input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); }
     return;
   }
 
