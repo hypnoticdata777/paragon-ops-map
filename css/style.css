@@ -4463,6 +4463,28 @@ body[data-ops-focus="compliance"] {
 }
 
 /* ==========================================================================
+   Backup Snapshot Rows
+   ========================================================================== */
+
+.backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eceff1;
+}
+.backup-row:last-child { border-bottom: none; }
+
+.backup-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.backup-meta strong { font-size: 14px; color: #263238; }
+.backup-meta span   { font-size: 12px; color: #607d8b; }
+
+/* ==========================================================================
    Bulk Select Mode
    ========================================================================== */
 

@@ -19,6 +19,8 @@ export const AUDIT_KEY       = 'pm-ops-audit-v1';
 export const GUIDE_KEY       = 'pm-ops-guide-dismissed';
 export const NOTIF_DATE_KEY  = 'pm-ops-notif-date';
 export const LAUNCH_CHECKLIST_KEY = 'pm-ops-launch-checklist-v1';
+export const BACKUP_KEY           = 'pm-ops-backups-v1';
+const MAX_BACKUPS = 5;
 
 // ── Toast notifications ───────────────────────────────────────────────────────
 let _toastTimer = null;
@@ -303,4 +305,122 @@ export function toggleNavCompact() {
 
 export function _fileSlug() {
   return _slugify(getCompanyName());
+}
+
+// ── Auto-backup snapshots ─────────────────────────────────────────────────────
+export function saveBackupSnapshot(label = 'Auto-save') {
+  try {
+    const snapshot = {
+      ts: new Date().toISOString(),
+      label,
+      company: getCompanyName(),
+      state: JSON.stringify({
+        departments: orgData.departments,
+        team: teamData,
+        workOrders,
+        portfolio,
+      }),
+    };
+    const backups = loadBackupSnapshots();
+    backups.unshift(snapshot);
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(backups.slice(0, MAX_BACKUPS)));
+  } catch (_) { /* non-critical — backup storage silently no-ops if full */ }
+}
+
+export function loadBackupSnapshots() {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) { return []; }
+}
+
+export function openBackupsModal() {
+  const modal = document.getElementById('backups-modal');
+  const body  = document.getElementById('backups-body');
+  if (!modal || !body) return;
+  const backups = loadBackupSnapshots();
+  if (backups.length === 0) {
+    body.innerHTML = '<p class="audit-empty">No backups yet. Backups are saved automatically after imports and auto-assign runs.</p>';
+  } else {
+    body.innerHTML = backups.map((b, i) => `
+      <div class="backup-row">
+        <div class="backup-meta">
+          <strong>${escapeBackup(b.label)}</strong>
+          <span>${escapeBackup(b.company || '')} &mdash; ${escapeBackup(new Date(b.ts).toLocaleString())}</span>
+        </div>
+        <button class="btn btn-secondary" onclick="restoreBackupSnapshot(${i})">Restore</button>
+      </div>
+    `).join('');
+  }
+  modal.classList.add('visible');
+}
+
+export function closeBackupsModal() {
+  document.getElementById('backups-modal')?.classList.remove('visible');
+}
+
+export function restoreBackupSnapshot(index) {
+  const backups = loadBackupSnapshots();
+  const backup  = backups[index];
+  if (!backup) return;
+  if (!confirm(`Restore backup from ${new Date(backup.ts).toLocaleString()}?\n\nThis will replace all current task, team, work order, and portfolio data.`)) return;
+
+  try {
+    const { departments, team, workOrders: wos, portfolio: port } = JSON.parse(backup.state);
+
+    if (Array.isArray(departments)) {
+      departments.forEach(savedDept => {
+        if (!savedDept || typeof savedDept.id !== 'string') return;
+        const dept = orgData.departments.find(d => d.id === savedDept.id);
+        if (!dept || !Array.isArray(savedDept.tasks)) return;
+        savedDept.tasks.forEach(savedTask => {
+          if (!savedTask || typeof savedTask.name !== 'string' || !savedTask.name.trim()) return;
+          if (typeof savedTask.owner !== 'string') return;
+          const key  = savedTask._configName || savedTask.name;
+          const task = dept.tasks.find(t => t._configName === key);
+          if (!task) return;
+          task.name     = savedTask.name.slice(0, 200);
+          task.owner    = savedTask.owner;
+          task.status   = STATUS_CYCLE.includes(savedTask.status)   ? savedTask.status   : 'todo';
+          task.priority = PRIORITY_CYCLE.includes(savedTask.priority) ? savedTask.priority : 'medium';
+          task.dueDate  = savedTask.dueDate  || null;
+          task.blockedBy = savedTask.blockedBy || null;
+        });
+      });
+    }
+
+    if (team && Array.isArray(team.employees)) {
+      setTeamData(team);
+      saveTeamData();
+    }
+
+    if (Array.isArray(wos)) {
+      setWorkOrders(wos);
+      saveWorkOrders();
+    }
+
+    if (port) {
+      setPortfolio({
+        properties: Array.isArray(port.properties) ? port.properties : [],
+        vendors:    Array.isArray(port.vendors)    ? port.vendors    : [],
+        tenants:    Array.isArray(port.tenants)    ? port.tenants    : [],
+      });
+      savePortfolio();
+    }
+
+    saveToStorage();
+    closeBackupsModal();
+    _showActionToast('✓ Backup restored', 'save-toast--success');
+
+    // Trigger a full UI refresh via page reload so all views sync cleanly
+    setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    alert('Could not restore this backup — the data may be corrupted.');
+  }
+}
+
+function escapeBackup(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

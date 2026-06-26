@@ -10,7 +10,7 @@ import {
 import {
   saveToStorage, saveTeamData, saveWorkOrders, logAudit,
   getCompanyName, _showActionToast, showSaveToast, _fileSlug,
-  saveAuditLog,
+  saveAuditLog, saveBackupSnapshot,
 } from '../storage.js';
 import {
   escapeHtml, jsonAttr, isTaskOverdue, _downloadBlob, _slugify,
@@ -410,7 +410,7 @@ export function runAutoAssign() {
     return;
   }
 
-  // Save undo snapshot before bulk change (imported from io.js via app.js binding)
+  saveBackupSnapshot('Before auto-assign');
   window._saveUndoSnapshot && window._saveUndoSnapshot();
 
   const workload = buildWorkloadMap();
