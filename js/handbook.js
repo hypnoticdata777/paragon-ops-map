@@ -55,6 +55,14 @@ export function downloadOperationsHandbook() {
   _showActionToast('Operations handbook downloaded', 'save-toast--success');
 }
 
+export function downloadOperationsHandbookHTML() {
+  const company  = getCompanyName();
+  const markdown = buildOperationsHandbookMarkdown();
+  const html     = markdownToPrintHtml(markdown, `${company} Operations Handbook`);
+  _downloadBlob(html, 'text/html', `pm-ops-${_fileSlug()}-operations-handbook.html`);
+  _showActionToast('HTML handbook downloaded', 'save-toast--success');
+}
+
 export function printOperationsHandbook() {
   const markdown = buildOperationsHandbookMarkdown();
   const html = markdownToPrintHtml(markdown, `${getCompanyName()} Operations Handbook`);
