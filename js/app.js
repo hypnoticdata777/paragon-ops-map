@@ -45,6 +45,7 @@ import {
   toggleBulkMode, cancelBulkMode, toggleTaskCheck,
   selectAllVisibleTasks, applyBulkAction,
   openTaskNotes, closeTaskNotes,
+  openCustomFields, closeCustomFields, addCustomField, deleteCustomField,
 } from './views/tracking.js';
 import {
   renderMapControls, renderFlowMap,
@@ -259,6 +260,10 @@ Object.assign(window, {
   applyBulkAction,
   openTaskNotes,
   closeTaskNotes,
+  openCustomFields,
+  closeCustomFields,
+  addCustomField,
+  deleteCustomField,
   // Map tab: visual operational flow and department detail panels.
   renderMapControls,
   renderFlowMap,

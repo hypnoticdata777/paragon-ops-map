@@ -99,6 +99,14 @@ export function loadFromStorage() {
         if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
         if (savedTask.blockedBy !== undefined) task.blockedBy = savedTask.blockedBy || null;
         if (typeof savedTask.notes === 'string') task.notes = savedTask.notes.slice(0, 1000);
+        if (savedTask.customFields && typeof savedTask.customFields === 'object' && !Array.isArray(savedTask.customFields)) {
+          task.customFields = Object.fromEntries(
+            Object.entries(savedTask.customFields)
+              .filter(([k, v]) => typeof k === 'string' && typeof v === 'string')
+              .slice(0, 10)
+              .map(([k, v]) => [k.slice(0, 40), v.slice(0, 200)])
+          );
+        }
       });
     });
   } catch (e) {
