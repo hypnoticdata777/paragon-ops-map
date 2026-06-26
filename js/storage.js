@@ -58,13 +58,15 @@ export function saveToStorage() {
     const payload = orgData.departments.map(dept => ({
       id: dept.id,
       tasks: dept.tasks.map(t => ({
-        _configName: t._configName || t.name,
-        name:        t.name,
-        owner:       t.owner,
-        status:      t.status   || 'todo',
-        priority:    t.priority || 'medium',
-        dueDate:     t.dueDate  || null,
-        blockedBy:   t.blockedBy || null
+        _configName:  t._configName || t.name,
+        name:         t.name,
+        owner:        t.owner,
+        status:       t.status   || 'todo',
+        priority:     t.priority || 'medium',
+        dueDate:      t.dueDate  || null,
+        blockedBy:    t.blockedBy || null,
+        notes:        t.notes    || null,
+        customFields: t.customFields || null,
       }))
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -96,6 +98,7 @@ export function loadFromStorage() {
         if (savedTask.priority && PRIORITY_CYCLE.includes(savedTask.priority)) task.priority = savedTask.priority;
         if (savedTask.dueDate !== undefined) task.dueDate = savedTask.dueDate;
         if (savedTask.blockedBy !== undefined) task.blockedBy = savedTask.blockedBy || null;
+        if (typeof savedTask.notes === 'string') task.notes = savedTask.notes.slice(0, 1000);
       });
     });
   } catch (e) {

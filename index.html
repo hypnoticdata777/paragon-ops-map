@@ -423,6 +423,26 @@
     </div>
   </div>
 </div>
+<!-- Per-task Notes modal -->
+<div id="task-notes-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="task-notes-title">
+  <div class="task-notes-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Task Notes</div>
+        <h2 id="task-notes-title" class="task-notes-heading">Task</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeTaskNotes()" aria-label="Close">&times;</button>
+    </div>
+    <div class="task-notes-body">
+      <textarea id="task-notes-textarea" class="task-notes-textarea" placeholder="Add context, blockers, links, or anything the team needs to know about this task..." maxlength="1000" rows="8"></textarea>
+      <p class="task-notes-hint">Max 1000 characters. Saved per-task alongside status and owner.</p>
+    </div>
+    <div class="playbook-actions">
+      <button class="btn btn-secondary" onclick="closeTaskNotes()">Cancel</button>
+      <button class="btn btn-primary" id="task-notes-save-btn">Save Notes</button>
+    </div>
+  </div>
+</div>
 <!-- Recurring Templates modal -->
 <div id="recurring-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="recurring-modal-title">
   <div class="recurring-panel">

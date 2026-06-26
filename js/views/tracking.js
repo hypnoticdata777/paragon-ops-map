@@ -217,6 +217,10 @@ export function renderTrackingView() {
                    title="Double-click to rename">${escapeHtml(task.name)}</div>
             </div>
             <div class="task-right">
+              <button class="task-notes-btn${task.notes ? ' task-notes-btn--has-notes' : ''}"
+                      onclick="openTaskNotes('${dept.id}',${taskIdx})"
+                      title="${task.notes ? 'Edit notes' : 'Add notes'}"
+                      aria-label="${task.notes ? 'Edit notes' : 'Add notes'}">&#128221;</button>
               <span class="status-pill status-${status}"
                     onclick="cycleTaskStatus('${dept.id}', ${taskIdx})"
                     title="Status: ${STATUS_LABELS[status]} — click to change">
@@ -828,6 +832,50 @@ function _updateDepChip(deptId, taskIdx, task, anchorEl) {
     });
   }
   oldChip.replaceWith(newChip);
+}
+
+// ── Per-task notes ────────────────────────────────────────────────────────────
+export function openTaskNotes(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const modal    = document.getElementById('task-notes-modal');
+  const title    = document.getElementById('task-notes-title');
+  const textarea = document.getElementById('task-notes-textarea');
+  const saveBtn  = document.getElementById('task-notes-save-btn');
+  if (!modal || !textarea) return;
+
+  if (title)   title.textContent = task.name;
+  textarea.value = task.notes || '';
+
+  saveBtn.onclick = () => {
+    task.notes = textarea.value.trim().slice(0, 1000) || null;
+    saveToStorage();
+    _updateNotesIcon(deptId, taskIdx, task);
+    closeTaskNotes();
+    _showActionToast('Notes saved', 'save-toast--success');
+  };
+
+  modal.classList.add('visible');
+  setTimeout(() => textarea.focus(), 50);
+}
+
+export function closeTaskNotes() {
+  document.getElementById('task-notes-modal')?.classList.remove('visible');
+}
+
+function _updateNotesIcon(deptId, taskIdx, task) {
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+  const btn = taskEl.querySelector('.task-notes-btn');
+  if (btn) {
+    btn.classList.toggle('task-notes-btn--has-notes', Boolean(task.notes));
+    btn.title = task.notes ? 'Edit notes' : 'Add notes';
+  }
 }
 
 export function isDependencyBlocking(task) {
