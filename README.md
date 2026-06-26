@@ -1,95 +1,78 @@
+<div align="center">
+
 # PM Ops Map
 
-> An open-source operations management tool for property management companies — track every department, every task, every maintenance request, and exactly who owns what.
+**Free, open-source operations management for property management companies.**
+Track every department, every task, every maintenance request — and exactly who owns what.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-blue)](https://hypnoticdata777.github.io/paragon-ops-map/)
-[![Download v1.0.0](https://img.shields.io/badge/Download-v1.0.0-orange)](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
+[![Live Demo](https://img.shields.io/badge/▶%20Live%20Demo-Visit-blue?style=flat-square)](https://hypnoticdata777.github.io/paragon-ops-map/)
+[![Download](https://img.shields.io/badge/Download-v1.0.0-orange?style=flat-square)](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
+[![CI](https://github.com/hypnoticdata777/paragon-ops-map/actions/workflows/ci.yml/badge.svg)](https://github.com/hypnoticdata777/paragon-ops-map/actions)
 
-**[▶ Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/)** — runs entirely in the browser, nothing to install.
+**No database. No login. No backend. No monthly fee.**
+
+[**▶ Open the Live Demo**](https://hypnoticdata777.github.io/paragon-ops-map/) — runs entirely in your browser.
+
+</div>
 
 ---
 
-## Use in 5 Minutes
+## What Is It?
 
-**No database. No login. No backend.**
+PM Ops Map is a free browser app that gives a property management company a complete operating system on day one — without signing up for anything.
 
-### Option A — Live Demo (Recommended for most companies)
+Open it, enter your company name, and you get:
 
-1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/)
-2. Complete the setup screen
-3. Add your first portfolio records, assign owners, track work orders, and export your handbook
+- **260+ standard PM tasks** across 17 departments, all editable to match your company
+- **Team assignment engine** with auto-assign, workload balancing, and role templates
+- **Maintenance work orders** tracked from intake to completion
+- **Property, tenant, and vendor registry**
+- **Exportable operations handbook** (Markdown + printable HTML)
+- **Recurring task templates** for weekly ops, monthly finance, compliance, and more
+- **Auto-backups** so nothing gets lost
 
-### Option B — Download the Release ZIP
+Everything saves to `localStorage`. Nothing goes to a server. Export your data anytime as JSON or CSV.
+
+---
+
+## Get Started in 2 Minutes
+
+### Option A — Live Demo (no setup)
+
+1. Open [**hypnoticdata777.github.io/paragon-ops-map**](https://hypnoticdata777.github.io/paragon-ops-map/)
+2. Enter your company name and portfolio size
+3. Add your team, assign tasks, track work orders
+
+### Option B — Download the ZIP
 
 1. Go to [Releases](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
 2. Download `pm-ops-map.zip` under **Assets**
-3. Unzip it anywhere on your computer
-4. Open `index.html` in Chrome, Firefox, Safari, or Edge
-5. Complete the setup screen — you're live
+3. Unzip → open `index.html` in any modern browser
+4. Done
 
-### Option C — Clone and Run Locally
-
-The source version uses browser modules and loads `config.json`, so run it from a tiny local web server:
+### Option C — Run Locally from Source
 
 ```bash
 git clone https://github.com/hypnoticdata777/paragon-ops-map.git
 cd paragon-ops-map
 python -m http.server 8000
+# open http://localhost:8000
 ```
 
-Then open `http://localhost:8000`.
+Or with Node: `npm install && npm start`
 
-If you are developing with Node installed, `npm start` also works (see [Development](#development)).
-
-### Option D — Fork and Host on GitHub Pages (Free)
+### Option D — Fork and Host Free on GitHub Pages
 
 1. Fork this repo
-2. Go to **Settings → Pages → Source → main branch**
-3. Your tool is live at `https://yourusername.github.io/paragon-ops-map/`
-
----
-
-## What It Does
-
-PM Ops Map gives your property management team a single source of truth for all operational responsibilities. It comes pre-loaded with **17 common PM departments and 260+ standard tasks** — all fully editable to match your company.
-
-It answers nine questions at a glance:
-
-1. **What work exists?** — Every task across every department, organized and documented
-2. **Who owns it?** — Every task assigned to a named team member or flagged UNOWNED
-3. **Where are the gaps?** — Unowned tasks surface automatically, highlighted in red
-4. **Who is overloaded?** — The workload dashboard shows task distribution and flags imbalances
-5. **What's the current state?** — Every task carries a live status and priority so you can see what's in flight, blocked, or done without a separate project tool
-6. **What maintenance is in progress?** — The Work Orders board tracks every repair and service request from intake to completion
-7. **What should a new company set up first?** — The Launch Plan recommends a first-week operating blueprint, checklist, and setup gaps
-8. **How do we document this for the team?** — The Handbook export turns the configured map into a Markdown SOP starter pack
-9. **Can we trust this data outside the app?** — Data Quality checks flag incomplete properties, tenants, vendors, and open repairs before export
-10. **Can a beginner see the whole flow before entering real data?** — The setup wizard, role templates, and demo company show the first operating loop end to end
-
-On first launch, the setup screen captures company name, portfolio size, and primary operations focus. That profile stays in `localStorage` and adjusts the app's tone automatically for stability, maintenance, growth, or compliance workflows.
-
----
-
-## Best Workflow for New Companies
-
-1. Open the [Live Demo](https://hypnoticdata777.github.io/paragon-ops-map/) or a downloaded release ZIP
-2. Enter your company name, portfolio size, and primary operations focus
-3. Review the **Launch Plan** on the Tracking view
-4. Follow the **Setup Wizard**: property -> tenant -> vendor -> team -> first work order
-5. Open **Portfolio** and add properties, tenants, vendors, or the editable **Starter Example**
-6. Add your real team members in **Team Manager**, or start from a role template
-7. Assign every UNOWNED responsibility or run **Auto-Assign**
-8. Create one starter work order to validate maintenance intake and closeout
-9. Review **Data Quality** before exporting CSVs or sharing the handbook
-10. Download or print the **Handbook** to get a shareable operations SOP starter pack
-11. Re-export JSON, CSV, or copy state whenever you want a backup or device transfer
+2. **Settings → Pages → Source → main branch**
+3. Your team's URL is live at `https://yourusername.github.io/paragon-ops-map/`
 
 ---
 
 ## Who It's For
 
-| Role | How They Use It |
+| Role | How they use it |
 |------|----------------|
 | **Operations Manager** | Audit ownership, spot gaps, run auto-assign to fill them |
 | **CEO / Leadership** | See workload distribution and who is overloaded at a glance |
@@ -101,333 +84,163 @@ On first launch, the setup screen captures company name, portfolio size, and pri
 
 ## Features
 
-### Launch Plan — Guided First-Week Setup
+### Task Tracking — The Core View
 
-The **Launch Plan** appears on the Tracking view after setup. It uses the company's portfolio size and operating focus to recommend a practical operating blueprint for beginners.
+Every department as a collapsible card. Every task row shows priority, status, owner, and due date — all editable with a single click.
 
-It includes:
+| Action | How |
+|--------|-----|
+| Rename a task | Double-click the task name → type → Enter |
+| Reassign an owner | Click the owner badge → pick from dropdown |
+| Change status | Click the status pill — cycles To Do → In Progress → Blocked → Done |
+| Change priority | Click the colored dot — cycles High → Medium → Low |
+| Set a due date | Click the calendar icon |
+| Set a dependency | Click the dependency chip → search and select the blocking task |
+| Add notes | Click 📝 — freeform notes saved per task |
+| Add custom fields | Click 🏷️ — up to 10 key-value pairs per task (billing codes, unit refs, etc.) |
+| Bulk edit | Enable bulk mode → check tasks → reassign or change status in one shot |
 
-- A **Start Here** panel that recommends the single next best action
-- Plain-language setup steps for adding people, closing unowned gaps, and exporting the handbook
-- A **Setup Wizard** that walks new users through property -> tenant -> vendor -> team -> first work order
-- A focus-specific starter blueprint for stability, maintenance, growth, or compliance
-- Department shortcuts that jump directly to the most important operating areas
-- A first-week checklist for ownership, maintenance intake, rent collection, vendors, owner reporting, and backup coverage
-- Live setup gaps based on the current map, team roster, and work orders
-- A **Data Quality** panel that checks whether portfolio and maintenance records are complete enough to export or hand off
-- A Markdown **Download Launch Plan** action for sharing or onboarding
-- A **Print Launch Plan** action for a clean handoff/meeting copy
-- A **Load Demo Company** action for exploring a realistic sample workspace before entering real data
+#### Filters
+
+Search by keyword, owner, status, or priority — all four compose together. The search input debounces at 200ms so it doesn't stutter while you type. Clear all with one button.
 
 ---
 
-### Portfolio Starter and Data Quality
+### Bulk Select Mode
 
-The **Portfolio tab** tracks the beginner registry a property management company needs before heavier systems are worth adopting:
+Enable **Bulk Mode** from the filter bar to check multiple tasks at once. A floating action bar appears at the bottom of the screen with dropdowns to reassign all selected tasks to a new owner or change all their statuses in one click. Works across collapsed departments too.
 
-- Managed properties with unit counts, owner/client context, and operating notes
-- Tenant roster with property, unit, status, phone, and email
-- Vendor bench with trade, phone, and email
-- Edit and delete actions on portfolio cards so incomplete records can be cleaned up without rebuilding them
-- An optional **Starter Example** that adds an editable duplex, tenant, vendor, and first repair request so new users can see the workflow in context
+---
 
-The Launch dashboard includes four data-quality checks:
+### Per-Task Notes
 
-| Check | What it flags |
-|-------|---------------|
-| Properties | Missing owner/client or unit count |
-| Tenants | Missing property, unit, phone, or email |
-| Vendors | Missing trade, phone, or email |
-| Work Orders | Open repairs missing assignee, vendor, target date, or property |
+Click the **📝** icon on any task to open a notes panel. Freeform text, up to 1,000 characters, saved automatically to `localStorage`. The icon turns solid when a task has notes so nothing gets buried.
 
-These checks feed the readiness score, setup gaps, and risk queue so incomplete data is visible before the user exports CSVs or shares the handbook.
+---
+
+### Custom Task Fields
+
+Click **🏷️** on any task to add your own key-value fields. Up to 10 per task. Good for things the default columns don't cover — billing codes, unit numbers, vendor reference IDs, permit numbers, inspection scores. Fields persist in `localStorage` alongside all other task data.
+
+---
+
+### Recurring Work Order Templates
+
+Click **📅 Recurring Templates** in the Work Orders toolbar to pick from five built-in PM task templates:
+
+| Template | Frequency |
+|----------|-----------|
+| Weekly Ops Check | Weekly |
+| Monthly Financial Review | Monthly |
+| Monthly Compliance Check | Monthly |
+| Quarterly Property Inspections | Quarterly |
+| Move Cycle (Move-In/Move-Out) | Per turn |
+
+Pick a template, enter a property name and due date, and the app creates the matching work orders automatically. Every created work order is tagged with the template name in its notes.
+
+---
+
+### Auto-Backup Snapshots
+
+The app automatically saves a snapshot before every import and every auto-assign run. Click **Backups** in the stats bar to see the last 5 snapshots and restore any of them with one click.
+
+Each backup captures: all tasks and their state, the full team roster, all work orders, and the portfolio registry.
+
+---
+
+### Team Manager — Auto-Assignment Engine
+
+Add employees by name and badge color. Set **department affinities** on each card (click to toggle), then hit **⚡ Auto-Assign** to route every unowned task in one shot using two rules:
+
+1. **Affinity match** — prefer employees tagged for that department
+2. **Workload balance** — among matching employees, pick the one with the fewest tasks
+
+No employee with no affinity for a department? The engine falls back to the globally least-loaded person. No task is ever left UNOWNED after a run.
+
+**Employee name validation** — names are capped at 60 characters and "UNOWNED" is blocked as a name.
+
+#### Role Templates
+
+| Template | Best for |
+|----------|----------|
+| **Solo PM** | One operator covering every lane |
+| **2-Person Team** | Splitting front-office and back-office |
+| **Maintenance-Heavy** | Teams where repairs, vendors, and turns dominate |
+| **Leasing-Heavy** | Teams focused on pipeline, applications, and move-ins |
+
+#### Role Playbooks
+
+Click **Playbook** on any employee card for a full scrollable summary — workload metrics, status breakdown, priority focus, blockers, active work orders, and the full responsibility list. Download as Markdown for onboarding packets.
+
+---
+
+### Work Orders — Maintenance Pipeline
+
+Four-stage kanban: **Submitted → Scheduled → In Progress → Completed**
+
+Each work order captures: property, unit, tenant/resident, issue title, notes, priority, assignee, vendor, target date, and estimated cost. Cards are fully editable after creation. A pulsing red beacon on the tab means at least one open work order has no assignee.
+
+---
+
+### Portfolio & Data Quality
+
+Track properties, tenants, and vendors in the **Portfolio tab**. The launch dashboard runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
 
 ---
 
 ### Operations Handbook Export
 
-Click **Handbook** in the stats bar to download a Markdown operations handbook generated from the current workspace.
+One click generates a complete operations handbook from your current workspace:
 
-The handbook includes:
+- **Handbook .md** — full Markdown document (works in Notion, Confluence, or any editor)
+- **Handbook .html** — self-contained printable HTML file, no extra tools needed
+- **Print Handbook** — browser print dialog with clean formatting
 
-- Company profile and operating focus
-- Operating snapshot with assignment, blocker, overdue, team, and work order counts
-- Portfolio registry with properties, tenants, and vendors
-- First-week operating rhythm
-- Setup gaps to close
-- Critical PM coverage across leasing, rent collection, inspections, maintenance, compliance, renewals, and emergencies
-- Team roster and workload
-- Department-by-department SOP checklist
-- Maintenance work order summary
-- Starter SOP templates for daily huddles, maintenance intake, owner updates, and move-in handoffs
-- Handoff notes for the next manager or new hire
-
-This turns PM Ops Map from a live dashboard into a starter operating manual for a new property management company.
-
-Use **Print Handbook** for a print-friendly version without needing to copy Markdown into another tool.
+The handbook includes: company profile, team roster, workload breakdown, full department SOP checklists, work order summary, and starter SOP templates (daily huddle, maintenance intake, owner reports, move-in handoffs).
 
 ---
 
-### 🔄 Multi-Device Sync
+### Map View — Org Flow Visualization
 
-Use the **Copy State** and **Paste State** buttons in the stats bar to transfer your full data set between devices without a backend.
-
-- **Copy State** — serializes all tasks, team members, and work orders to your clipboard as a single JSON blob
-- **Paste State** — reads from the clipboard, validates the schema, shows an import report, and restores matching state after confirmation
-
-Works across any two browsers that share clipboard access (e.g. paste into a colleague's machine via a chat tool, or sync between your laptop and tablet).
-
-JSON exports include schema metadata (`pm-ops-map-state`, currently version 2), task identity keys, dependencies, team data, portfolio records, work orders, and company context. Imports show matched departments/tasks, skipped records, invalid due dates, and included portfolio/team/work-order counts before overwrite.
+Custom SVG diagram: Company → Departments → Owners. Line thickness scales with task count. Click any owner circle to highlight their connections; click any department box to see its tasks in a slide-in panel. Hover for counts.
 
 ---
 
-### 📋 Audit Log
+### Launch Plan — Guided First-Week Setup
 
-Every meaningful change is recorded in an append-only audit log stored in `localStorage`.
+Appears automatically for new companies. Uses your portfolio size and operating focus (stability / maintenance / growth / compliance) to recommend the next best action, surface setup gaps, and walk through a structured first-week checklist.
 
-Click **Audit Log** in the stats bar to open the log panel. Each entry shows:
-
-| Field | Content |
-|-------|---------|
-| Time | Timestamp of the action |
-| Action | What happened (Owner changed, Status changed, Priority changed, Task renamed, Auto-assigned, etc.) |
-| Detail | The before/after values or relevant context |
-
-The log caps at 500 entries (oldest entries are dropped). You can clear it at any time from inside the panel. Logged actions include: owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, and paste-state operations.
+Includes a **Load Demo Company** option for exploring a realistic sample workspace before entering real data.
 
 ---
 
-### 🔗 Task Dependencies
+### Audit Log
 
-Each task can be marked as **blocked by** another task in any department.
-
-Click the dependency chip on a task row (in Tracking view or the due-date panel) to open the dependency picker:
-
-- Search across all departments and tasks
-- Select the blocking task — a chip appears on the dependent task
-- The chip turns **red** if the blocking task is not yet Done, and **green** once it is resolved
-- Click **Clear** in the picker or the chip's remove control to unlink the dependency
-
-Dependencies persist in `localStorage` alongside all other task data.
+Every meaningful change (owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, paste-state operations) is recorded in an append-only log. Capped at 500 entries. View or clear it from the stats bar.
 
 ---
 
-### 📱 Mobile Touch Targets
+### Multi-Device Sync
 
-The app is optimized for touch devices via a `@media (hover: none) and (pointer: coarse)` media query that activates only on real touch screens (not just narrow viewports):
-
-- Task rows expand to a minimum of 52 px tall
-- Status pills, owner badges, priority dots, and action buttons all meet the 36 px minimum tap target
-- All interactive elements use `touch-action: manipulation` to eliminate the 300 ms tap delay
+No backend needed — use **Copy State** and **Paste State** in the stats bar to move your full workspace between devices via clipboard. The import flow validates the schema, shows a preview report, and asks for confirmation before overwriting.
 
 ---
 
-### 🔔 Overdue Notifications
+### Overdue Notifications
 
-The app can send browser notifications for overdue tasks.
-
-Click **🔔 Alerts** in the stats bar (visible after granting permission) to trigger a permission request. Once granted:
-
-- On each page load the app checks for tasks with a due date in the past that are not Done
-- One grouped notification is sent per session (not on every reload) listing the overdue count
-- Permission is requested lazily on interaction, not on page load, which browsers prefer
-
-The last notification date is stored in `localStorage` to avoid spamming repeated visits.
+Grant browser notification permission from the stats bar (**🔔 Alerts**). On each page load, the app checks for overdue tasks and sends one grouped notification per session if any are found.
 
 ---
 
-### 🔧 Work Orders — Maintenance Pipeline
-
-The **Work Orders tab** is a kanban board for tracking maintenance requests and service jobs from intake to completion.
-
-#### Four-stage pipeline
-
-| Stage | Meaning |
-|-------|---------|
-| **Submitted** | Request received — not yet scheduled |
-| **Scheduled** | Vendor or staff member confirmed — date set |
-| **In Progress** | Work is actively underway |
-| **✓ Completed** | Job closed out |
-
-Click **→ Next Status** on any card to advance it one step. Cards show their priority with a colored left border (red = high, amber = medium, green = low).
-
-#### Work order fields
-
-Each work order captures: property address, unit number, tenant/resident, issue title, notes, priority, assignee (pulled from your team roster), vendor name, target date, and estimated cost.
-
-Existing work orders can be edited from their card, so missing assignee, vendor, target date, property, or resident details can be fixed without deleting the request.
-
-#### Beacon
-
-A pulsing red dot appears on the Work Orders tab whenever an open work order has no assignee — so nothing slips through the cracks.
-
----
-
-### 👥 Team Manager — Auto-Assignment Engine
-
-The **Team Manager tab** manages your employee roster and distributes tasks automatically.
-
-#### Employee Roster
-
-Add employees by name and pick their badge color from the palette. Each employee card shows:
-- Their current task count and a mini workload bar
-- **Department affinity tags** — one per department, click to toggle on/off
-- A **Playbook** panel for that employee's owned tasks, priorities, blockers, affinities, and active work orders
-
-Affinities tell the auto-assign engine which departments this person covers.
-
-#### Role Templates
-
-Team Manager includes four starter team shapes:
-
-| Template | Best for |
-|----------|----------|
-| **Solo PM** | One operator covering every lane |
-| **2-Person Team** | Splitting front-office and back-office work |
-| **Maintenance-Heavy** | Teams where repair intake, vendors, and turns dominate |
-| **Leasing-Heavy** | Teams focused on pipeline, applications, and move-ins |
-
-Applying a template replaces the current roster, keeps matching assigned owners where possible, and marks removed owners' work as UNOWNED so Auto-Assign can rebalance cleanly.
-
-#### Role Playbooks
-
-Click **Playbook** on any employee card to open a scrollable role summary without leaving the app. Each playbook shows workload metrics, status breakdown, department affinities, priority focus, blockers/overdue items, active work orders, and the full responsibility list. A Markdown download remains available inside the panel for handoffs or onboarding packets.
-
-#### ⚡ Auto-Assign
-
-Click **Auto-Assign** in the filter bar to instantly route every UNOWNED task using two rules:
-
-| Rule | Logic |
-|------|-------|
-| **Affinity match** | Prefer employees tagged for that department |
-| **Workload balance** | Among matching employees, pick the one with the fewest tasks right now |
-
-If no employee has an affinity for a department, the engine falls back to the globally least-loaded person — so no task is ever left UNOWNED after a run.
-
-#### Workload Dashboard
-
-A horizontal bar chart sorted by task count. Employees carrying significantly more than the team average (≥35% above, more than 5 tasks) are flagged with a ⚠ beacon.
-
-#### Beacons
-
-| Beacon | Location | Meaning |
-|--------|----------|---------|
-| 🔴 Dot | Team Manager tab | UNOWNED tasks exist |
-| 🔴 Badge | Auto-Assign button | Live count of UNOWNED tasks |
-| ⚠ Icon | Workload Dashboard row | Employee is significantly above team average |
-| 🔴 Banner | Top of Team Manager | UNOWNED count with a one-click fix |
-| 🔴 Dot | Work Orders tab | Open work order has no assignee |
-
----
-
-### 📊 Tracking View — Task-Level Accountability
-
-Every department displayed as a collapsible card. Each task row shows its priority, name, status, and owner — all editable with a single click.
-
-#### Task interactions
-
-| Action | How |
-|--------|-----|
-| Rename a task | Double-click the task name → type → Enter to save |
-| Reassign an owner | Click the owner badge → pick from dropdown |
-| Change status | Click the status pill — cycles through the four states |
-| Change priority | Click the colored dot — cycles through the three levels |
-| Set a due date | Click the calendar icon on the task row |
-| Set a dependency | Click the dependency chip → search and select the blocking task |
-| Spot unowned tasks | Red pulsing badge — impossible to miss |
-
-#### Status lifecycle
-
-| Status | Meaning |
-|--------|---------|
-| **To Do** | Not started yet — the default |
-| **In Progress** | Actively being worked on |
-| **⚠ Blocked** | Something is stopping this task |
-| **✓ Done** | Complete — row dims |
-
-#### Priority levels
-
-| Priority | Indicator | When to use |
-|----------|-----------|-------------|
-| 🔴 **High** | Red dot | Time-sensitive or business-critical |
-| 🟡 **Medium** | Amber dot | Normal operational work |
-| 🟢 **Low** | Green dot | Nice-to-have or background tasks |
-
-#### Department headers
-
-Each department header shows a **thin progress bar** (% of tasks Done) and inline counts for done and blocked tasks. Both update live as you click.
-
-#### Filters
-
-| Filter | Options |
-|--------|---------|
-| Keyword search | Full-text across all task names |
-| Owner | Show one team member's tasks only |
-| Status | To Do / In Progress / Blocked / Done |
-| Priority | High / Medium / Low |
-
-All four filters compose together. The Clear button resets all at once.
-
----
-
-### 🗺 Map View — Org Flow Visualization
-
-A custom SVG diagram showing **Company → Departments → Owners**. Line thickness scales with task count.
-
-| Action | How |
-|--------|-----|
-| Focus on one person | Click their owner circle — connections highlight, others dim |
-| See a department's tasks | Click any department box — detail panel slides in |
-| Hover for counts | Tooltip on any department, owner, or connection line |
-| Shift-click a pill | Hide/show that owner's connections entirely |
-| Reset | Click Reset in the controls bar |
-
----
-
-### 📈 Live Stats Bar
-
-Persistent across all views, updates whenever any task changes:
-
-| Stat | What it shows |
-|------|--------------|
-| Total Tasks | All tasks across all departments |
-| ✓ Assigned | Tasks with a named owner |
-| ✓ Done | Tasks marked Done (green) |
-| ⏳ In Progress | Tasks actively being worked (orange) |
-| ⚠ Blocked | Tasks that are stuck (red) |
-| ⚠ Unowned | Tasks with no assigned owner (red) |
-| Departments | Total department count |
-
-Also contains: Export to JSON, task CSV, Properties CSV, Tenants CSV, Vendors CSV, Work Orders CSV · Download Handbook · Print Handbook · Import a saved config · Copy State · Paste State · Audit Log · 🔔 Alerts · Reset options
-
-> **Export/Import note:** JSON exports include the full versioned workspace. CSV exports are spreadsheet-friendly slices for tasks, properties, tenants, vendors, and work orders. Old exports without newer fields import cleanly and fall back to sensible defaults.
-
-#### Reset Options
-
-The Reset button lets you choose what to clear from this browser:
-
-| Option | Clears |
-|--------|--------|
-| **1 - Tasks only** | Task names, owners, statuses, due dates, and dependencies |
-| **2 - Operating workspace** | Tasks, team, portfolio, work orders, audit log, and launch checklist |
-| **3 - Company setup and preferences** | Company profile, nav state, guide state, and notification date |
-| **4 - Everything** | All PM Ops Map data stored on this device |
-
----
-
-## Customizing It for Your Company
+## Customizing for Your Company
 
 ### Add or remove team members
 
-Use the **Team Manager tab** — no code required. Type a name, pick a badge color, click **+ Add Employee**. To remove someone, click ✕ on their card (their tasks revert to UNOWNED automatically).
-
-To set up auto-assignment, click the department affinity tags on each employee card to mark which areas they cover, then run **⚡ Auto-Assign**.
+Use **Team Manager** — no code required. Name + badge color + click **+ Add Employee**. Remove with ✕ (their tasks revert to UNOWNED).
 
 ### Customize departments and tasks
 
-Edit `config.json` in the project root. This is the master data file — no JavaScript knowledge needed.
-
-**Add a task to an existing department:**
+Edit `config.json` in the project root. No JavaScript needed.
 
 ```json
 {
@@ -440,29 +253,11 @@ Edit `config.json` in the project root. This is the master data file — no Java
 }
 ```
 
-**Add a new department:**
+Add a new department the same way, using a new `id`.
 
-```json
-{
-  "id": "hr",
-  "name": "Human Resources",
-  "color": "#5e35b1",
-  "tasks": [
-    { "name": "Post job listings",       "owner": "Jordan" },
-    { "name": "Run onboarding process",  "owner": "UNOWNED" }
-  ]
-}
-```
+### Fork and brand it
 
-**Add default employee colors and affinities** in the `ownerColors` and `defaultAffinities` sections of `config.json`. These are used to seed the team roster on first load. After that, the Team Manager UI takes over.
-
-### Update your company name
-
-On first load, the setup screen asks for your company name, portfolio size, and primary operations focus. It saves to `localStorage`, appears in the header and SVG map, and adjusts the app's accent tone. To reset it, open DevTools → Application → localStorage → delete `pm-ops-company-name` and `pm-ops-profile-v1`, then reload.
-
-### Keep navigation out of the way
-
-Use **Hide nav** in the header to collapse the tab bar into a thin working strip. Hover or focus the strip to reveal it, or click **Show nav** to restore the full tabs. The preference saves locally.
+Change the company name on first launch (it's saved to `localStorage`). To re-run the setup, open DevTools → Application → localStorage → delete `pm-ops-company-name` and reload.
 
 ---
 
@@ -470,97 +265,38 @@ Use **Hide nav** in the header to collapse the tab bar into a thin working strip
 
 ```
 pm-ops-map/
-├── index.html              Main layout, navigation, modals
+├── index.html              Main layout, navigation, all modals
 ├── config.json             Master data — departments, tasks, owners, colors, affinities
 ├── css/
 │   └── style.css           All styles, responsive breakpoints, animations
 ├── js/
-│   ├── app.js              Entry point — imports all modules, registers window globals, boots the app
-│   ├── state.js            Shared mutable state, constants, setters, and employee helpers
-│   ├── storage.js          localStorage persistence, toast notifications, company profile helpers
-│   ├── ui.js               Stats bar, beacons, onboarding modal, welcome guide, notifications
-│   ├── io.js               Export / Import (JSON + task/portfolio/work-order CSV), clipboard sync, undo stack
-│   ├── launchPlan.js       Guided setup plan, launch checklist, setup gaps, data-quality checks
-│   ├── handbook.js         Markdown operations handbook generator
-│   ├── stateSchema.js      Versioned JSON export/import schema and validation report
-│   ├── stateSchema.cjs     CommonJS mirror for schema tests
-│   ├── templates.js        Role templates, SOP templates, and demo workspace seed data
-│   ├── templates.cjs       CommonJS mirror for template tests
-│   ├── data.js             Jest-only shim — reads config.json for test assertions
-│   ├── utils.js            Pure utility functions for browser modules
-│   ├── utils.cjs           CommonJS mirror for Jest tests
+│   ├── app.js              Entry point — imports all modules, registers window globals
+│   ├── state.js            Shared mutable state, constants, and setters
+│   ├── storage.js          localStorage persistence, backup snapshots, toast notifications
+│   ├── ui.js               Stats bar, beacons, onboarding modal, notifications
+│   ├── io.js               JSON/CSV export-import, clipboard sync, undo stack
+│   ├── launchPlan.js       Guided setup plan, data-quality checks, demo company
+│   ├── handbook.js         Markdown + HTML operations handbook generator
+│   ├── stateSchema.js      Versioned JSON export/import schema and validation
+│   ├── templates.js        Role templates, SOP templates, demo workspace data
+│   ├── utils.js            Pure utility functions
 │   ├── views/
-│   │   ├── tracking.js     Tracking view, filter bar, owner picker, status/priority cycles,
-│   │   │                   due dates, task dependencies
-│   │   ├── map.js          SVG flow map, department panel, tooltips, SVG helpers
-│   │   ├── team.js         Team Manager, auto-assign engine, role playbooks, audit log
-│   │   ├── portfolio.js    Property, tenant, vendor registry and starter example
-│   │   └── workorders.js   Work Orders kanban board
+│   │   ├── tracking.js     Tracking view, filters, bulk mode, notes, custom fields
+│   │   ├── map.js          SVG flow map and department panel
+│   │   ├── team.js         Team Manager, auto-assign engine, playbooks, audit log
+│   │   ├── portfolio.js    Property, tenant, and vendor registry
+│   │   ├── workorders.js   Work Orders kanban board
+│   │   └── recurring.js    Recurring work order templates
 │   └── __tests__/
-│       ├── data.test.js    Unit tests for config.json structure (10 tests)
-│       ├── utils.test.js   Unit tests for utility functions (37 tests)
+│       ├── data.test.js    config.json structure tests
+│       ├── utils.test.js   Utility function tests
 │       ├── stateSchema.test.js
 │       └── templates.test.js
-├── .github/workflows/ci.yml CI for install, tests, audit, and production build
-├── CONTRIBUTING.md         How to contribute
-├── LICENSE.txt             MIT License
-└── webpack.config.*.js     Optional build configs (not needed to run the app)
+├── .github/workflows/ci.yml  CI: install, test, audit, build
+├── CONTRIBUTING.md
+├── LICENSE.txt
+└── webpack.config.*.js       Optional build configs (not needed to run)
 ```
-
----
-
-## Architecture
-
-### Data flow
-
-All data lives in `config.json`. On load, `app.js` fetches it, stamps each task with a stable `_configName` identity key, and hands the result to `state.js`. Every module imports state variables directly from there. Edits in the UI mutate those in-memory objects; `storage.js` persists them to `localStorage` after each change. Nothing goes to a server.
-
-### Module dependency graph
-
-```
-utils.js          ← no dependencies (pure browser-module functions)
-state.js          ← no dependencies
-storage.js        ← state, utils
-ui.js             ← state, storage, utils
-views/tracking.js ← state, storage, utils, ui, views/map
-views/map.js      ← state, storage, utils
-views/team.js     ← state, storage, utils, ui, views/tracking, views/map, views/workorders
-views/portfolio.js ← state, storage, utils, launchPlan
-views/workorders.js ← state, storage, utils, ui
-launchPlan.js     ← state, storage, utils
-handbook.js       ← state, storage, utils, templates
-templates.js      ← no dependencies
-stateSchema.js    ← no dependencies
-io.js             ← state, storage, utils, stateSchema, ui, views/tracking, views/map, views/team, views/portfolio
-app.js            ← everything above
-```
-
-There are **no circular dependencies** in this graph. Each arrow points only downward.
-
-### Why `.cjs` mirrors exist
-
-The browser app uses ES module `import/export` syntax so GitHub Pages can serve the source directly. Jest still runs in CommonJS mode, so `utils.cjs` mirrors `utils.js` for the unit tests without requiring Babel or `--experimental-vm-modules`.
-
-The same pattern is used for `stateSchema.cjs` and `templates.cjs`, keeping schema and template tests simple while the browser app stays native ES modules.
-
-### Global function assignments
-
-ES modules do not automatically place functions on `window`. Because `index.html` uses inline `onclick="fn()"` handlers throughout, `app.js` explicitly assigns every handler to `window` via `Object.assign(window, { ... })` after importing them. If you add a new function that needs to be callable from HTML, add it to that block at the bottom of `app.js`.
-
-### Known workaround — `window._saveUndoSnapshot`
-
-The undo snapshot function (`_saveUndoSnapshot`) lives in `io.js`. The auto-assign engine in `views/team.js` needs to call it before bulk-assigning tasks, but `io.js` already imports from `views/team.js` (for `renderTeamView` and `renderLegend`). A direct import back would create a circular dependency.
-
-The workaround is that `runAutoAssign()` in `team.js` calls it via the window global:
-
-```js
-// views/team.js
-window._saveUndoSnapshot && window._saveUndoSnapshot();
-```
-
-`app.js` assigns `_saveUndoSnapshot` to `window` as part of its normal global registration, so this works correctly in the browser. The `&&` guard prevents a crash in any environment where `app.js` hasn't run yet (e.g. isolated unit tests).
-
-The clean long-term fix would be to extract `_saveUndoSnapshot` and `undoLastAction` into their own `undo.js` module that both `team.js` and `io.js` can import without a cycle. PRs welcome.
 
 ---
 
@@ -568,20 +304,45 @@ The clean long-term fix would be to extract `_saveUndoSnapshot` and `undoLastAct
 
 | Layer | Choice | Why |
 |-------|--------|-----|
-| Structure | HTML5 | Semantic, no framework overhead |
+| Structure | HTML5 | No framework overhead |
 | Styles | CSS3 (Flexbox, Grid) | Responsive without a CSS library |
-| Logic | Vanilla JavaScript ES6+ | Zero dependencies to maintain |
-| Visualization | Custom SVG engine | Full control over layout and interactivity |
-| Persistence | localStorage | Edits survive page refresh without a backend |
+| Logic | Vanilla JS ES Modules | Zero runtime dependencies |
+| Visualization | Custom SVG | Full control over layout and interactivity |
+| Persistence | localStorage | Survives page refresh, no backend |
 | Build | Webpack 5 (optional) | Not required to run the app |
 
-**Zero runtime dependencies.** Everything ships as static files.
+**Zero runtime dependencies.** Deploys as static files.
 
 ---
 
-## Browser Compatibility
+## Architecture
 
-Works in all modern browsers: Chrome 80+, Firefox 74+, Safari 13.1+, Edge 80+.
+### Data flow
+
+`config.json` is fetched on load. `app.js` stamps each task with a stable `_configName` identity key and passes the result to `state.js`. Every module imports from `state.js`. UI edits mutate in-memory objects; `storage.js` persists them to `localStorage` after each change. Nothing goes to a server.
+
+### Module graph (no circular dependencies)
+
+```
+utils.js            ← no dependencies
+state.js            ← no dependencies
+storage.js          ← state, utils
+ui.js               ← state, storage, utils
+views/tracking.js   ← state, storage, utils, ui
+views/map.js        ← state, storage, utils
+views/team.js       ← state, storage, utils, ui, views/tracking, views/map, views/workorders
+views/portfolio.js  ← state, storage, utils, launchPlan
+views/workorders.js ← state, storage, utils, ui
+views/recurring.js  ← state, storage, views/workorders
+launchPlan.js       ← state, storage, utils
+handbook.js         ← state, storage, utils, templates
+io.js               ← state, storage, utils, stateSchema, ui, views/*
+app.js              ← everything above
+```
+
+### Adding a new HTML-callable function
+
+ES modules do not automatically place functions on `window`. Every `onclick="fn()"` handler must be imported in `app.js` and added to `Object.assign(window, { ... })` at the bottom. If you add a new function callable from HTML, add it there or it will silently fail.
 
 ---
 
@@ -589,29 +350,29 @@ Works in all modern browsers: Chrome 80+, Firefox 74+, Safari 13.1+, Edge 80+.
 
 ```bash
 npm install
-npm start          # webpack-dev-server with live reload at localhost:8080
+npm start          # webpack-dev-server with live reload → localhost:8080
 npm test           # Jest unit test suite
-npm audit --audit-level=moderate
 npm run build      # Production bundle → dist/
 ```
 
-Requires Node.js 20.9 or newer for the current build toolchain.
+Requires Node.js 20.9+.
 
-GitHub Actions runs the same core checks on push and pull request:
+CI runs on every push and pull request: `npm ci` → `npm test` → `npm audit --omit=dev` → `npm run build`.
 
-- `npm ci`
-- `npm test -- --runInBand`
-- `npm audit --audit-level=moderate`
-- `npm run build`
+---
+
+## Browser Compatibility
+
+Chrome 80+, Firefox 74+, Safari 13.1+, Edge 80+. Mobile touch targets are optimized for phone/tablet use.
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome — especially department templates, mobile UX improvements, and new visualization options.
+See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome — especially department templates, mobile UX improvements, and visualization options.
 
 ---
 
 ## License
 
-MIT — free to use, modify, and deploy for any property management company. See [LICENSE.txt](LICENSE.txt).
+MIT — free to use, modify, and deploy. See [LICENSE.txt](LICENSE.txt).
