@@ -5,7 +5,7 @@ import {
   STATUS_LABELS, PRIORITY_LABELS, STATUS_CYCLE, PRIORITY_CYCLE,
   getEmployeeHex, getEmployeeNames,
 } from '../state.js';
-import { saveToStorage, logAudit } from '../storage.js';
+import { saveToStorage, logAudit, _showActionToast } from '../storage.js';
 import {
   escapeHtml, jsonAttr, isTaskOverdue, isValidISODate,
   formatDueChip, buildDeptCompletionText,
@@ -13,6 +13,141 @@ import {
 import { updateStats } from '../ui.js';
 // Imported lazily via dynamic references; map.js does not import tracking.js.
 import { renderFlowMap, renderMapControls } from './map.js';
+
+// ── Bulk-select mode ──────────────────────────────────────────────────────────
+let _bulkMode     = false;
+let _bulkSelected = new Set(); // keys: "deptId:taskIdx"
+
+export function isBulkMode() { return _bulkMode; }
+
+export function toggleBulkMode() {
+  _bulkMode = !_bulkMode;
+  _bulkSelected.clear();
+  renderTrackingView();
+  if (_bulkMode) document.querySelectorAll('.department').forEach(d => d.classList.add('expanded'));
+  _updateBulkBar();
+
+  const btn = document.getElementById('bulk-toggle-btn');
+  if (btn) {
+    btn.textContent = _bulkMode ? '✕ Cancel Select' : '☑ Bulk Select';
+    btn.classList.toggle('btn-secondary', !_bulkMode);
+    btn.classList.toggle('btn-primary',   _bulkMode);
+  }
+}
+
+export function cancelBulkMode() {
+  if (!_bulkMode) return;
+  _bulkMode = false;
+  _bulkSelected.clear();
+  renderTrackingView();
+  _updateBulkBar();
+
+  const btn = document.getElementById('bulk-toggle-btn');
+  if (btn) {
+    btn.textContent = '☑ Bulk Select';
+    btn.classList.replace('btn-primary', 'btn-secondary');
+  }
+}
+
+export function toggleTaskCheck(deptId, taskIdx) {
+  const key = `${deptId}:${taskIdx}`;
+  if (_bulkSelected.has(key)) _bulkSelected.delete(key);
+  else                         _bulkSelected.add(key);
+
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (taskEl) {
+    const cb = taskEl.querySelector('.task-bulk-check');
+    if (cb) cb.checked = _bulkSelected.has(key);
+    taskEl.classList.toggle('task-bulk-selected', _bulkSelected.has(key));
+  }
+  _updateBulkBar();
+}
+
+export function selectAllVisibleTasks() {
+  document.querySelectorAll('.task-item').forEach(taskEl => {
+    if (taskEl.style.display === 'none') return;
+    const key = `${taskEl.dataset.deptId}:${taskEl.dataset.taskIdx}`;
+    _bulkSelected.add(key);
+    taskEl.classList.add('task-bulk-selected');
+    const cb = taskEl.querySelector('.task-bulk-check');
+    if (cb) cb.checked = true;
+  });
+  _updateBulkBar();
+}
+
+export function applyBulkAction() {
+  const newOwner  = document.getElementById('bulk-owner-select')?.value  || '';
+  const newStatus = document.getElementById('bulk-status-select')?.value || '';
+
+  if (!newOwner && !newStatus) {
+    alert('Choose a new owner or status to apply to the selected tasks.');
+    return;
+  }
+
+  let count = 0;
+  _bulkSelected.forEach(key => {
+    const [deptId, idxStr] = key.split(':');
+    const taskIdx = parseInt(idxStr, 10);
+    const dept = orgData.departments.find(d => d.id === deptId);
+    if (!dept || !dept.tasks[taskIdx]) return;
+    const task = dept.tasks[taskIdx];
+
+    if (newOwner) {
+      logAudit('owner_changed', { dept: dept.name, task: task.name, from: task.owner, to: newOwner });
+      task.owner = newOwner;
+    }
+    if (newStatus && STATUS_CYCLE.includes(newStatus)) {
+      logAudit('status_changed', { dept: dept.name, task: task.name, from: task.status || 'todo', to: newStatus });
+      task.status = newStatus;
+    }
+    count++;
+  });
+
+  saveToStorage();
+  cancelBulkMode();
+  updateStats();
+  populateOwnerFilter();
+  _showActionToast(`✓ ${count} task${count !== 1 ? 's' : ''} updated`, 'save-toast--success');
+}
+
+function _updateBulkBar() {
+  let bar = document.getElementById('bulk-action-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bulk-action-bar';
+    bar.className = 'bulk-action-bar';
+    document.body.appendChild(bar);
+  }
+
+  if (!_bulkMode || _bulkSelected.size === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+
+  const owners = ['UNOWNED', ...getEmployeeNames()];
+  bar.innerHTML = `
+    <span class="bulk-bar-count">${_bulkSelected.size} task${_bulkSelected.size !== 1 ? 's' : ''} selected</span>
+    <label class="bulk-bar-label">Assign to</label>
+    <select id="bulk-owner-select" class="bulk-bar-select">
+      <option value="">— keep current —</option>
+      ${owners.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}
+    </select>
+    <label class="bulk-bar-label">Set status</label>
+    <select id="bulk-status-select" class="bulk-bar-select">
+      <option value="">— keep current —</option>
+      <option value="todo">To Do</option>
+      <option value="in-progress">In Progress</option>
+      <option value="blocked">Blocked</option>
+      <option value="done">Done</option>
+    </select>
+    <button class="btn btn-primary" onclick="applyBulkAction()">Apply</button>
+    <button class="btn btn-secondary" onclick="selectAllVisibleTasks()">Select All</button>
+    <button class="btn btn-secondary" onclick="cancelBulkMode()">Cancel</button>
+  `;
+  bar.classList.add('visible');
+}
 
 // ── Tracking view renderer ────────────────────────────────────────────────────
 export function renderTrackingView() {
@@ -52,7 +187,7 @@ export function renderTrackingView() {
           const priority  = task.priority || 'medium';
           const isDone    = status === 'done';
           return `
-          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''}"
+          <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''} ${_bulkMode && _bulkSelected.has(`${dept.id}:${taskIdx}`) ? 'task-bulk-selected' : ''}"
                data-dept-id="${dept.id}"
                data-task-idx="${taskIdx}"
                data-owner="${task.owner}"
@@ -60,6 +195,7 @@ export function renderTrackingView() {
                data-status="${status}"
                data-priority="${priority}">
             <div class="task-left">
+              ${_bulkMode ? `<input type="checkbox" class="task-bulk-check" ${_bulkSelected.has(`${dept.id}:${taskIdx}`) ? 'checked' : ''} onclick="toggleTaskCheck('${dept.id}',${taskIdx});event.stopPropagation()" aria-label="Select task">` : ''}
               <span class="priority-dot priority-${priority}"
                     onclick="cycleTaskPriority('${dept.id}', ${taskIdx})"
                     title="Priority: ${PRIORITY_LABELS[priority]} — click to change"></span>
