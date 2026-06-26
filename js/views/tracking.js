@@ -251,6 +251,12 @@ export function setTaskOwner(deptId, taskIdx, newOwner) {
 }
 
 // ── Search & filter ───────────────────────────────────────────────────────────
+let _filterDebounceTimer = null;
+export function debounceApplyFilter() {
+  clearTimeout(_filterDebounceTimer);
+  _filterDebounceTimer = setTimeout(applyFilter, 200);
+}
+
 export function populateOwnerFilter() {
   const select = document.getElementById('owner-filter');
   while (select.options.length > 1) select.remove(1);
