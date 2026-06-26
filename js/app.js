@@ -41,6 +41,8 @@ import {
   cycleTaskStatus, cycleTaskPriority,
   openDueDatePicker, setTaskDueDate,
   openDependencyPicker, setTaskDependency, clearTaskDependency,
+  toggleBulkMode, cancelBulkMode, toggleTaskCheck,
+  selectAllVisibleTasks, applyBulkAction,
 } from './views/tracking.js';
 import {
   renderMapControls, renderFlowMap,
@@ -107,6 +109,7 @@ function switchView(view, tabEl) {
   } else {
     filterBar.style.display = 'none';
     clearFilter();
+    cancelBulkMode();
   }
 
   closeOwnerPicker();
@@ -243,6 +246,11 @@ Object.assign(window, {
   openDependencyPicker,
   setTaskDependency,
   clearTaskDependency,
+  toggleBulkMode,
+  cancelBulkMode,
+  toggleTaskCheck,
+  selectAllVisibleTasks,
+  applyBulkAction,
   // Map tab: visual operational flow and department detail panels.
   renderMapControls,
   renderFlowMap,
