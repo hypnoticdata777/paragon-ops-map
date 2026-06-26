@@ -4463,6 +4463,62 @@ body[data-ops-focus="compliance"] {
 }
 
 /* ==========================================================================
+   Per-task Notes
+   ========================================================================== */
+
+.task-notes-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.35;
+  padding: 4px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.task-notes-btn:hover           { opacity: 0.8; background: #eceff1; }
+.task-notes-btn--has-notes      { opacity: 1; }
+
+.task-notes-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+  width: min(520px, 96vw);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.task-notes-body {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-notes-heading { font-size: 16px; }
+
+.task-notes-textarea {
+  width: 100%;
+  border: 2px solid #cfd8dc;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+.task-notes-textarea:focus {
+  outline: none;
+  border-color: #00897b;
+  box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
+}
+
+.task-notes-hint { font-size: 11px; color: #90a4ae; }
+
+/* ==========================================================================
    Recurring Templates Modal
    ========================================================================== */
 

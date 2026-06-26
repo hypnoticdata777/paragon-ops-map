@@ -44,6 +44,7 @@ import {
   openDependencyPicker, setTaskDependency, clearTaskDependency,
   toggleBulkMode, cancelBulkMode, toggleTaskCheck,
   selectAllVisibleTasks, applyBulkAction,
+  openTaskNotes, closeTaskNotes,
 } from './views/tracking.js';
 import {
   renderMapControls, renderFlowMap,
@@ -256,6 +257,8 @@ Object.assign(window, {
   toggleTaskCheck,
   selectAllVisibleTasks,
   applyBulkAction,
+  openTaskNotes,
+  closeTaskNotes,
   // Map tab: visual operational flow and department detail panels.
   renderMapControls,
   renderFlowMap,
