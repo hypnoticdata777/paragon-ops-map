@@ -93,6 +93,7 @@ export function renderWorkOrdersView() {
           <span class="wo-stat-pill wo-stat-done">${completedCount} completed</span>
         </div>
       </div>
+      <button class="btn btn-secondary" onclick="openRecurringModal()" title="Create a batch of work orders from a recurring PM checklist template">&#128197; Recurring Templates</button>
       <button class="btn btn-primary" onclick="showNewWorkOrderModal()">+ New Work Order</button>
     </div>
 
