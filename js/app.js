@@ -81,7 +81,7 @@ import {
   startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
   focusCoverageArea, loadDemoCompany, printLaunchPlan,
 } from './launchPlan.js';
-import { downloadOperationsHandbook, printOperationsHandbook } from './handbook.js';
+import { downloadOperationsHandbook, downloadOperationsHandbookHTML, printOperationsHandbook } from './handbook.js';
 import {
   openRecurringModal, closeRecurringModal,
   previewRecurringTemplate, applyPendingRecurringTemplate,
@@ -349,6 +349,7 @@ Object.assign(window, {
   startWorkOrderSetup,
   downloadLaunchHandbook,
   downloadOperationsHandbook,
+  downloadOperationsHandbookHTML,
   printOperationsHandbook,
   openRecurringModal,
   closeRecurringModal,
