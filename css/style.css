@@ -4463,6 +4463,95 @@ body[data-ops-focus="compliance"] {
 }
 
 /* ==========================================================================
+   Custom Task Fields
+   ========================================================================== */
+
+.task-fields-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.3;
+  padding: 4px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.task-fields-btn:hover           { opacity: 0.8; background: #eceff1; }
+.task-fields-btn--has-fields     { opacity: 1; }
+
+.custom-fields-empty {
+  font-size: 13px;
+  color: #90a4ae;
+  margin-bottom: 14px;
+}
+
+.custom-fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.custom-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f7f8;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.custom-field-key {
+  font-size: 12px;
+  font-weight: 700;
+  color: #546e7a;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.custom-field-value {
+  font-size: 13px;
+  color: #263238;
+  flex: 1;
+  word-break: break-word;
+}
+
+.custom-field-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #b0bec5;
+  font-size: 16px;
+  padding: 0 4px;
+  transition: color 0.1s;
+}
+.custom-field-delete:hover { color: #d32f2f; }
+
+.custom-field-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cf-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 2px solid #cfd8dc;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+.cf-input:focus {
+  outline: none;
+  border-color: #00897b;
+  box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
+}
+
+/* ==========================================================================
    Per-task Notes
    ========================================================================== */
 

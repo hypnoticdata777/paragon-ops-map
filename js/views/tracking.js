@@ -221,6 +221,10 @@ export function renderTrackingView() {
                       onclick="openTaskNotes('${dept.id}',${taskIdx})"
                       title="${task.notes ? 'Edit notes' : 'Add notes'}"
                       aria-label="${task.notes ? 'Edit notes' : 'Add notes'}">&#128221;</button>
+              <button class="task-fields-btn${task.customFields && Object.keys(task.customFields).length > 0 ? ' task-fields-btn--has-fields' : ''}"
+                      onclick="openCustomFields('${dept.id}',${taskIdx})"
+                      title="${task.customFields && Object.keys(task.customFields).length > 0 ? 'Edit custom fields' : 'Add custom fields'}"
+                      aria-label="Custom fields">&#127991;</button>
               <span class="status-pill status-${status}"
                     onclick="cycleTaskStatus('${dept.id}', ${taskIdx})"
                     title="Status: ${STATUS_LABELS[status]} — click to change">
@@ -875,6 +879,113 @@ function _updateNotesIcon(deptId, taskIdx, task) {
   if (btn) {
     btn.classList.toggle('task-notes-btn--has-notes', Boolean(task.notes));
     btn.title = task.notes ? 'Edit notes' : 'Add notes';
+  }
+}
+
+// ── Custom task fields ────────────────────────────────────────────────────────
+export function openCustomFields(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const modal = document.getElementById('custom-fields-modal');
+  const title = document.getElementById('custom-fields-title');
+  const body  = document.getElementById('custom-fields-body');
+  if (!modal || !body) return;
+
+  if (title) title.textContent = task.name;
+  _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  modal.dataset.deptId   = deptId;
+  modal.dataset.taskIdx  = taskIdx;
+  modal.classList.add('visible');
+}
+
+function _renderCustomFieldsBody(body, deptId, taskIdx, task) {
+  const fields = task.customFields || {};
+  const entries = Object.entries(fields);
+
+  body.innerHTML = `
+    ${entries.length === 0
+      ? '<p class="custom-fields-empty">No custom fields yet. Add a field below.</p>'
+      : `<div class="custom-fields-list">
+          ${entries.map(([k, v]) => `
+            <div class="custom-field-row">
+              <span class="custom-field-key">${escapeHtml(k)}</span>
+              <span class="custom-field-value">${escapeHtml(v)}</span>
+              <button class="custom-field-delete" onclick="deleteCustomField('${escapeHtml(deptId)}',${taskIdx},${escapeHtml(JSON.stringify(k))})" title="Remove field">&times;</button>
+            </div>
+          `).join('')}
+        </div>`
+    }
+    <div class="custom-field-add">
+      <input id="cf-key-input"   type="text" class="cf-input" placeholder="Field name (e.g. Billing Code)" maxlength="40" autocomplete="off">
+      <input id="cf-val-input"   type="text" class="cf-input" placeholder="Value (e.g. BC-001)" maxlength="200" autocomplete="off">
+      <button class="btn btn-primary" onclick="addCustomField('${escapeHtml(deptId)}',${taskIdx})">Add</button>
+    </div>
+  `;
+
+  document.getElementById('cf-val-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addCustomField(deptId, taskIdx);
+  });
+}
+
+export function addCustomField(deptId, taskIdx) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task) return;
+
+  const keyEl = document.getElementById('cf-key-input');
+  const valEl = document.getElementById('cf-val-input');
+  const key   = (keyEl?.value || '').trim().slice(0, 40);
+  const val   = (valEl?.value || '').trim().slice(0, 200);
+
+  if (!key) { keyEl?.focus(); return; }
+
+  if (!task.customFields) task.customFields = {};
+  if (Object.keys(task.customFields).length >= 10 && !task.customFields[key]) {
+    alert('Maximum of 10 custom fields per task.');
+    return;
+  }
+  task.customFields[key] = val;
+  saveToStorage();
+
+  const modal = document.getElementById('custom-fields-modal');
+  const body  = document.getElementById('custom-fields-body');
+  if (body) _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  _updateCustomFieldsIcon(deptId, taskIdx, task);
+}
+
+export function deleteCustomField(deptId, taskIdx, key) {
+  const dept = orgData.departments.find(d => d.id === deptId);
+  if (!dept) return;
+  const task = dept.tasks[taskIdx];
+  if (!task || !task.customFields) return;
+
+  delete task.customFields[key];
+  if (Object.keys(task.customFields).length === 0) task.customFields = null;
+  saveToStorage();
+
+  const body = document.getElementById('custom-fields-body');
+  if (body) _renderCustomFieldsBody(body, deptId, taskIdx, task);
+  _updateCustomFieldsIcon(deptId, taskIdx, task);
+}
+
+export function closeCustomFields() {
+  document.getElementById('custom-fields-modal')?.classList.remove('visible');
+}
+
+function _updateCustomFieldsIcon(deptId, taskIdx, task) {
+  const taskEl = document.querySelector(
+    `.department[data-id="${deptId}"] .task-item[data-task-idx="${taskIdx}"]`
+  );
+  if (!taskEl) return;
+  const btn = taskEl.querySelector('.task-fields-btn');
+  const hasFields = task.customFields && Object.keys(task.customFields).length > 0;
+  if (btn) {
+    btn.classList.toggle('task-fields-btn--has-fields', hasFields);
+    btn.title = hasFields ? 'Edit custom fields' : 'Add custom fields';
   }
 }
 
