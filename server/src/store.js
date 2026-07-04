@@ -61,6 +61,9 @@ class WorkspaceStore {
 
   async pull(slug, passphrase) {
     if (!isValidSlug(slug)) throw new HttpError('Invalid workspace name.', 400);
+    if (typeof passphrase !== 'string' || passphrase.length === 0) {
+      throw new HttpError('Passphrase is required.', 400);
+    }
     const existing = this._readRaw(slug);
     if (!existing) throw new HttpError('No workspace with that name exists yet.', 404);
     if (!verifyPassphrase(passphrase, existing.salt, existing.hash)) {
