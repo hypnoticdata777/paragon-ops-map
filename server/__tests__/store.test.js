@@ -26,6 +26,16 @@ describe('WorkspaceStore', () => {
     await expect(store.pull('acme-pm', 'wrong')).rejects.toMatchObject({ status: 403 });
   });
 
+  test('pull with a missing or non-string passphrase returns 400, not a crash', async () => {
+    const store = new WorkspaceStore(tempDir());
+    await store.push('acme-pm', { passphrase: 'secret1', state: { a: 1 }, expectedVersion: 0 });
+
+    await expect(store.pull('acme-pm', undefined)).rejects.toMatchObject({ status: 400 });
+    await expect(store.pull('acme-pm', null)).rejects.toMatchObject({ status: 400 });
+    await expect(store.pull('acme-pm', 123)).rejects.toMatchObject({ status: 400 });
+    await expect(store.peekVersion('acme-pm', undefined)).rejects.toMatchObject({ status: 400 });
+  });
+
   test('pulling a workspace that does not exist returns 404', async () => {
     const store = new WorkspaceStore(tempDir());
     await expect(store.pull('nope', 'secret1')).rejects.toMatchObject({ status: 404 });

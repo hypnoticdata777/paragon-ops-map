@@ -9,7 +9,7 @@ Track every department, every task, every maintenance request — and exactly wh
 [![Download](https://img.shields.io/badge/Download-v1.0.0-orange?style=flat-square)](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
 [![CI](https://github.com/hypnoticdata777/paragon-ops-map/actions/workflows/ci.yml/badge.svg)](https://github.com/hypnoticdata777/paragon-ops-map/actions)
 
-**No database. No login. No backend. No monthly fee.**
+**No database required. No login required. No backend required. No monthly fee.**
 
 <!-- TODO: replace with the portfolio URL once it's live -->
 See it in action on [my portfolio](#) — or run it yourself in under a minute, see below.
@@ -144,7 +144,7 @@ Pick a template, enter a property name and due date, and the app creates the mat
 
 ### Auto-Backup Snapshots
 
-The app automatically saves a snapshot before every import and every auto-assign run. Click **Backups** in the stats bar to see the last 5 snapshots and restore any of them with one click.
+The app automatically saves a snapshot before every import, every auto-assign run, and every Team Sync update. Click **Backups** in the stats bar to see the last 5 snapshots and restore any of them with one click.
 
 Each backup captures: all tasks and their state, the full team roster, all work orders, and the portfolio registry.
 
@@ -186,7 +186,7 @@ Each work order captures: property, unit, tenant/resident, issue title, notes, p
 
 ### Portfolio & Data Quality
 
-Track properties, tenants, and vendors in the **Portfolio tab**. The launch dashboard runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
+Track properties, tenants, and vendors in the **Portfolio tab**. Tenant records include monthly rent and lease start/end dates, with a color-coded chip that flags leases renewing within 60 days or already expired — surfaced both on the tenant card and in the Launch Plan's risk queue. The launch dashboard also runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
 
 ---
 
@@ -218,7 +218,7 @@ Includes a **Load Demo Company** option for exploring a realistic sample workspa
 
 ### Audit Log
 
-Every meaningful change (owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, paste-state operations) is recorded in an append-only log. Capped at 500 entries. View or clear it from the stats bar.
+Every meaningful change (owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, paste-state operations, Team Sync connect/disconnect/sync events) is recorded in an append-only log. Capped at 500 entries. View or clear it from the stats bar.
 
 ---
 
@@ -337,7 +337,7 @@ pm-ops-map/
 
 ### Data flow
 
-`config.json` is fetched on load. `app.js` stamps each task with a stable `_configName` identity key and passes the result to `state.js`. Every module imports from `state.js`. UI edits mutate in-memory objects; `storage.js` persists them to `localStorage` after each change. Nothing goes to a server.
+`config.json` is fetched on load. `app.js` stamps each task with a stable `_configName` identity key and passes the result to `state.js`. Every module imports from `state.js`. UI edits mutate in-memory objects; `storage.js` persists them to `localStorage` after each change. Nothing goes to a server unless `sync.js` is connected to a Team Sync workspace.
 
 ### Module graph (no circular dependencies)
 
@@ -355,6 +355,7 @@ views/recurring.js  ← state, storage, views/workorders
 launchPlan.js       ← state, storage, utils
 handbook.js         ← state, storage, utils, templates
 io.js               ← state, storage, utils, stateSchema, ui, views/*
+sync.js             ← state, storage, utils, stateSchema, io
 app.js              ← everything above
 ```
 
@@ -373,9 +374,9 @@ npm test           # Jest unit test suite
 npm run build      # Production bundle → dist/
 ```
 
-Requires Node.js 20.9+.
+Requires Node.js 20.9+. The optional sync server has its own independent test suite — see [`server/README.md`](server/README.md).
 
-CI runs on every push and pull request: `npm ci` → `npm test` → `npm audit --omit=dev` → `npm run build`.
+CI runs two jobs on every push and pull request: the app (`npm ci` → `npm test` → `npm audit --omit=dev` → `npm run build`) and the sync server (`cd server && npm ci && npm test && npm audit --omit=dev`).
 
 ---
 
