@@ -117,13 +117,13 @@ export function buildEmployeeCard(emp, depts, workload, maxTasks) {
   const pct       = maxTasks > 0 ? Math.round((taskCount / maxTasks) * 100) : 0;
 
   return `
-    <div class="employee-card" data-emp="${emp.name}">
+    <div class="employee-card" data-emp="${escapeHtml(emp.name)}">
       <div class="employee-card-header">
-        <span class="emp-color-dot" style="background:${emp.hex}"></span>
+        <span class="emp-color-dot" style="background:${escapeHtml(emp.hex)}"></span>
         <span class="emp-name">${escapeHtml(emp.name)}</span>
-        <span class="emp-task-count" style="color:${emp.hex}">${taskCount} task${taskCount !== 1 ? 's' : ''}</span>
+        <span class="emp-task-count" style="color:${escapeHtml(emp.hex)}">${taskCount} task${taskCount !== 1 ? 's' : ''}</span>
         <div class="emp-mini-bar-track">
-          <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${emp.hex}"></div>
+          <div class="emp-mini-bar-fill" style="width:${Math.max(pct, 2)}%;background:${escapeHtml(emp.hex)}"></div>
         </div>
         <button class="emp-playbook-btn" onclick="openRolePlaybook(${jsonAttr(emp.name)})" title="Open role playbook for ${escapeHtml(emp.name)}">Playbook</button>
         <button class="emp-remove-btn" onclick="removeEmployee(${jsonAttr(emp.name)})" title="Remove ${escapeHtml(emp.name)}">&#x2715;</button>
@@ -141,7 +141,7 @@ export function buildEmployeeCard(emp, depts, workload, maxTasks) {
                 : `border-color:${dept.color};color:${dept.color}`}"
               onclick="toggleAffinity(${jsonAttr(emp.name)}, ${jsonAttr(dept.id)})"
               title="${active ? 'Remove' : 'Add'} affinity: ${escapeHtml(dept.name)}"
-            >${dept.name}</button>
+            >${escapeHtml(dept.name)}</button>
           `;
         }).join('')}
       </div>
@@ -162,14 +162,14 @@ export function buildWorkloadBars(workload, maxTasks) {
     return `
       <div class="workload-bar-row${overloaded ? ' overloaded' : ''}">
         <div class="workload-name-cell">
-          <span class="wl-dot" style="background:${hex}"></span>
+          <span class="wl-dot" style="background:${escapeHtml(hex)}"></span>
           <span class="wl-name">${escapeHtml(name)}</span>
           ${overloaded
             ? '<span class="wl-beacon" title="Significantly above team average — consider re-balancing">&#9888;</span>'
             : ''}
         </div>
         <div class="workload-bar-track">
-          <div class="workload-bar-fill" style="width:${Math.max(pct, 2)}%;background:${hex}"></div>
+          <div class="workload-bar-fill" style="width:${Math.max(pct, 2)}%;background:${escapeHtml(hex)}"></div>
         </div>
         <span class="workload-count">${count}</span>
       </div>
@@ -385,7 +385,7 @@ export function renderLegend() {
 
   legend.innerHTML = teamData.employees.map(emp => `
     <div class="legend-item">
-      <div class="legend-color" style="background:${emp.hex}"></div>
+      <div class="legend-color" style="background:${escapeHtml(emp.hex)}"></div>
       <span>${escapeHtml(emp.name)}</span>
     </div>
   `).join('') + `

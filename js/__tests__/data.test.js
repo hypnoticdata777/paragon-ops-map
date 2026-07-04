@@ -30,6 +30,14 @@ describe('orgData', () => {
     const ids = orgData.departments.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  test('every task ships UNOWNED — the starter config carries no real names', () => {
+    orgData.departments.forEach((dept) => {
+      dept.tasks.forEach((task) => {
+        expect(task.owner).toBe('UNOWNED');
+      });
+    });
+  });
 });
 
 describe('ownerColors', () => {
@@ -51,9 +59,11 @@ describe('ownerColors', () => {
 });
 
 describe('defaultAffinities', () => {
-  test('is a non-empty object', () => {
+  test('is an object', () => {
+    // Ships empty by default — the starter config has no pre-assigned team,
+    // so there are no sample owners to attach affinities to.
     expect(typeof defaultAffinities).toBe('object');
-    expect(Object.keys(defaultAffinities).length).toBeGreaterThan(0);
+    expect(defaultAffinities).not.toBeNull();
   });
 
   test('every affinity value is an array of department id strings', () => {
