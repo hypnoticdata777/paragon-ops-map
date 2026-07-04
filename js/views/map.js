@@ -98,7 +98,7 @@ export function showDeptPanel(dept) {
       ${Object.entries(byOwner).map(([owner, tasks]) => `
         <div class="map-panel-owner-group">
           <div class="map-panel-owner-badge${owner === 'UNOWNED' ? ' owner-unowned' : ''}"
-               style="${owner !== 'UNOWNED' ? `background:${getEmployeeHex(owner)}` : ''}">${owner}</div>
+               style="${owner !== 'UNOWNED' ? `background:${escapeHtml(getEmployeeHex(owner))}` : ''}">${escapeHtml(owner)}</div>
           <ul>
             ${tasks.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
           </ul>
@@ -306,8 +306,8 @@ export function renderFlowMap() {
     const statsColor = unownedCount > 0 ? '#d32f2f' : '#78909c';
     svgText(g, bx + 14, cy + 10, statsLabel, statsColor, 11, 400, 'start');
 
-    const ownerList = [...new Set(dept.tasks.map(t => t.owner))].join(', ');
-    const tipHtml = `<strong>${dept.name}</strong><br>${dept.tasks.length} tasks · Owners: ${ownerList}`;
+    const ownerList = [...new Set(dept.tasks.map(t => t.owner))].map(escapeHtml).join(', ');
+    const tipHtml = `<strong>${escapeHtml(dept.name)}</strong><br>${dept.tasks.length} tasks · Owners: ${ownerList}`;
 
     g.addEventListener('mouseenter', (e) => {
       showMapTooltip(tipHtml, e.clientX, e.clientY);
@@ -355,7 +355,7 @@ export function renderFlowMap() {
       .filter(d => d.tasks.some(t => t.owner === owner))
       .map(d => d.name)
       .join(', ');
-    const ownerTipHtml = `<strong>${owner}</strong><br>${taskCount} tasks · Depts: ${deptNames || 'none'}`;
+    const ownerTipHtml = `<strong>${escapeHtml(owner)}</strong><br>${taskCount} tasks · Depts: ${escapeHtml(deptNames || 'none')}`;
 
     g.addEventListener('mouseenter', (e) => {
       showMapTooltip(ownerTipHtml, e.clientX, e.clientY);

@@ -3457,6 +3457,47 @@ body {
   gap: 6px;
 }
 
+.tenant-lease-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.tenant-rent-chip,
+.lease-chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.tenant-rent-chip {
+  color: var(--ink-muted, #647482);
+  background: var(--surface-muted, #eceff1);
+  border: 1px solid var(--line-soft, #cfd8dc);
+}
+
+.lease-chip--neutral {
+  color: var(--ink-muted, #647482);
+  background: var(--surface-muted, #eceff1);
+  border: 1px solid var(--line-soft, #cfd8dc);
+}
+
+.lease-chip--warn {
+  color: var(--warning, #b95f00);
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+}
+
+.lease-chip--danger {
+  color: var(--danger, #c62828);
+  background: #ffebee;
+  border: 1px solid #e57373;
+}
+
 .portfolio-edit-btn,
 .portfolio-delete-btn {
   padding: 6px 9px;

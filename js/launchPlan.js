@@ -7,7 +7,7 @@ import {
   COMPANY_KEY, OPS_PROFILE_KEY, applyCompanyName, applyOpsProfile,
   saveTeamData, saveWorkOrders, savePortfolio, saveToStorage, logAudit,
 } from './storage.js';
-import { escapeHtml, _slugify } from './utils.js';
+import { escapeHtml, _slugify, getLeaseStatus } from './utils.js';
 import { ROLE_TEMPLATES, buildDemoWorkspace } from './templates.js';
 
 // Maintainer note:
@@ -644,7 +644,7 @@ function renderSetupWizard(snapshot) {
     },
     {
       label: 'Team',
-      detail: 'Replace sample roles.',
+      detail: 'Add your people.',
       done: snapshot.employeeCount > 0 && !snapshot.isStarterTeam,
       onclick: 'startTeamSetup()',
     },
@@ -820,6 +820,10 @@ function getOperationsSnapshot() {
   );
   const openWorkOrders = workOrders.filter(w => w.status !== 'completed').length;
   const unassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+  const leasesNeedingAttention = portfolio.tenants.filter(tenant => {
+    const status = getLeaseStatus(tenant);
+    return status && (status.tone === 'warn' || status.tone === 'danger');
+  }).length;
 
   return {
     totalTasks,
@@ -836,6 +840,7 @@ function getOperationsSnapshot() {
     vendorCount: portfolio.vendors.length,
     employeeCount: teamData.employees.length,
     isStarterTeam: isStarterTeam(),
+    leasesNeedingAttention,
   };
 }
 
@@ -956,6 +961,15 @@ function getRiskQueue(snapshot) {
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     });
   }
+  if (snapshot.leasesNeedingAttention > 0) {
+    risks.push({
+      label: 'Leases',
+      title: `${snapshot.leasesNeedingAttention} lease${snapshot.leasesNeedingAttention === 1 ? '' : 's'} expired or renewing within 60 days`,
+      detail: 'Reach out about renewal or move-out before the lease end date arrives.',
+      tone: 'danger',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
   if (snapshot.isStarterTeam) {
     risks.push({
       label: 'Team',
@@ -1031,7 +1045,7 @@ function getNextAction() {
   if (!teamData.employees.length || isStarterTeam()) {
     return {
       title: 'Add your real team first',
-      detail: 'The starter map has sample owners. Replace them with your people so every responsibility can point to a real person.',
+      detail: 'Every task starts unowned. Add your people so every responsibility can point to a real person.',
       button: 'Open Team Manager',
       onclick: 'startTeamSetup()',
     };
@@ -1086,9 +1100,8 @@ export function focusCoverageArea(areaId) {
 }
 
 function isStarterTeam() {
-  // The default team is seeded from config.json ownerColors. If the current
-  // roster still exactly matches those sample names, guide users to replace it
-  // before trusting assignments.
+  // config.json ships with no starter names (ownerColors only defines UNOWNED),
+  // so this only matches if a future config reintroduces named sample owners.
   if (!ownerColors || !teamData.employees.length) return false;
   const starterNames = Object.keys(ownerColors)
     .filter(name => name !== 'UNOWNED')

@@ -76,6 +76,12 @@ export const SOP_TEMPLATES = [
   },
 ];
 
+function _isoDateOffset(from, days) {
+  const d = new Date(from);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function buildDemoWorkspace(now = new Date()) {
   const stamp = now.getTime();
   const propertyId = `demo-property-${stamp}`;
@@ -107,6 +113,9 @@ export function buildDemoWorkspace(now = new Date()) {
           status: 'active',
           phone: '(555) 010-2040',
           email: 'maya.chen@example.com',
+          rent: 1450,
+          leaseStart: _isoDateOffset(now, -320),
+          leaseEnd: _isoDateOffset(now, 45),
           createdAt: now.toISOString(),
         },
       ],

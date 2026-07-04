@@ -190,7 +190,7 @@ export function renderTrackingView() {
           <div class="task-item ${isUnowned ? 'unowned' : ''} ${isDone ? 'task-done' : ''} ${isTaskOverdue(task) ? 'task-overdue' : ''} ${_bulkMode && _bulkSelected.has(`${dept.id}:${taskIdx}`) ? 'task-bulk-selected' : ''}"
                data-dept-id="${dept.id}"
                data-task-idx="${taskIdx}"
-               data-owner="${task.owner}"
+               data-owner="${escapeHtml(task.owner)}"
                data-name="${safeName.toLowerCase()}"
                data-status="${status}"
                data-priority="${priority}">
@@ -231,10 +231,10 @@ export function renderTrackingView() {
                 ${STATUS_LABELS[status]}
               </span>
               <div class="task-owner${isUnowned ? ' owner-unowned' : ''}"
-                   style="${!isUnowned ? `background:${getEmployeeHex(task.owner)}` : ''}"
+                   style="${!isUnowned ? `background:${escapeHtml(getEmployeeHex(task.owner))}` : ''}"
                    onclick="showOwnerPicker('${dept.id}', ${taskIdx}, this)"
                    title="Click to reassign">
-                ${task.owner}
+                ${escapeHtml(task.owner)}
               </div>
             </div>
           </div>`;

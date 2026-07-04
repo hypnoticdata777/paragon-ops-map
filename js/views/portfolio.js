@@ -1,6 +1,6 @@
 import { portfolio, setPortfolio, workOrders } from '../state.js';
 import { savePortfolio, saveWorkOrders, logAudit, _showActionToast } from '../storage.js';
-import { escapeHtml, shakeInput } from '../utils.js';
+import { escapeHtml, shakeInput, isValidISODate, formatCurrency, getLeaseStatus } from '../utils.js';
 import { renderLaunchPlan } from '../launchPlan.js';
 
 const editState = {
@@ -130,6 +130,18 @@ export function renderPortfolioView() {
               <span>Email</span>
               <input id="tenant-email" class="portfolio-input" type="email" placeholder="tenant@example.com" maxlength="90" value="${escapeHtml(editingTenant?.email || '')}">
             </label>
+            <label>
+              <span>Monthly rent</span>
+              <input id="tenant-rent" class="portfolio-input" type="number" min="0" step="1" placeholder="1200" value="${editingTenant?.rent ? Number(editingTenant.rent) : ''}">
+            </label>
+            <label>
+              <span>Lease start</span>
+              <input id="tenant-lease-start" class="portfolio-input" type="date" value="${escapeHtml(editingTenant?.leaseStart || '')}">
+            </label>
+            <label>
+              <span>Lease end</span>
+              <input id="tenant-lease-end" class="portfolio-input" type="date" value="${escapeHtml(editingTenant?.leaseEnd || '')}">
+            </label>
           </div>
           <div class="portfolio-form-actions">
             <button class="btn btn-primary portfolio-submit" onclick="commitAddTenant()">${editingTenant ? 'Update Tenant' : 'Add Tenant'}</button>
@@ -209,6 +221,7 @@ export function renderPortfolioView() {
   [
     'property-name', 'property-units', 'property-owner', 'property-notes',
     'tenant-name', 'tenant-property', 'tenant-unit', 'tenant-status', 'tenant-phone', 'tenant-email',
+    'tenant-rent', 'tenant-lease-start', 'tenant-lease-end',
     'vendor-name', 'vendor-trade', 'vendor-phone', 'vendor-email'
   ].forEach(id => {
     const el = document.getElementById(id);
@@ -246,6 +259,9 @@ export function addStarterExample() {
     status: 'active',
     phone: '(555) 010-2040',
     email: 'maya.chen@example.com',
+    rent: 1450,
+    leaseStart: new Date(stamp - 320 * 86400000).toISOString().slice(0, 10),
+    leaseEnd: new Date(stamp + 45 * 86400000).toISOString().slice(0, 10),
     createdAt: new Date().toISOString(),
   };
   const vendor = {
@@ -331,6 +347,18 @@ export function commitAddTenant() {
     nameEl?.focus();
     return;
   }
+
+  const leaseStartEl = document.getElementById('tenant-lease-start');
+  const leaseEndEl   = document.getElementById('tenant-lease-end');
+  const leaseStart   = leaseStartEl?.value || '';
+  const leaseEnd     = leaseEndEl?.value || '';
+  if (leaseStart && leaseEnd && isValidISODate(leaseStart) && isValidISODate(leaseEnd) && leaseEnd < leaseStart) {
+    shakeInput(leaseEndEl);
+    alert('Lease end date must be on or after the lease start date.');
+    return;
+  }
+
+  const rawRent = parseFloat(document.getElementById('tenant-rent')?.value);
   const payload = {
     name,
     propertyId: document.getElementById('tenant-property')?.value || '',
@@ -338,6 +366,9 @@ export function commitAddTenant() {
     status: document.getElementById('tenant-status')?.value || 'active',
     phone: document.getElementById('tenant-phone')?.value.trim() || '',
     email: document.getElementById('tenant-email')?.value.trim() || '',
+    rent: Number.isFinite(rawRent) && rawRent >= 0 ? rawRent : 0,
+    leaseStart: isValidISODate(leaseStart) ? leaseStart : '',
+    leaseEnd: isValidISODate(leaseEnd) ? leaseEnd : '',
   };
   const existing = portfolio.tenants.find(tenant => tenant.id === editState.tenantId);
   if (existing) {
@@ -498,12 +529,19 @@ function renderVendorCard(vendor) {
 function renderTenantCard(tenant) {
   const contact = [tenant.phone, tenant.email].filter(Boolean).join(' / ');
   const unitLabel = tenant.unit ? `Unit ${tenant.unit}` : 'No unit recorded';
+  const leaseStatus = getLeaseStatus(tenant);
   return `
     <article class="portfolio-card">
       <div>
         <strong>${escapeHtml(tenant.name)}</strong>
         <span>${escapeHtml(propertyName(tenant.propertyId))} / ${escapeHtml(unitLabel)} / ${escapeHtml(tenant.status || 'active')}</span>
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
+        ${tenant.rent > 0 || leaseStatus ? `
+          <div class="tenant-lease-row">
+            ${tenant.rent > 0 ? `<span class="tenant-rent-chip">${escapeHtml(formatCurrency(tenant.rent))}/mo</span>` : ''}
+            ${leaseStatus ? `<span class="lease-chip lease-chip--${leaseStatus.tone}">${escapeHtml(leaseStatus.label)}</span>` : ''}
+          </div>
+        ` : ''}
       </div>
       <div class="portfolio-card-actions">
         <button class="portfolio-edit-btn" onclick="startEditTenant('${tenant.id}')" aria-label="Edit ${escapeHtml(tenant.name)}">Edit</button>

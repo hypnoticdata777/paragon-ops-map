@@ -157,6 +157,56 @@ describe('jsonAttr', () => {
   });
 });
 
+describe('formatCurrency', () => {
+  test('formats a whole number with two decimals and thousands separator', () => {
+    expect(utils.formatCurrency(1200)).toBe('$1,200.00');
+  });
+
+  test('formats a decimal amount', () => {
+    expect(utils.formatCurrency(45.5)).toBe('$45.50');
+  });
+
+  test('null/undefined defaults to $0.00', () => {
+    expect(utils.formatCurrency(null)).toBe('$0.00');
+    expect(utils.formatCurrency(undefined)).toBe('$0.00');
+  });
+});
+
+describe('getLeaseStatus', () => {
+  test('tenant with no leaseEnd returns null', () => {
+    expect(utils.getLeaseStatus({ name: 'Maya' })).toBeNull();
+  });
+
+  test('invalid leaseEnd format returns null', () => {
+    expect(utils.getLeaseStatus({ leaseEnd: '13/40/2026' })).toBeNull();
+  });
+
+  test('leaseEnd in the past is tone danger / expired', () => {
+    const status = utils.getLeaseStatus({ leaseEnd: '2020-01-01' }, '2026-01-01');
+    expect(status.tone).toBe('danger');
+    expect(status.label).toBe('Lease expired');
+  });
+
+  test('leaseEnd today is tone warn / ends today', () => {
+    const status = utils.getLeaseStatus({ leaseEnd: '2026-01-01' }, '2026-01-01');
+    expect(status.tone).toBe('warn');
+    expect(status.label).toBe('Lease ends today');
+    expect(status.days).toBe(0);
+  });
+
+  test('leaseEnd 30 days out is tone warn with day count', () => {
+    const status = utils.getLeaseStatus({ leaseEnd: '2026-01-31' }, '2026-01-01');
+    expect(status.tone).toBe('warn');
+    expect(status.label).toBe('Lease ends in 30d');
+  });
+
+  test('leaseEnd far in the future is tone neutral', () => {
+    const status = utils.getLeaseStatus({ leaseEnd: '2099-06-15' }, '2026-01-01');
+    expect(status.tone).toBe('neutral');
+    expect(status.label).toBe('Lease ends Jun 15');
+  });
+});
+
 describe('isTaskOverdue (integration)', () => {
   test('past dueDate with todo status is overdue', () => {
     const task = { dueDate: '2020-01-01', status: 'todo' };

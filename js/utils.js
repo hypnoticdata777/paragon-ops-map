@@ -95,6 +95,25 @@ function formatWODate(isoStr) {
   } catch (e) { return ''; }
 }
 
+// Formats a number as USD, e.g. 1200 -> "$1,200.00".
+function formatCurrency(amount) {
+  return `$${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Returns { tone, label, days } describing how close a tenant's lease end
+// date is, or null if the tenant has no valid lease end date on file.
+// todayISO is injectable for testing; defaults to the real current date.
+function getLeaseStatus(tenant, todayISO = getTodayISO()) {
+  if (!tenant || !isValidISODate(tenant.leaseEnd)) return null;
+  const today = new Date(todayISO + 'T00:00:00');
+  const end   = new Date(tenant.leaseEnd + 'T00:00:00');
+  const days  = Math.round((end - today) / 86400000);
+
+  if (days < 0)   return { tone: 'danger', label: 'Lease expired', days };
+  if (days <= 60) return { tone: 'warn', label: days === 0 ? 'Lease ends today' : `Lease ends in ${days}d`, days };
+  return { tone: 'neutral', label: `Lease ends ${formatDueChip(tenant.leaseEnd)}`, days };
+}
+
 export {
   escapeHtml,
   jsonAttr,
@@ -108,4 +127,6 @@ export {
   _slugify,
   _downloadBlob,
   formatWODate,
+  formatCurrency,
+  getLeaseStatus,
 };
