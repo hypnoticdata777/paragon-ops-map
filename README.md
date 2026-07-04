@@ -31,8 +31,9 @@ Open it, enter your company name, and you get:
 - **Exportable operations handbook** (Markdown + printable HTML)
 - **Recurring task templates** for weekly ops, monthly finance, compliance, and more
 - **Auto-backups** so nothing gets lost
+- **Optional team sync** — self-host a small sync server so your whole team shares one live workspace instead of one browser
 
-Everything saves to `localStorage`. Nothing goes to a server. Export your data anytime as JSON or CSV.
+Everything saves to `localStorage` by default. Nothing goes to a server unless you turn on Team Sync yourself. Export your data anytime as JSON or CSV.
 
 ---
 
@@ -226,6 +227,18 @@ No backend needed — use **Copy State** and **Paste State** in the stats bar to
 
 ---
 
+### Team Sync (optional, self-hosted)
+
+For a team of more than one, Copy/Paste State is a manual chore. **Team Sync** in the stats bar connects this device to a small self-hosted sync server so your whole team shares one live workspace instead — no accounts, just a workspace name and a passphrase your team keeps between yourselves.
+
+- The first device to connect to a workspace name creates it with its current data. Everyone else who connects with the same name and passphrase joins it.
+- Changes sync automatically in the background every ~8 seconds. If your local edits and a teammate's collide, you get the same import-preview-and-confirm screen used for file imports before anything overwrites your device.
+- Skip this entirely and the app works exactly as it always has, saved only to this browser.
+
+The server lives in [`server/`](server/) — see [`server/README.md`](server/README.md) for how to run it locally, deploy it with Docker Compose for durable team use, or one-click deploy a free trial instance to Render.
+
+---
+
 ### Overdue Notifications
 
 Grant browser notification permission from the stats bar (**🔔 Alerts**). On each page load, the app checks for overdue tasks and sends one grouped notification per session if any are found.
@@ -275,6 +288,7 @@ pm-ops-map/
 │   ├── storage.js          localStorage persistence, backup snapshots, toast notifications
 │   ├── ui.js               Stats bar, beacons, onboarding modal, notifications
 │   ├── io.js               JSON/CSV export-import, clipboard sync, undo stack
+│   ├── sync.js             Optional team sync client (connect/push/pull/auto-sync loop)
 │   ├── launchPlan.js       Guided setup plan, data-quality checks, demo company
 │   ├── handbook.js         Markdown + HTML operations handbook generator
 │   ├── stateSchema.js      Versioned JSON export/import schema and validation
@@ -292,7 +306,10 @@ pm-ops-map/
 │       ├── utils.test.js   Utility function tests
 │       ├── stateSchema.test.js
 │       └── templates.test.js
-├── .github/workflows/ci.yml  CI: install, test, audit, build
+├── server/                  Optional self-hosted sync server (own package.json, tests, Docker) — see server/README.md
+├── docker-compose.yml       Runs the sync server locally with durable storage
+├── render.yaml              One-click Render deploy for the sync server
+├── .github/workflows/ci.yml  CI: install, test, audit, build (app + sync server as separate jobs)
 ├── CONTRIBUTING.md
 ├── LICENSE.txt
 └── webpack.config.*.js       Optional build configs (not needed to run)

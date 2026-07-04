@@ -1,0 +1,23 @@
+{
+  "name": "pm-ops-map-sync-server",
+  "version": "1.0.0",
+  "description": "Optional self-hosted sync server for PM Ops Map — lets a team share one workspace across devices without a full backend.",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  }
+}

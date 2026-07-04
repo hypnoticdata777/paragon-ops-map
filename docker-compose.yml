@@ -1,0 +1,19 @@
+# Runs the optional PM Ops Map sync server with durable storage. The static
+# app itself needs no server — this is only for teams that want live sync
+# across devices. See server/README.md for setup and README.md's "Team Sync"
+# section for how to point the app at this once it's running.
+services:
+  sync:
+    build: ./server
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DATA_DIR=/data
+      - ALLOWED_ORIGINS=*
+    volumes:
+      - sync-data:/data
+    restart: unless-stopped
+
+volumes:
+  sync-data:
