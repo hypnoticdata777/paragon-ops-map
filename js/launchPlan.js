@@ -644,7 +644,7 @@ function renderSetupWizard(snapshot) {
     },
     {
       label: 'Team',
-      detail: 'Replace sample roles.',
+      detail: 'Add your people.',
       done: snapshot.employeeCount > 0 && !snapshot.isStarterTeam,
       onclick: 'startTeamSetup()',
     },
@@ -1031,7 +1031,7 @@ function getNextAction() {
   if (!teamData.employees.length || isStarterTeam()) {
     return {
       title: 'Add your real team first',
-      detail: 'The starter map has sample owners. Replace them with your people so every responsibility can point to a real person.',
+      detail: 'Every task starts unowned. Add your people so every responsibility can point to a real person.',
       button: 'Open Team Manager',
       onclick: 'startTeamSetup()',
     };
@@ -1086,9 +1086,8 @@ export function focusCoverageArea(areaId) {
 }
 
 function isStarterTeam() {
-  // The default team is seeded from config.json ownerColors. If the current
-  // roster still exactly matches those sample names, guide users to replace it
-  // before trusting assignments.
+  // config.json ships with no starter names (ownerColors only defines UNOWNED),
+  // so this only matches if a future config reintroduces named sample owners.
   if (!ownerColors || !teamData.employees.length) return false;
   const starterNames = Object.keys(ownerColors)
     .filter(name => name !== 'UNOWNED')
