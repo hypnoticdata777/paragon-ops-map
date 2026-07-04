@@ -87,6 +87,9 @@ import {
   openRecurringModal, closeRecurringModal,
   previewRecurringTemplate, applyPendingRecurringTemplate,
 } from './views/recurring.js';
+import {
+  initSync, openSyncModal, closeSyncModal, connectSync, disconnectSync, syncNow,
+} from './sync.js';
 
 // ── View switcher ─────────────────────────────────────────────────────────────
 function switchView(view, tabEl) {
@@ -160,6 +163,7 @@ function initApp() {
   applyOpsProfile();
   renderLaunchPlan();
   applyNavCompactState();
+  initSync();
 
   // Start with all departments open so a first-time user can immediately see
   // the operational checklist instead of hunting through collapsed sections.
@@ -360,4 +364,10 @@ Object.assign(window, {
   closeRecurringModal,
   previewRecurringTemplate,
   applyPendingRecurringTemplate,
+  // Team Sync tab: optional self-hosted live sync across devices.
+  openSyncModal,
+  closeSyncModal,
+  connectSync,
+  disconnectSync,
+  syncNow,
 });

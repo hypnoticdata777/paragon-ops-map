@@ -4319,6 +4319,52 @@ body[data-ops-focus="compliance"] {
   flex: 1;
 }
 
+.sync-modal-body {
+  overflow-y: auto;
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sync-modal-intro {
+  margin: 0;
+  color: var(--ink-muted, #647482);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sync-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #2c3a46);
+}
+
+.sync-modal-status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-muted, #f1f5f7);
+  color: var(--ink-muted, #647482);
+  font-size: 13px;
+}
+
+.sync-btn--active {
+  background: #e8f5f3;
+  border-color: var(--accent, #00897b);
+  color: var(--accent-strong, #00695c);
+}
+
+.sync-btn--active small {
+  display: block;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .audit-list {
   display: flex;
   flex-direction: column;

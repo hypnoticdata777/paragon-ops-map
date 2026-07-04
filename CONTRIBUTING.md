@@ -14,7 +14,9 @@ Found a bug or something that doesn't work in your browser? [Open an issue](http
 - Browser and OS
 
 ### 3. Submit a Feature
-Before building something large, open an issue first to discuss it. The tool is intentionally simple — features that add backend dependencies, require a login, or break the "open index.html and it works" experience won't be merged.
+Before building something large, open an issue first to discuss it. The core app is intentionally simple — features that require an account/login to use the app itself, or break the "open index.html and it works" zero-setup experience, won't be merged into the client.
+
+The one exception is `server/` — an optional, self-hosted sync server (see `server/README.md`) that lets a team share one workspace live instead of copy/pasting state between devices. It's a separate, independently deployable package with its own `package.json`, tests, and Docker setup. The main app must keep working with zero backend if you never touch it; changes to `server/` should keep that same "no accounts, just a workspace name and a passphrase" simplicity rather than growing into full user management.
 
 Features that are welcome:
 - New visualization options that work with the existing SVG engine
@@ -23,6 +25,7 @@ Features that are welcome:
 - Undo/redo
 - Due dates and priority levels on tasks
 - Audit trail / change log
+- Improvements to the optional sync server (conflict handling, storage backends, deployment docs) that don't compromise its zero-account simplicity
 
 ## Getting Started Locally
 
@@ -41,6 +44,14 @@ npm install
 npm start       # runs at localhost:8080
 ```
 
+To work on the optional sync server:
+
+```bash
+cd server
+npm install
+npm start       # listens on :4000 — see server/README.md
+```
+
 ## Project Structure
 
 ```
@@ -53,10 +64,12 @@ pm-ops-map/
 │   ├── state.js        Shared in-memory state and constants
 │   ├── storage.js      localStorage, profile, audit, and reset helpers
 │   ├── io.js           JSON/CSV export, import, clipboard sync, and undo
+│   ├── sync.js         Optional team sync client — talks to server/
 │   ├── launchPlan.js   Beginner setup dashboard and readiness checks
 │   ├── handbook.js     Markdown handbook export
 │   ├── data.js         Jest-only config.json shim
 │   └── views/          Tracking, map, team, portfolio, and work order screens
+└── server/             Optional sync server — separate package.json, own deps, own tests
 ```
 
 Starter operating data lives in `config.json`. Runtime state is loaded by `app.js`, kept in `state.js`, and persisted by `storage.js`. Feature rendering lives in the relevant `js/views/` module.
@@ -67,8 +80,8 @@ Starter operating data lives in `config.json`. Runtime state is loaded by `app.j
 - If you're editing `config.json`, make sure the data structure matches the existing schema exactly
 - If you're editing an HTML-called handler, update both `index.html` and the `Object.assign(window, ...)` block in `js/app.js`
 - If you're editing a view, keep changes in the relevant `js/views/` module when possible
-- No new runtime dependencies — the published app should keep working as browser-native HTML, CSS, and JavaScript
-- Run `npm test` before submitting — tests must pass
+- No new runtime dependencies in the client app (`index.html`, `js/`, `css/`) — it should keep working as browser-native HTML, CSS, and JavaScript with zero installs. `server/` is a separate package and may have its own minimal dependencies.
+- Run `npm test` before submitting — tests must pass. If you touched `server/`, also run `npm test` inside `server/`.
 
 ## Code Style
 

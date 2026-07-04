@@ -214,6 +214,7 @@
       </label>
       <button class="btn btn-export" onclick="copyStateToClipboard()" title="Copy full state to clipboard to paste on another device">&#128203; Copy State</button>
       <button class="btn btn-export" onclick="pasteStateFromClipboard()" title="Paste a state copied from another device">&#128241; Paste State</button>
+      <button class="btn btn-secondary" id="sync-status-pill" onclick="openSyncModal()" title="Sync this workspace with your team">&#8635; Team Sync</button>
       <button class="btn btn-secondary" onclick="openAuditLog()" title="View change history">&#128203; Audit Log</button>
       <button class="btn btn-secondary" onclick="openBackupsModal()" title="View and restore automatic backups">&#128190; Backups</button>
       <button class="btn btn-secondary" id="notif-btn" onclick="requestNotificationPermission()" title="Enable browser alerts for overdue tasks" hidden>&#128276; Alerts</button>
@@ -506,6 +507,45 @@
     <div id="backups-body" class="audit-body"></div>
     <div class="playbook-actions">
       <button class="btn btn-secondary" onclick="closeBackupsModal()">Close</button>
+    </div>
+  </div>
+</div>
+<!-- Team Sync modal -->
+<div id="sync-modal" class="playbook-overlay" role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
+  <div class="audit-panel">
+    <div class="playbook-header">
+      <div>
+        <div class="playbook-kicker">Optional &middot; Self-Hosted</div>
+        <h2 id="sync-modal-title">Team Sync</h2>
+      </div>
+      <button class="playbook-close-btn" onclick="closeSyncModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="sync-modal-body">
+      <p class="sync-modal-intro">
+        Point this device at a small self-hosted sync server so your team shares one
+        workspace. No accounts &mdash; just a workspace name and a passphrase your
+        team keeps between yourselves. Leave this disconnected and the app keeps
+        working exactly as before, saved only to this browser.
+      </p>
+      <label class="sync-field">
+        <span>Sync server URL</span>
+        <input id="sync-server-url" type="text" class="portfolio-input" placeholder="https://your-sync-server.example.com">
+      </label>
+      <label class="sync-field">
+        <span>Workspace name</span>
+        <input id="sync-workspace" type="text" class="portfolio-input" placeholder="acme-property-mgmt" maxlength="40" autocomplete="off">
+      </label>
+      <label class="sync-field">
+        <span>Passphrase</span>
+        <input id="sync-passphrase" type="password" class="portfolio-input" placeholder="Shared with your team" autocomplete="off">
+      </label>
+      <p id="sync-modal-status" class="sync-modal-status">Not connected &mdash; this device is working offline.</p>
+    </div>
+    <div class="playbook-actions">
+      <button class="btn btn-primary" id="sync-connect-btn" onclick="connectSync()">Connect</button>
+      <button class="btn btn-secondary" onclick="syncNow()">Sync Now</button>
+      <button class="btn btn-secondary" onclick="disconnectSync()">Disconnect</button>
+      <button class="btn btn-secondary" onclick="closeSyncModal()">Close</button>
     </div>
   </div>
 </div>
