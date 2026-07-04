@@ -6,13 +6,13 @@
 Track every department, every task, every maintenance request — and exactly who owns what.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
-[![Live Demo](https://img.shields.io/badge/▶%20Live%20Demo-Visit-blue?style=flat-square)](https://hypnoticdata777.github.io/paragon-ops-map/)
 [![Download](https://img.shields.io/badge/Download-v1.0.0-orange?style=flat-square)](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
 [![CI](https://github.com/hypnoticdata777/paragon-ops-map/actions/workflows/ci.yml/badge.svg)](https://github.com/hypnoticdata777/paragon-ops-map/actions)
 
 **No database. No login. No backend. No monthly fee.**
 
-[**▶ Open the Live Demo**](https://hypnoticdata777.github.io/paragon-ops-map/) — runs entirely in your browser.
+<!-- TODO: replace with the portfolio URL once it's live -->
+See it in action on [my portfolio](#) — or run it yourself in under a minute, see below.
 
 </div>
 
@@ -41,7 +41,8 @@ Everything saves to `localStorage` by default. Nothing goes to a server unless y
 
 ### Option A — Live Demo (no setup)
 
-1. Open [**hypnoticdata777.github.io/paragon-ops-map**](https://hypnoticdata777.github.io/paragon-ops-map/)
+<!-- TODO: replace with the portfolio URL once it's live -->
+1. Open the live demo on [my portfolio](#)
 2. Enter your company name and portfolio size
 3. Add your team, assign tasks, track work orders
 
