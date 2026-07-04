@@ -61,7 +61,9 @@ export function undoLastAction() {
 }
 
 // ── Shared import logic ───────────────────────────────────────────────────────
-function _applyImportedState(data) {
+// Exported so sync.js can apply a pulled/conflicting remote workspace through
+// the same path as a file/clipboard import.
+export function _applyImportedState(data) {
   data.departments.forEach(savedDept => {
     const dept = orgData.departments.find(d => d.id === savedDept.id);
     if (!dept) return;
@@ -283,8 +285,10 @@ export async function pasteStateFromClipboard() {
   }
 }
 
-export function openImportReview(data, report, source = 'file') {
-  pendingImport = { data, report, source };
+// onApplied, if given, runs after a successful confirmPendingImport() — used
+// by sync.js to record the new sync version once the user accepts the pull.
+export function openImportReview(data, report, source = 'file', onApplied = null) {
+  pendingImport = { data, report, source, onApplied };
   const modal = document.getElementById('import-review-modal');
   const body = document.getElementById('import-review-body');
   const confirmBtn = document.getElementById('import-confirm-btn');
@@ -314,21 +318,31 @@ export function cancelPendingImport() {
   document.getElementById('import-review-modal')?.classList.remove('visible');
 }
 
+const IMPORT_AUDIT_ACTIONS = {
+  clipboard: 'import_clipboard',
+  sync: 'import_sync',
+};
+const IMPORT_SUCCESS_TOASTS = {
+  clipboard: 'State pasted from clipboard',
+  sync: 'Synced from team server',
+};
+
 export function confirmPendingImport() {
   if (!pendingImport || !pendingImport.report.ok) return;
-  const { data, source } = pendingImport;
+  const { data, source, onApplied } = pendingImport;
   saveBackupSnapshot('Before import');
   _saveUndoSnapshot();
   _applyImportedState(data);
-  logAudit(source === 'clipboard' ? 'import_clipboard' : 'import_file');
+  logAudit(IMPORT_AUDIT_ACTIONS[source] || 'import_file');
   cancelPendingImport();
-  _showActionToast(source === 'clipboard' ? 'State pasted from clipboard' : 'Workspace imported', 'save-toast--success');
+  _showActionToast(IMPORT_SUCCESS_TOASTS[source] || 'Workspace imported', 'save-toast--success');
+  onApplied?.();
 }
 
 function buildImportReviewHTML(report, source) {
   return `
     <p class="import-review-note">
-      ${source === 'clipboard' ? 'Clipboard state' : 'JSON file'} will replace matching task assignments, statuses, due dates, dependencies, team data, work orders, and portfolio data on this device.
+      ${{ clipboard: 'Clipboard state', sync: 'Your team sync server' }[source] || 'JSON file'} will replace matching task assignments, statuses, due dates, dependencies, team data, work orders, and portfolio data on this device.
     </p>
     <div class="import-review-summary">
       ${buildImportMetric('Schema', String(report.schemaVersion))}

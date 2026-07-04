@@ -1,0 +1,23 @@
+# One-click deploy for the optional PM Ops Map sync server.
+#
+# This uses Render's free web service tier so you can try it in minutes with
+# no cost. IMPORTANT: Render's free tier has no persistent disk, so workspace
+# data is lost whenever the service restarts or redeploys (it also sleeps
+# after 15 minutes idle). That's fine for kicking the tires. For a team that
+# actually depends on this, either upgrade to a paid Render instance and add
+# a disk mounted at /data, or self-host with docker-compose.yml on any VPS —
+# see server/README.md for both paths.
+services:
+  - type: web
+    name: pm-ops-map-sync
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    plan: free
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: DATA_DIR
+        value: /data
+      - key: ALLOWED_ORIGINS
+        value: "*"
