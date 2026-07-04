@@ -7,7 +7,7 @@ import {
   COMPANY_KEY, OPS_PROFILE_KEY, applyCompanyName, applyOpsProfile,
   saveTeamData, saveWorkOrders, savePortfolio, saveToStorage, logAudit,
 } from './storage.js';
-import { escapeHtml, _slugify } from './utils.js';
+import { escapeHtml, _slugify, getLeaseStatus } from './utils.js';
 import { ROLE_TEMPLATES, buildDemoWorkspace } from './templates.js';
 
 // Maintainer note:
@@ -820,6 +820,10 @@ function getOperationsSnapshot() {
   );
   const openWorkOrders = workOrders.filter(w => w.status !== 'completed').length;
   const unassignedWorkOrders = workOrders.filter(w => w.assignee === 'UNASSIGNED' && w.status !== 'completed').length;
+  const leasesNeedingAttention = portfolio.tenants.filter(tenant => {
+    const status = getLeaseStatus(tenant);
+    return status && (status.tone === 'warn' || status.tone === 'danger');
+  }).length;
 
   return {
     totalTasks,
@@ -836,6 +840,7 @@ function getOperationsSnapshot() {
     vendorCount: portfolio.vendors.length,
     employeeCount: teamData.employees.length,
     isStarterTeam: isStarterTeam(),
+    leasesNeedingAttention,
   };
 }
 
@@ -953,6 +958,15 @@ function getRiskQueue(snapshot) {
       title: 'No starter vendor bench exists',
       detail: 'Add at least one vendor before the first urgent repair hits.',
       tone: 'warn',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
+  if (snapshot.leasesNeedingAttention > 0) {
+    risks.push({
+      label: 'Leases',
+      title: `${snapshot.leasesNeedingAttention} lease${snapshot.leasesNeedingAttention === 1 ? '' : 's'} expired or renewing within 60 days`,
+      detail: 'Reach out about renewal or move-out before the lease end date arrives.',
+      tone: 'danger',
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     });
   }

@@ -5,7 +5,7 @@ import {
   PRIORITY_LABELS, getEmployeeHex, getEmployeeNames,
 } from '../state.js';
 import { saveWorkOrders, logAudit } from '../storage.js';
-import { escapeHtml, formatDueChip, formatWODate, isValidISODate } from '../utils.js';
+import { escapeHtml, formatDueChip, formatWODate, isValidISODate, formatCurrency } from '../utils.js';
 import { updateWorkOrderBeacon } from '../ui.js';
 
 // ── Beacon ────────────────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ function buildWorkOrderCard(wo) {
               style="${isUnassigned ? '' : `background:${escapeHtml(assigneeBg)}`}">
           ${isUnassigned ? '&#9888; Unassigned' : escapeHtml(wo.assignee)}
         </span>
-        ${wo.cost > 0 ? `<span class="wo-cost">$${Number(wo.cost).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : ''}
+        ${wo.cost > 0 ? `<span class="wo-cost">${escapeHtml(formatCurrency(wo.cost))}</span>` : ''}
         <div class="wo-card-actions">
           <button class="wo-edit-btn"
                   onclick="showEditWorkOrderModal('${wo.id}')"
