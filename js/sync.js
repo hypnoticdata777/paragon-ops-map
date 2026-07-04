@@ -6,8 +6,8 @@ import { orgData, teamData, workOrders, portfolio } from './state.js';
 import {
   getCompanyName, saveBackupSnapshot, logAudit, _showActionToast,
 } from './storage.js';
-import { buildStatePayload, validateImportedState } from './stateSchema.js';
-import { openImportReview, _applyImportedState } from './io.js';
+import { buildStatePayload, validateImportedState, formatImportReport } from './stateSchema.js';
+import { openImportReview, _applyImportedState, _saveUndoSnapshot } from './io.js';
 import { escapeHtml } from './utils.js';
 
 const SYNC_CONFIG_KEY = 'pm-ops-sync-config-v1';
@@ -74,8 +74,12 @@ function currentSnapshot() {
   return JSON.stringify(currentPayload());
 }
 
-async function apiCall(path, body) {
-  const res = await fetch(`${sync.serverUrl}${path}`, {
+// baseUrl defaults to the committed connection so the background loop always
+// targets the live workspace. connectSync()/createWorkspace() pass an explicit
+// candidate URL instead, so a reconnect attempt never touches `sync`'s fields
+// (and can't race the background loop) until it actually succeeds.
+async function apiCall(path, body, baseUrl = sync.serverUrl) {
+  const res = await fetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -130,58 +134,63 @@ export async function connectSync() {
   if (!SLUG_RE.test(workspace)) return alert('Workspace name must be 2-40 lowercase letters, numbers, or hyphens.');
   if (passphrase.length < 4) return alert('Passphrase must be at least 4 characters.');
 
-  Object.assign(sync, { serverUrl, workspace, passphrase });
+  // Deliberately not touching `sync` yet: if this device is already connected
+  // elsewhere, the background loop keeps syncing that workspace safely while
+  // this attempt is in flight, and a failed/declined attempt leaves nothing
+  // to roll back.
   setSyncModalBusy(true, 'Connecting…');
 
   try {
-    const remote = await apiCall(`/api/workspaces/${workspace}/pull`, { passphrase });
+    const remote = await apiCall(`/api/workspaces/${workspace}/pull`, { passphrase }, serverUrl);
     setSyncModalBusy(false);
     // Existing workspace — let the user review before it overwrites this device.
     const report = validateImportedState(remote.state, orgData);
     closeSyncModal();
     openImportReview(remote.state, report, 'sync', () => {
-      sync.version = remote.version;
-      sync.lastSyncedSnapshot = currentSnapshot();
-      sync.lastSyncedAt = Date.now();
-      finishConnect();
+      commitConnection({ serverUrl, workspace, passphrase, version: remote.version });
     });
   } catch (err) {
+    setSyncModalBusy(false);
     if (err.status === 404) {
-      setSyncModalBusy(false);
       if (!confirm(`No workspace named "${workspace}" exists yet.\n\nCreate it now with this device's current data? Anyone who enters this workspace name and passphrase will be able to read and change it.`)) {
         return;
       }
-      await createWorkspace();
+      await createWorkspace(serverUrl, workspace, passphrase);
       return;
     }
-    setSyncModalBusy(false);
     if (err.status === 403) return alert('Incorrect passphrase for that workspace.');
     alert(`Could not reach sync server: ${err.message}`);
   }
 }
 
-async function createWorkspace() {
+async function createWorkspace(serverUrl, workspace, passphrase) {
   setSyncModalBusy(true, 'Creating workspace…');
   try {
-    const result = await apiCall(`/api/workspaces/${sync.workspace}/push`, {
-      passphrase: sync.passphrase,
+    const result = await apiCall(`/api/workspaces/${workspace}/push`, {
+      passphrase,
       state: currentPayload(),
       expectedVersion: 0,
-    });
-    sync.version = result.version;
-    sync.lastSyncedSnapshot = currentSnapshot();
-    sync.lastSyncedAt = Date.now();
+    }, serverUrl);
     setSyncModalBusy(false);
     closeSyncModal();
-    finishConnect();
+    commitConnection({ serverUrl, workspace, passphrase, version: result.version });
   } catch (err) {
     setSyncModalBusy(false);
+    if (err.status === 409) {
+      alert('Someone else just created a workspace with that name. Reopen Team Sync and connect again to join it.');
+      return;
+    }
     alert(`Could not create workspace: ${err.message}`);
   }
 }
 
-function finishConnect() {
-  sync.connected = true;
+// Only point where a connection attempt actually takes effect — restarts the
+// auto-sync loop cleanly even if it was already running against a different
+// workspace (startAutoSync() stops any prior timer first).
+function commitConnection({ serverUrl, workspace, passphrase, version }) {
+  Object.assign(sync, { serverUrl, workspace, passphrase, version, connected: true });
+  sync.lastSyncedSnapshot = currentSnapshot();
+  sync.lastSyncedAt = Date.now();
   saveSyncConfig();
   logAudit('sync_connected', { title: sync.workspace });
   _showActionToast(`✓ Connected to team sync: ${sync.workspace}`, 'save-toast--success');
@@ -302,10 +311,28 @@ async function pullIfNewerTick(manual) {
     return;
   }
 
-  // Remote moved ahead and we have no local edits in flight — safe to apply
-  // automatically, with a backup snapshot as the undo path.
   const remote = await apiCall(`/api/workspaces/${sync.workspace}/pull`, { passphrase: sync.passphrase });
+
+  // The version check and this pull were two separate round trips. If the
+  // user edited local state while either was in flight, applying the remote
+  // snapshot now would silently discard that edit with no trace left for the
+  // next tick to catch — so bail and let the next tick push it instead.
+  if (currentSnapshot() !== sync.lastSyncedSnapshot) return;
+
+  // Never apply unvalidated data, even on the "safe" auto-pull path — a
+  // malformed or incompatible remote payload should fail loudly, not throw
+  // inside _applyImportedState and wedge the loop silently.
+  const report = validateImportedState(remote.state, orgData);
+  if (!report.ok) {
+    sync.lastError = formatImportReport(report);
+    if (manual) alert(`Sync failed: incoming workspace data is incompatible.\n\n${formatImportReport(report)}`);
+    return;
+  }
+
+  // Remote moved ahead and we have no local edits in flight — safe to apply
+  // automatically, with a backup snapshot and an undo entry as the way back.
   saveBackupSnapshot('Before sync update');
+  _saveUndoSnapshot();
   _applyImportedState(remote.state);
   logAudit('import_sync', { title: sync.workspace });
   sync.version = remote.version;

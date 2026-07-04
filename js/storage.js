@@ -20,6 +20,7 @@ export const GUIDE_KEY       = 'pm-ops-guide-dismissed';
 export const NOTIF_DATE_KEY  = 'pm-ops-notif-date';
 export const LAUNCH_CHECKLIST_KEY = 'pm-ops-launch-checklist-v1';
 export const BACKUP_KEY           = 'pm-ops-backups-v1';
+export const SYNC_CONFIG_KEY      = 'pm-ops-sync-config-v1'; // must match js/sync.js's SYNC_CONFIG_KEY
 const MAX_BACKUPS = 5;
 
 // ── Toast notifications ───────────────────────────────────────────────────────
@@ -141,7 +142,7 @@ export function confirmResetStorage(choice) {
     },
     '3': {
       label: 'company setup and preferences',
-      keys: [COMPANY_KEY, OPS_PROFILE_KEY, NAV_COMPACT_KEY, GUIDE_KEY, NOTIF_DATE_KEY],
+      keys: [COMPANY_KEY, OPS_PROFILE_KEY, NAV_COMPACT_KEY, GUIDE_KEY, NOTIF_DATE_KEY, SYNC_CONFIG_KEY],
     },
     '4': {
       label: 'all PM Ops Map data on this device',
@@ -157,6 +158,7 @@ export function confirmResetStorage(choice) {
         GUIDE_KEY,
         NOTIF_DATE_KEY,
         LAUNCH_CHECKLIST_KEY,
+        SYNC_CONFIG_KEY,
       ],
     },
   };
