@@ -3357,6 +3357,13 @@ body {
   margin-bottom: 14px;
 }
 
+.portfolio-csv-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
 .portfolio-panel h3,
 .portfolio-list-head h3 {
   color: var(--ink-strong, #17202a);
