@@ -114,6 +114,24 @@ function getLeaseStatus(tenant, todayISO = getTodayISO()) {
   return { tone: 'neutral', label: `Lease ends ${formatDueChip(tenant.leaseEnd)}`, days };
 }
 
+// Returns { tone, label, balance } if a tenant has a positive outstanding
+// balance, or null if they're current. Tone escalates to danger once the
+// balance reaches a full month's rent.
+function getDelinquencyStatus(tenant) {
+  const balance = Number(tenant?.balanceDue || 0);
+  if (!(balance > 0)) return null;
+  const rent = Number(tenant?.rent || 0);
+  const tone = rent > 0 && balance >= rent ? 'danger' : 'warn';
+  return { tone, label: `${formatCurrency(balance)} past due`, balance };
+}
+
+// Only allows absolute http(s) links — this gets embedded as an <a href>, so
+// rejecting anything else (javascript:, data:, relative paths) up front means
+// callers never need to think about scheme-based injection at render time.
+function isSafeUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
 export {
   escapeHtml,
   jsonAttr,
@@ -129,4 +147,6 @@ export {
   formatWODate,
   formatCurrency,
   getLeaseStatus,
+  getDelinquencyStatus,
+  isSafeUrl,
 };
