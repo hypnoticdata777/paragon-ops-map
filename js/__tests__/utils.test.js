@@ -207,6 +207,57 @@ describe('getLeaseStatus', () => {
   });
 });
 
+describe('getDelinquencyStatus', () => {
+  test('tenant with no balance due returns null', () => {
+    expect(utils.getDelinquencyStatus({ rent: 1200 })).toBeNull();
+  });
+
+  test('zero or negative balance returns null', () => {
+    expect(utils.getDelinquencyStatus({ rent: 1200, balanceDue: 0 })).toBeNull();
+    expect(utils.getDelinquencyStatus({ rent: 1200, balanceDue: -50 })).toBeNull();
+  });
+
+  test('balance less than a full month rent is tone warn', () => {
+    const status = utils.getDelinquencyStatus({ rent: 1200, balanceDue: 400 });
+    expect(status.tone).toBe('warn');
+    expect(status.label).toBe('$400.00 past due');
+  });
+
+  test('balance at or above a full month rent is tone danger', () => {
+    const status = utils.getDelinquencyStatus({ rent: 1200, balanceDue: 1200 });
+    expect(status.tone).toBe('danger');
+    const status2 = utils.getDelinquencyStatus({ rent: 1200, balanceDue: 2500 });
+    expect(status2.tone).toBe('danger');
+  });
+
+  test('balance due with no rent on file is still tone warn (no month to compare against)', () => {
+    const status = utils.getDelinquencyStatus({ balanceDue: 5000 });
+    expect(status.tone).toBe('warn');
+  });
+});
+
+describe('isSafeUrl', () => {
+  test('accepts http and https URLs', () => {
+    expect(utils.isSafeUrl('https://example.com/lease.pdf')).toBe(true);
+    expect(utils.isSafeUrl('http://example.com')).toBe(true);
+  });
+
+  test('rejects javascript: URLs', () => {
+    expect(utils.isSafeUrl('javascript:alert(1)')).toBe(false);
+  });
+
+  test('rejects data: URLs', () => {
+    expect(utils.isSafeUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
+  });
+
+  test('rejects relative paths and empty values', () => {
+    expect(utils.isSafeUrl('/some/path')).toBe(false);
+    expect(utils.isSafeUrl('')).toBe(false);
+    expect(utils.isSafeUrl(null)).toBe(false);
+    expect(utils.isSafeUrl(undefined)).toBe(false);
+  });
+});
+
 describe('isTaskOverdue (integration)', () => {
   test('past dueDate with todo status is overdue', () => {
     const task = { dueDate: '2020-01-01', status: 'todo' };
