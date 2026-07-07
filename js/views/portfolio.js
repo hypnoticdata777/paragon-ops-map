@@ -1,6 +1,9 @@
 import { portfolio, setPortfolio, workOrders } from '../state.js';
-import { savePortfolio, saveWorkOrders, logAudit, _showActionToast } from '../storage.js';
-import { escapeHtml, shakeInput, isValidISODate, formatCurrency, getLeaseStatus, getDelinquencyStatus, isSafeUrl } from '../utils.js';
+import { savePortfolio, saveWorkOrders, logAudit, _showActionToast, saveBackupSnapshot } from '../storage.js';
+import {
+  escapeHtml, shakeInput, isValidISODate, formatCurrency, getLeaseStatus, getDelinquencyStatus, isSafeUrl,
+  parseCSV, buildCsvHeaderMap,
+} from '../utils.js';
 import { renderLaunchPlan } from '../launchPlan.js';
 
 const editState = {
@@ -69,6 +72,12 @@ export function renderPortfolioView() {
               <h3>${editingProperty ? 'Edit Property' : 'Add Property'}</h3>
               <p>${editingProperty ? 'Update owner/client context, units, or operating notes.' : 'Track the minimum context needed to run early operations.'}</p>
             </div>
+            ${!editingProperty ? `
+              <label class="btn btn-secondary portfolio-csv-btn" title="Bulk-add properties from a CSV file">
+                &#8593; Import CSV
+                <input type="file" accept=".csv" style="display:none" onchange="importPropertiesCSV(this)">
+              </label>
+            ` : ''}
           </div>
           <div class="portfolio-form-grid">
             <label>
@@ -104,6 +113,12 @@ export function renderPortfolioView() {
               <h3>${editingTenant ? 'Edit Tenant' : 'Add Tenant'}</h3>
               <p>${editingTenant ? 'Keep resident contact and unit context ready for maintenance and communication.' : 'Know who is connected to each unit before requests and renewals arrive.'}</p>
             </div>
+            ${!editingTenant ? `
+              <label class="btn btn-secondary portfolio-csv-btn" title="Bulk-add tenants from a CSV file">
+                &#8593; Import CSV
+                <input type="file" accept=".csv" style="display:none" onchange="importTenantsCSV(this)">
+              </label>
+            ` : ''}
           </div>
           <div class="portfolio-form-grid">
             <label>
@@ -167,6 +182,12 @@ export function renderPortfolioView() {
               <h3>${editingVendor ? 'Edit Vendor' : 'Add Vendor'}</h3>
               <p>${editingVendor ? 'Keep dispatch information complete before urgent repairs arrive.' : 'Build the emergency bench before the first urgent repair.'}</p>
             </div>
+            ${!editingVendor ? `
+              <label class="btn btn-secondary portfolio-csv-btn" title="Bulk-add vendors from a CSV file">
+                &#8593; Import CSV
+                <input type="file" accept=".csv" style="display:none" onchange="importVendorsCSV(this)">
+              </label>
+            ` : ''}
           </div>
           <div class="portfolio-form-grid">
             <label>
@@ -324,6 +345,208 @@ export function addStarterExample() {
   const workOrderBeacon = document.getElementById('wo-tab-beacon');
   if (workOrderBeacon) workOrderBeacon.hidden = false;
   _showActionToast('Starter example added', 'save-toast--success');
+}
+
+// ── CSV bulk import ────────────────────────────────────────────────────────────
+// A company migrating off a spreadsheet almost always already has this data
+// in Excel/Sheets — typing it into the form one record at a time is exactly
+// the kind of friction this feature removes. Column headers match what
+// exportPropertiesCSV/exportTenantsCSV/exportVendorsCSV produce, so
+// "export, edit in Excel, re-import" is a real round trip, but headers can
+// also be reordered/partial since matching is by name, not position.
+
+function _readCsvFile(inputEl) {
+  return new Promise((resolve, reject) => {
+    const file = inputEl.files[0];
+    if (!file) { resolve(null); return; }
+    const reader = new FileReader();
+    reader.onload = ev => resolve(ev.target.result);
+    reader.onerror = () => reject(new Error('Could not read the file.'));
+    reader.readAsText(file);
+  });
+}
+
+// Runs the shared read -> parse -> map -> confirm pipeline and returns the
+// array of new records to add, or null if the import didn't happen.
+async function _importPortfolioCSV(inputEl, { label, pluralLabel = `${label}s`, requiredHeader, mapRow }) {
+  let text;
+  try {
+    text = await _readCsvFile(inputEl);
+  } catch (e) {
+    alert(e.message);
+    inputEl.value = '';
+    return null;
+  }
+  inputEl.value = '';
+  if (!text) return null;
+
+  const allRows = parseCSV(text);
+  if (allRows.length < 2) {
+    alert(`That file doesn't look like a ${label} CSV — no data rows found.`);
+    return null;
+  }
+  const headerMap = buildCsvHeaderMap(allRows[0]);
+  if (!(requiredHeader in headerMap)) {
+    alert(`That file needs a "${requiredHeader}" column — that's how each row's name is read.`);
+    return null;
+  }
+
+  const records = [];
+  let skipped = 0;
+  let warnings = 0;
+  allRows.slice(1).forEach((cells, idx) => {
+    if (cells.every(c => c.trim() === '')) return;
+    const result = mapRow(headerMap, cells, idx);
+    if (!result) { skipped++; return; }
+    if (result.warning) warnings++;
+    records.push(result.record);
+  });
+
+  if (records.length === 0) {
+    alert(`No usable ${label} rows found in that file — check that the "${requiredHeader}" column has a value on each row.`);
+    return null;
+  }
+
+  const parts = [`Import ${records.length} ${records.length === 1 ? label : pluralLabel}?`];
+  if (skipped) parts.push(`${skipped} row${skipped === 1 ? '' : 's'} skipped (no ${requiredHeader}).`);
+  if (warnings) parts.push(`${warnings} row${warnings === 1 ? '' : 's'} had a value that couldn't be used and was left blank.`);
+  parts.push("This adds new records — it won't update or remove any existing ones.");
+  if (!confirm(parts.join('\n'))) return null;
+
+  return records;
+}
+
+function _resolvePropertyIdByName(name) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return '';
+  const match = portfolio.properties.find(p => p.name.toLowerCase() === trimmed.toLowerCase());
+  return match ? match.id : '';
+}
+
+export async function importPropertiesCSV(inputEl) {
+  const records = await _importPortfolioCSV(inputEl, {
+    label: 'property',
+    pluralLabel: 'properties',
+    requiredHeader: 'property',
+    mapRow: (h, cells, idx) => {
+      const name = (cells[h['property']] || '').trim();
+      if (!name) return null;
+      const rawUnits = parseInt(cells[h['units']], 10);
+      const rawDocUrl = (cells[h['document link']] || '').trim();
+      return {
+        warning: rawDocUrl && !isSafeUrl(rawDocUrl),
+        record: {
+          id: `property-csv-${Date.now()}-${idx}`,
+          name,
+          units: Number.isFinite(rawUnits) && rawUnits >= 0 ? rawUnits : 0,
+          owner: (cells[h['owner / client']] || '').trim(),
+          notes: (cells[h['notes']] || '').trim(),
+          documentUrl: isSafeUrl(rawDocUrl) ? rawDocUrl : '',
+          createdAt: new Date().toISOString(),
+        },
+      };
+    },
+  });
+  if (!records) return;
+
+  saveBackupSnapshot('Before CSV import');
+  portfolio.properties.unshift(...records);
+  savePortfolio();
+  logAudit('portfolio_property_added', { title: `${records.length} imported from CSV` });
+  renderPortfolioView();
+  renderLaunchPlan();
+  _showActionToast(`✓ Imported ${records.length} propert${records.length === 1 ? 'y' : 'ies'}`, 'save-toast--success');
+}
+
+export async function importTenantsCSV(inputEl) {
+  const records = await _importPortfolioCSV(inputEl, {
+    label: 'tenant',
+    requiredHeader: 'tenant',
+    mapRow: (h, cells, idx) => {
+      const name = (cells[h['tenant']] || '').trim();
+      if (!name) return null;
+      let warning = false;
+
+      const propertyName = cells[h['property']];
+      const propertyId = _resolvePropertyIdByName(propertyName);
+      if (propertyName && propertyName.trim() && !propertyId) warning = true;
+
+      const status = (cells[h['status']] || '').trim().toLowerCase();
+      const validStatus = ['active', 'applicant', 'notice', 'past'].includes(status) ? status : 'active';
+
+      const rawRent = parseFloat(cells[h['monthly rent']]);
+      const rawBalance = parseFloat(cells[h['balance due']]);
+      const leaseStart = (cells[h['lease start']] || '').trim();
+      const leaseEnd   = (cells[h['lease end']] || '').trim();
+      const validStart = isValidISODate(leaseStart) ? leaseStart : '';
+      let validEnd = isValidISODate(leaseEnd) ? leaseEnd : '';
+      if (validStart && validEnd && validEnd < validStart) { validEnd = ''; warning = true; }
+
+      const rawDocUrl = (cells[h['document link']] || '').trim();
+      if (rawDocUrl && !isSafeUrl(rawDocUrl)) warning = true;
+
+      return {
+        warning,
+        record: {
+          id: `tenant-csv-${Date.now()}-${idx}`,
+          name,
+          propertyId,
+          unit: (cells[h['unit']] || '').trim(),
+          status: validStatus,
+          phone: (cells[h['phone']] || '').trim(),
+          email: (cells[h['email']] || '').trim(),
+          rent: Number.isFinite(rawRent) && rawRent >= 0 ? rawRent : 0,
+          leaseStart: validStart,
+          leaseEnd: validEnd,
+          balanceDue: Number.isFinite(rawBalance) && rawBalance >= 0 ? rawBalance : 0,
+          documentUrl: isSafeUrl(rawDocUrl) ? rawDocUrl : '',
+          createdAt: new Date().toISOString(),
+        },
+      };
+    },
+  });
+  if (!records) return;
+
+  saveBackupSnapshot('Before CSV import');
+  portfolio.tenants.unshift(...records);
+  savePortfolio();
+  logAudit('portfolio_tenant_added', { title: `${records.length} imported from CSV` });
+  renderPortfolioView();
+  renderLaunchPlan();
+  _showActionToast(`✓ Imported ${records.length} tenant${records.length === 1 ? '' : 's'}`, 'save-toast--success');
+}
+
+export async function importVendorsCSV(inputEl) {
+  const records = await _importPortfolioCSV(inputEl, {
+    label: 'vendor',
+    requiredHeader: 'vendor',
+    mapRow: (h, cells, idx) => {
+      const name = (cells[h['vendor']] || '').trim();
+      if (!name) return null;
+      const rawDocUrl = (cells[h['document link']] || '').trim();
+      return {
+        warning: rawDocUrl && !isSafeUrl(rawDocUrl),
+        record: {
+          id: `vendor-csv-${Date.now()}-${idx}`,
+          name,
+          trade: (cells[h['trade']] || '').trim(),
+          phone: (cells[h['phone']] || '').trim(),
+          email: (cells[h['email']] || '').trim(),
+          documentUrl: isSafeUrl(rawDocUrl) ? rawDocUrl : '',
+          createdAt: new Date().toISOString(),
+        },
+      };
+    },
+  });
+  if (!records) return;
+
+  saveBackupSnapshot('Before CSV import');
+  portfolio.vendors.unshift(...records);
+  savePortfolio();
+  logAudit('portfolio_vendor_added', { title: `${records.length} imported from CSV` });
+  renderPortfolioView();
+  renderLaunchPlan();
+  _showActionToast(`✓ Imported ${records.length} vendor${records.length === 1 ? '' : 's'}`, 'save-toast--success');
 }
 
 export function commitAddProperty() {

@@ -36,7 +36,7 @@ import {
   requestNotificationPermission, initNotifications,
 } from './ui.js';
 import {
-  renderTrackingView, toggleDepartment,
+  renderTrackingView, toggleDepartment, toggleExpandAllDepartments,
   startTaskEdit, showOwnerPicker, closeOwnerPicker, setTaskOwner,
   populateOwnerFilter, applyFilter, clearFilter, debounceApplyFilter,
   cycleTaskStatus, cycleTaskPriority,
@@ -69,6 +69,7 @@ import {
   deleteProperty, deleteTenant, deleteVendor, addStarterExample,
   startEditProperty, startEditTenant, startEditVendor, cancelPortfolioEdit,
   recordTenantPayment,
+  importPropertiesCSV, importTenantsCSV, importVendorsCSV,
 } from './views/portfolio.js';
 import {
   exportJSON, exportCSV, exportPropertiesCSV, exportTenantsCSV,
@@ -81,7 +82,7 @@ import {
   renderLaunchPlan, toggleLaunchChecklistItem, resetLaunchChecklist,
   focusLaunchDepartment, downloadLaunchPlan,
   startTeamSetup, showUnownedTasks, startWorkOrderSetup, downloadLaunchHandbook,
-  focusCoverageArea, loadDemoCompany, printLaunchPlan,
+  focusCoverageArea, loadDemoCompany, startWithDemoCompany, printLaunchPlan,
 } from './launchPlan.js';
 import { downloadOperationsHandbook, downloadOperationsHandbookHTML, printOperationsHandbook } from './handbook.js';
 import {
@@ -166,11 +167,11 @@ function initApp() {
   applyNavCompactState();
   initSync();
 
-  // Start with all departments open so a first-time user can immediately see
-  // the operational checklist instead of hunting through collapsed sections.
-  document.querySelectorAll('.department').forEach(dept => {
-    dept.classList.add('expanded');
-  });
+  // Departments start collapsed — a brand-new company otherwise lands on a
+  // wall of 260+ UNOWNED tasks across 17 open departments, which is the
+  // opposite of the "start here" guidance the Launch Plan is trying to give.
+  // Collapsed headers still show task count and done/blocked totals, and
+  // "Expand All" in the filter bar is one click away.
 
   // A saved company name means the user has already onboarded. Otherwise we
   // show the lightweight setup prompt that personalizes exports and headings.
@@ -244,6 +245,7 @@ Object.assign(window, {
   // dependencies, and filters.
   renderTrackingView,
   toggleDepartment,
+  toggleExpandAllDepartments,
   startTaskEdit,
   showOwnerPicker,
   closeOwnerPicker,
@@ -314,6 +316,9 @@ Object.assign(window, {
   startEditVendor,
   cancelPortfolioEdit,
   recordTenantPayment,
+  importPropertiesCSV,
+  importTenantsCSV,
+  importVendorsCSV,
   // Import/export tools: let users keep ownership of their data with plain files
   // or clipboard transfer instead of needing a hosted database.
   exportJSON,
@@ -355,6 +360,7 @@ Object.assign(window, {
   downloadLaunchPlan,
   printLaunchPlan,
   loadDemoCompany,
+  startWithDemoCompany,
   startTeamSetup,
   showUnownedTasks,
   startWorkOrderSetup,

@@ -132,6 +132,51 @@ function isSafeUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
 }
 
+// Minimal RFC4180-style CSV parser: handles quoted fields, embedded commas,
+// embedded newlines inside quotes, escaped "" quotes, and CRLF/LF endings.
+// Returns an array of row arrays; drops a single trailing blank line so a
+// file that ends with a newline doesn't produce a phantom empty row.
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  const len = String(text || '').length;
+  const str = String(text || '');
+
+  for (let i = 0; i < len; i++) {
+    const char = str[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (str[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') { inQuotes = true; continue; }
+    if (char === ',') { row.push(field); field = ''; continue; }
+    if (char === '\r') { continue; }
+    if (char === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    field += char;
+  }
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Builds a case-insensitive header-name -> column-index map, e.g. for
+// matching a CSV's own column order against expected field names.
+function buildCsvHeaderMap(headerRow) {
+  const map = {};
+  (headerRow || []).forEach((name, idx) => {
+    const key = String(name || '').trim().toLowerCase();
+    if (key) map[key] = idx;
+  });
+  return map;
+}
+
 export {
   escapeHtml,
   jsonAttr,
@@ -149,4 +194,6 @@ export {
   getLeaseStatus,
   getDelinquencyStatus,
   isSafeUrl,
+  parseCSV,
+  buildCsvHeaderMap,
 };
