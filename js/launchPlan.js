@@ -7,7 +7,7 @@ import {
   COMPANY_KEY, OPS_PROFILE_KEY, applyCompanyName, applyOpsProfile,
   saveTeamData, saveWorkOrders, savePortfolio, saveToStorage, logAudit,
 } from './storage.js';
-import { escapeHtml, _slugify, getLeaseStatus } from './utils.js';
+import { escapeHtml, _slugify, getLeaseStatus, getDelinquencyStatus, formatCurrency } from './utils.js';
 import { ROLE_TEMPLATES, buildDemoWorkspace } from './templates.js';
 
 // Maintainer note:
@@ -824,6 +824,8 @@ function getOperationsSnapshot() {
     const status = getLeaseStatus(tenant);
     return status && (status.tone === 'warn' || status.tone === 'danger');
   }).length;
+  const delinquentTenants = portfolio.tenants.filter(tenant => getDelinquencyStatus(tenant)).length;
+  const totalBalanceDue = portfolio.tenants.reduce((sum, tenant) => sum + Number(tenant.balanceDue || 0), 0);
 
   return {
     totalTasks,
@@ -841,6 +843,8 @@ function getOperationsSnapshot() {
     employeeCount: teamData.employees.length,
     isStarterTeam: isStarterTeam(),
     leasesNeedingAttention,
+    delinquentTenants,
+    totalBalanceDue,
   };
 }
 
@@ -966,6 +970,15 @@ function getRiskQueue(snapshot) {
       label: 'Leases',
       title: `${snapshot.leasesNeedingAttention} lease${snapshot.leasesNeedingAttention === 1 ? '' : 's'} expired or renewing within 60 days`,
       detail: 'Reach out about renewal or move-out before the lease end date arrives.',
+      tone: 'danger',
+      onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
+    });
+  }
+  if (snapshot.delinquentTenants > 0) {
+    risks.push({
+      label: 'Delinquency',
+      title: `${snapshot.delinquentTenants} tenant${snapshot.delinquentTenants === 1 ? '' : 's'} behind on rent — ${formatCurrency(snapshot.totalBalanceDue)} outstanding`,
+      detail: 'Follow up before balances grow past a full month behind.',
       tone: 'danger',
       onclick: "switchView('portfolio', document.getElementById('portfolio-tab'))",
     });
