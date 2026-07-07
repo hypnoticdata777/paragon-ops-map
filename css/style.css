@@ -4260,6 +4260,17 @@ body[data-ops-focus="compliance"] {
   background: var(--accent-strong);
 }
 
+.setup-form .onboarding-btn--secondary {
+  background: transparent;
+  color: var(--accent-strong, #00695c);
+  border: 1.5px solid var(--line-strong, #c5d0d8);
+}
+
+.setup-form .onboarding-btn--secondary:hover {
+  background: var(--surface-muted, #f1f5f7);
+  border-color: var(--accent, #00897b);
+}
+
 .nav-toggle-btn {
   padding: 8px 12px;
   border: 1px solid rgba(255,255,255,0.2);

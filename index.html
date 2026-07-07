@@ -72,6 +72,7 @@
         <option value="low">🟢 Low</option>
       </select>
       <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+      <button class="btn btn-secondary" id="expand-all-btn" onclick="toggleExpandAllDepartments()" title="Expand or collapse every department at once">&#9660; Expand All</button>
       <button class="btn btn-secondary" id="bulk-toggle-btn" onclick="toggleBulkMode()" title="Select multiple tasks to reassign or change status in bulk">&#9745; Bulk Select</button>
       <!-- ★ BEACON: Auto-assign button. The badge inside shows the live UNOWNED count.
            JS keeps this disabled when count = 0 so managers always know the state. -->
@@ -258,6 +259,7 @@
       </select>
 
       <button class="onboarding-btn" onclick="submitCompanyName()">Start Mapping &rarr;</button>
+      <button class="onboarding-btn onboarding-btn--secondary" onclick="startWithDemoCompany()">Show me an example first</button>
     </div>
   </div>
 </div>

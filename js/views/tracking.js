@@ -251,6 +251,18 @@ export function toggleDepartment(deptId) {
   if (dept) dept.classList.toggle('expanded');
 }
 
+// Departments start collapsed so a new company sees a short list of headers
+// instead of every task in every department at once — this is the one-click
+// way back to the old "see everything" view for people who want it.
+export function toggleExpandAllDepartments() {
+  const depts = document.querySelectorAll('.department');
+  const anyCollapsed = [...depts].some(d => !d.classList.contains('expanded'));
+  depts.forEach(d => d.classList.toggle('expanded', anyCollapsed));
+
+  const btn = document.getElementById('expand-all-btn');
+  if (btn) btn.innerHTML = anyCollapsed ? '&#9650; Collapse All' : '&#9660; Expand All';
+}
+
 // ── Inline task name editing ───────────────────────────────────────────────────
 export function startTaskEdit(deptId, taskIdx) {
   document.querySelectorAll('.task-name-input').forEach(inp => inp.blur());
