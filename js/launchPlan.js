@@ -474,8 +474,7 @@ export function downloadLaunchHandbook() {
   if (window.downloadOperationsHandbook) window.downloadOperationsHandbook();
 }
 
-export function loadDemoCompany() {
-  if (!confirm('Load the demo company?\n\nThis replaces local portfolio, team, work orders, company profile, and task assignments with a realistic sample workspace.')) return;
+function _applyDemoCompanyData() {
   const demo = buildDemoWorkspace();
   const template = ROLE_TEMPLATES.maintenanceHeavy;
   const employees = template.employees.map(emp => ({
@@ -505,7 +504,21 @@ export function loadDemoCompany() {
   if (window.populateOwnerFilter) window.populateOwnerFilter();
   if (window.renderLegend) window.renderLegend();
   if (window.updateStats) window.updateStats();
+}
+
+export function loadDemoCompany() {
+  if (!confirm('Load the demo company?\n\nThis replaces local portfolio, team, work orders, company profile, and task assignments with a realistic sample workspace.')) return;
+  _applyDemoCompanyData();
   _showActionToast('Demo company loaded', 'save-toast--success');
+}
+
+// Called from the onboarding modal's "Show me an example first" button — no
+// confirmation dialog, since onboarding only ever runs on an empty workspace
+// with nothing to lose.
+export function startWithDemoCompany() {
+  document.getElementById('onboarding-modal')?.classList.remove('visible');
+  _applyDemoCompanyData();
+  _showActionToast('Demo company loaded — explore it, then replace with your own data anytime', 'save-toast--success');
 }
 
 export function focusLaunchDepartment(deptId) {

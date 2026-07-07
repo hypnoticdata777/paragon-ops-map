@@ -27,7 +27,7 @@ Open it, enter your company name, and you get:
 - **260+ standard PM tasks** across 17 departments, all editable to match your company
 - **Team assignment engine** with auto-assign, workload balancing, and role templates
 - **Maintenance work orders** tracked from intake to completion
-- **Property, tenant, and vendor registry**
+- **Property, tenant, and vendor registry** with rent/lease tracking, delinquency alerts, document links, and CSV bulk import
 - **Exportable operations handbook** (Markdown + printable HTML)
 - **Recurring task templates** for weekly ops, monthly finance, compliance, and more
 - **Auto-backups** so nothing gets lost
@@ -194,6 +194,8 @@ Track properties, tenants, and vendors in the **Portfolio tab**. Tenant records 
 
 The launch dashboard also runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
 
+**Bulk import from CSV.** Already tracking properties, tenants, or vendors in a spreadsheet? Click **Import CSV** next to any of the three Portfolio forms to add them all at once instead of typing each one in — no need to change your existing sheet's column order, just the column names need to roughly match. Column headers match what **Export CSV** produces for that same record type, so exporting, editing in Excel/Sheets, and re-importing is a real round trip. Import always adds new records; it never edits or removes existing ones, and shows a summary of skipped/warned rows before anything is saved.
+
 ---
 
 ### Operations Handbook Export
@@ -216,9 +218,9 @@ Custom SVG diagram: Company → Departments → Owners. Line thickness scales wi
 
 ### Launch Plan — Guided First-Week Setup
 
-Appears automatically for new companies. Uses your portfolio size and operating focus (stability / maintenance / growth / compliance) to recommend the next best action, surface setup gaps, and walk through a structured first-week checklist.
+Appears automatically for new companies. Uses your portfolio size and operating focus (stability / maintenance / growth / compliance) to recommend the next best action, surface setup gaps, and walk through a structured first-week checklist. Departments start collapsed so a brand-new company sees a short list of headers, not all 260+ tasks expanded at once — click any department to open it, or **Expand All** in the filter bar to see everything.
 
-Includes a **Load Demo Company** option for exploring a realistic sample workspace before entering real data.
+Click **"Show me an example first"** right on the onboarding screen (or **Load Demo Company** later from the dashboard) to explore a realistic sample workspace before entering real data.
 
 ---
 

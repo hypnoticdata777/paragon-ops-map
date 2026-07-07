@@ -258,6 +258,72 @@ describe('isSafeUrl', () => {
   });
 });
 
+describe('parseCSV', () => {
+  test('parses simple unquoted rows', () => {
+    expect(utils.parseCSV('a,b,c\n1,2,3')).toEqual([['a', 'b', 'c'], ['1', '2', '3']]);
+  });
+
+  test('handles CRLF line endings', () => {
+    expect(utils.parseCSV('a,b\r\n1,2\r\n')).toEqual([['a', 'b'], ['1', '2']]);
+  });
+
+  test('does not produce a phantom row for a trailing newline', () => {
+    expect(utils.parseCSV('a,b\n1,2\n')).toEqual([['a', 'b'], ['1', '2']]);
+  });
+
+  test('handles quoted fields containing commas', () => {
+    expect(utils.parseCSV('name,notes\n"Oak St","Gate code, ask owner"')).toEqual([
+      ['name', 'notes'],
+      ['Oak St', 'Gate code, ask owner'],
+    ]);
+  });
+
+  test('handles escaped double quotes inside a quoted field', () => {
+    expect(utils.parseCSV('name\n"Bob ""The Landlord"" Smith"')).toEqual([
+      ['name'],
+      ['Bob "The Landlord" Smith'],
+    ]);
+  });
+
+  test('handles embedded newlines inside a quoted field', () => {
+    expect(utils.parseCSV('name,notes\nOak,"Line one\nLine two"')).toEqual([
+      ['name', 'notes'],
+      ['Oak', 'Line one\nLine two'],
+    ]);
+  });
+
+  test('handles empty fields', () => {
+    expect(utils.parseCSV('a,b,c\n1,,3')).toEqual([['a', 'b', 'c'], ['1', '', '3']]);
+  });
+
+  test('empty string returns no rows', () => {
+    expect(utils.parseCSV('')).toEqual([]);
+  });
+
+  test('single row with no trailing newline', () => {
+    expect(utils.parseCSV('a,b,c')).toEqual([['a', 'b', 'c']]);
+  });
+});
+
+describe('buildCsvHeaderMap', () => {
+  test('maps header names to indexes, case-insensitively and trimmed', () => {
+    expect(utils.buildCsvHeaderMap(['Property', ' Units ', 'Owner / Client'])).toEqual({
+      'property': 0,
+      'units': 1,
+      'owner / client': 2,
+    });
+  });
+
+  test('skips blank header cells', () => {
+    expect(utils.buildCsvHeaderMap(['Name', '', 'Email'])).toEqual({ name: 0, email: 2 });
+  });
+
+  test('empty/undefined header row returns empty map', () => {
+    expect(utils.buildCsvHeaderMap([])).toEqual({});
+    expect(utils.buildCsvHeaderMap(undefined)).toEqual({});
+  });
+});
+
 describe('isTaskOverdue (integration)', () => {
   test('past dueDate with todo status is overdue', () => {
     const task = { dueDate: '2020-01-01', status: 'todo' };
