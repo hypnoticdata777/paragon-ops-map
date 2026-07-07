@@ -3498,6 +3498,21 @@ body {
   border: 1px solid #e57373;
 }
 
+.doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--focus, #1976d2);
+  text-decoration: none;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
+}
+
 .portfolio-edit-btn,
 .portfolio-delete-btn {
   padding: 6px 9px;

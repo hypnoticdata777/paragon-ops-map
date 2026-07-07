@@ -1,6 +1,6 @@
 import { portfolio, setPortfolio, workOrders } from '../state.js';
 import { savePortfolio, saveWorkOrders, logAudit, _showActionToast } from '../storage.js';
-import { escapeHtml, shakeInput, isValidISODate, formatCurrency, getLeaseStatus } from '../utils.js';
+import { escapeHtml, shakeInput, isValidISODate, formatCurrency, getLeaseStatus, getDelinquencyStatus, isSafeUrl } from '../utils.js';
 import { renderLaunchPlan } from '../launchPlan.js';
 
 const editState = {
@@ -87,6 +87,10 @@ export function renderPortfolioView() {
               <span>Notes</span>
               <input id="property-notes" class="portfolio-input" type="text" placeholder="Gate code, special terms, risk notes..." maxlength="140" value="${escapeHtml(editingProperty?.notes || '')}">
             </label>
+            <label>
+              <span>Document link</span>
+              <input id="property-doc-url" class="portfolio-input" type="url" placeholder="Deed, insurance, inspection report..." maxlength="500" value="${escapeHtml(editingProperty?.documentUrl || '')}">
+            </label>
           </div>
           <div class="portfolio-form-actions">
             <button class="btn btn-primary portfolio-submit" onclick="commitAddProperty()">${editingProperty ? 'Update Property' : 'Add Property'}</button>
@@ -142,6 +146,14 @@ export function renderPortfolioView() {
               <span>Lease end</span>
               <input id="tenant-lease-end" class="portfolio-input" type="date" value="${escapeHtml(editingTenant?.leaseEnd || '')}">
             </label>
+            <label>
+              <span>Balance due</span>
+              <input id="tenant-balance-due" class="portfolio-input" type="number" min="0" step="1" placeholder="0" value="${editingTenant?.balanceDue ? Number(editingTenant.balanceDue) : ''}">
+            </label>
+            <label>
+              <span>Lease document link</span>
+              <input id="tenant-doc-url" class="portfolio-input" type="url" placeholder="Signed lease PDF..." maxlength="500" value="${escapeHtml(editingTenant?.documentUrl || '')}">
+            </label>
           </div>
           <div class="portfolio-form-actions">
             <button class="btn btn-primary portfolio-submit" onclick="commitAddTenant()">${editingTenant ? 'Update Tenant' : 'Add Tenant'}</button>
@@ -172,6 +184,10 @@ export function renderPortfolioView() {
             <label>
               <span>Email</span>
               <input id="vendor-email" class="portfolio-input" type="email" placeholder="dispatch@example.com" maxlength="90" value="${escapeHtml(editingVendor?.email || '')}">
+            </label>
+            <label>
+              <span>W9 / COI link</span>
+              <input id="vendor-doc-url" class="portfolio-input" type="url" placeholder="Insurance certificate, W9..." maxlength="500" value="${escapeHtml(editingVendor?.documentUrl || '')}">
             </label>
           </div>
           <div class="portfolio-form-actions">
@@ -219,10 +235,10 @@ export function renderPortfolioView() {
   `;
 
   [
-    'property-name', 'property-units', 'property-owner', 'property-notes',
+    'property-name', 'property-units', 'property-owner', 'property-notes', 'property-doc-url',
     'tenant-name', 'tenant-property', 'tenant-unit', 'tenant-status', 'tenant-phone', 'tenant-email',
-    'tenant-rent', 'tenant-lease-start', 'tenant-lease-end',
-    'vendor-name', 'vendor-trade', 'vendor-phone', 'vendor-email'
+    'tenant-rent', 'tenant-lease-start', 'tenant-lease-end', 'tenant-balance-due', 'tenant-doc-url',
+    'vendor-name', 'vendor-trade', 'vendor-phone', 'vendor-email', 'vendor-doc-url'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.onkeydown = e => {
@@ -249,6 +265,7 @@ export function addStarterExample() {
     units: 2,
     owner: 'Rivera Family LLC',
     notes: 'Lockbox on side gate. Owner prefers text before non-urgent repairs.',
+    documentUrl: 'https://example.com/documents/oak-street-deed.pdf',
     createdAt: new Date().toISOString(),
   };
   const tenant = {
@@ -262,6 +279,8 @@ export function addStarterExample() {
     rent: 1450,
     leaseStart: new Date(stamp - 320 * 86400000).toISOString().slice(0, 10),
     leaseEnd: new Date(stamp + 45 * 86400000).toISOString().slice(0, 10),
+    balanceDue: 450,
+    documentUrl: 'https://example.com/documents/maya-chen-lease.pdf',
     createdAt: new Date().toISOString(),
   };
   const vendor = {
@@ -270,6 +289,7 @@ export function addStarterExample() {
     trade: 'Plumbing',
     phone: '(555) 010-1188',
     email: 'dispatch@aceplumbing.example',
+    documentUrl: 'https://example.com/documents/ace-plumbing-coi.pdf',
     createdAt: new Date().toISOString(),
   };
   const workOrder = {
@@ -314,12 +334,20 @@ export function commitAddProperty() {
     nameEl?.focus();
     return;
   }
+  const docUrlEl = document.getElementById('property-doc-url');
+  const docUrl = docUrlEl?.value.trim() || '';
+  if (docUrl && !isSafeUrl(docUrl)) {
+    shakeInput(docUrlEl);
+    alert('Document link must be a full http:// or https:// URL.');
+    return;
+  }
   const rawUnits = parseInt(document.getElementById('property-units')?.value, 10);
   const payload = {
     name,
     units: Number.isFinite(rawUnits) && rawUnits >= 0 ? rawUnits : 0,
     owner: document.getElementById('property-owner')?.value.trim() || '',
     notes: document.getElementById('property-notes')?.value.trim() || '',
+    documentUrl: docUrl,
   };
   const existing = portfolio.properties.find(property => property.id === editState.propertyId);
   if (existing) {
@@ -358,7 +386,16 @@ export function commitAddTenant() {
     return;
   }
 
+  const docUrlEl = document.getElementById('tenant-doc-url');
+  const docUrl = docUrlEl?.value.trim() || '';
+  if (docUrl && !isSafeUrl(docUrl)) {
+    shakeInput(docUrlEl);
+    alert('Document link must be a full http:// or https:// URL.');
+    return;
+  }
+
   const rawRent = parseFloat(document.getElementById('tenant-rent')?.value);
+  const rawBalance = parseFloat(document.getElementById('tenant-balance-due')?.value);
   const payload = {
     name,
     propertyId: document.getElementById('tenant-property')?.value || '',
@@ -369,6 +406,8 @@ export function commitAddTenant() {
     rent: Number.isFinite(rawRent) && rawRent >= 0 ? rawRent : 0,
     leaseStart: isValidISODate(leaseStart) ? leaseStart : '',
     leaseEnd: isValidISODate(leaseEnd) ? leaseEnd : '',
+    balanceDue: Number.isFinite(rawBalance) && rawBalance >= 0 ? rawBalance : 0,
+    documentUrl: docUrl,
   };
   const existing = portfolio.tenants.find(tenant => tenant.id === editState.tenantId);
   if (existing) {
@@ -396,11 +435,19 @@ export function commitAddVendor() {
     nameEl?.focus();
     return;
   }
+  const docUrlEl = document.getElementById('vendor-doc-url');
+  const docUrl = docUrlEl?.value.trim() || '';
+  if (docUrl && !isSafeUrl(docUrl)) {
+    shakeInput(docUrlEl);
+    alert('Document link must be a full http:// or https:// URL.');
+    return;
+  }
   const payload = {
     name,
     trade: document.getElementById('vendor-trade')?.value.trim() || '',
     phone: document.getElementById('vendor-phone')?.value.trim() || '',
     email: document.getElementById('vendor-email')?.value.trim() || '',
+    documentUrl: docUrl,
   };
   const existing = portfolio.vendors.find(vendor => vendor.id === editState.vendorId);
   if (existing) {
@@ -433,6 +480,27 @@ export function deleteProperty(id) {
   logAudit('portfolio_property_deleted', { title: property.name });
   renderPortfolioView();
   renderLaunchPlan();
+}
+
+export function recordTenantPayment(id) {
+  const tenant = portfolio.tenants.find(t => t.id === id);
+  if (!tenant) return;
+  const currentBalance = Number(tenant.balanceDue || 0);
+  const input = prompt(`Record a payment for ${tenant.name}.\n\nCurrent balance due: ${formatCurrency(currentBalance)}\n\nPayment amount:`, currentBalance > 0 ? currentBalance : (tenant.rent || ''));
+  if (input === null) return;
+  const amount = parseFloat(input);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert('Enter a payment amount greater than 0.');
+    return;
+  }
+  tenant.balanceDue = Math.max(0, currentBalance - amount);
+  tenant.lastPaymentDate = new Date().toISOString().slice(0, 10);
+  tenant.updatedAt = new Date().toISOString();
+  savePortfolio();
+  logAudit('portfolio_payment_recorded', { title: tenant.name, from: currentBalance, to: tenant.balanceDue });
+  renderPortfolioView();
+  renderLaunchPlan();
+  _showActionToast(`✓ Payment recorded for ${tenant.name}`, 'save-toast--success');
 }
 
 export function deleteTenant(id) {
@@ -493,6 +561,14 @@ export function cancelPortfolioEdit(type) {
   renderPortfolioView();
 }
 
+// Re-validates the scheme at render time too, not just on save — portfolio
+// records can also arrive via JSON import or Team Sync, neither of which
+// goes through commitAddProperty/Tenant/Vendor's save-time validation.
+function renderDocLink(url) {
+  if (!isSafeUrl(url)) return '';
+  return `<a class="doc-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">&#128196; Document</a>`;
+}
+
 function renderPropertyCard(property) {
   return `
     <article class="portfolio-card">
@@ -500,6 +576,7 @@ function renderPropertyCard(property) {
         <strong>${escapeHtml(property.name)}</strong>
         <span>${Number(property.units || 0)} unit${Number(property.units || 0) === 1 ? '' : 's'}${property.owner ? ` / ${escapeHtml(property.owner)}` : ''}</span>
         ${property.notes ? `<small>${escapeHtml(property.notes)}</small>` : ''}
+        ${renderDocLink(property.documentUrl)}
       </div>
       <div class="portfolio-card-actions">
         <button class="portfolio-edit-btn" onclick="startEditProperty('${property.id}')" aria-label="Edit ${escapeHtml(property.name)}">Edit</button>
@@ -517,6 +594,7 @@ function renderVendorCard(vendor) {
         <strong>${escapeHtml(vendor.name)}</strong>
         <span>${escapeHtml(vendor.trade || 'General vendor')}</span>
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
+        ${renderDocLink(vendor.documentUrl)}
       </div>
       <div class="portfolio-card-actions">
         <button class="portfolio-edit-btn" onclick="startEditVendor('${vendor.id}')" aria-label="Edit ${escapeHtml(vendor.name)}">Edit</button>
@@ -530,20 +608,25 @@ function renderTenantCard(tenant) {
   const contact = [tenant.phone, tenant.email].filter(Boolean).join(' / ');
   const unitLabel = tenant.unit ? `Unit ${tenant.unit}` : 'No unit recorded';
   const leaseStatus = getLeaseStatus(tenant);
+  const delinquency = getDelinquencyStatus(tenant);
   return `
     <article class="portfolio-card">
       <div>
         <strong>${escapeHtml(tenant.name)}</strong>
         <span>${escapeHtml(propertyName(tenant.propertyId))} / ${escapeHtml(unitLabel)} / ${escapeHtml(tenant.status || 'active')}</span>
         ${contact ? `<small>${escapeHtml(contact)}</small>` : ''}
-        ${tenant.rent > 0 || leaseStatus ? `
+        ${tenant.rent > 0 || leaseStatus || delinquency ? `
           <div class="tenant-lease-row">
             ${tenant.rent > 0 ? `<span class="tenant-rent-chip">${escapeHtml(formatCurrency(tenant.rent))}/mo</span>` : ''}
             ${leaseStatus ? `<span class="lease-chip lease-chip--${leaseStatus.tone}">${escapeHtml(leaseStatus.label)}</span>` : ''}
+            ${delinquency ? `<span class="lease-chip lease-chip--${delinquency.tone}">${escapeHtml(delinquency.label)}</span>` : ''}
           </div>
         ` : ''}
+        ${tenant.lastPaymentDate ? `<small>Last payment: ${escapeHtml(tenant.lastPaymentDate)}</small>` : ''}
+        ${renderDocLink(tenant.documentUrl)}
       </div>
       <div class="portfolio-card-actions">
+        <button class="portfolio-edit-btn" onclick="recordTenantPayment('${tenant.id}')" aria-label="Record payment for ${escapeHtml(tenant.name)}">Payment</button>
         <button class="portfolio-edit-btn" onclick="startEditTenant('${tenant.id}')" aria-label="Edit ${escapeHtml(tenant.name)}">Edit</button>
         <button class="portfolio-delete-btn" onclick="deleteTenant('${tenant.id}')" aria-label="Delete ${escapeHtml(tenant.name)}">Delete</button>
       </div>

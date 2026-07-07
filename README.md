@@ -186,7 +186,13 @@ Each work order captures: property, unit, tenant/resident, issue title, notes, p
 
 ### Portfolio & Data Quality
 
-Track properties, tenants, and vendors in the **Portfolio tab**. Tenant records include monthly rent and lease start/end dates, with a color-coded chip that flags leases renewing within 60 days or already expired — surfaced both on the tenant card and in the Launch Plan's risk queue. The launch dashboard also runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
+Track properties, tenants, and vendors in the **Portfolio tab**. Tenant records include monthly rent and lease start/end dates, with a color-coded chip that flags leases renewing within 60 days or already expired — surfaced both on the tenant card and in the Launch Plan's risk queue.
+
+**Rent collection.** Each tenant tracks a balance due. Click **Payment** on a tenant card to record what came in — it reduces the balance, stamps the payment date, and logs it to the audit trail. Any tenant with an outstanding balance shows a past-due chip (escalating to a stronger warning once they owe a full month's rent) and rolls up into a Launch Plan risk item showing total dollars outstanding across the portfolio.
+
+**Document links.** Properties, tenants, and vendors can each carry a link to an external document — a signed lease, a certificate of insurance, a deed — pasted from wherever you already store files (Google Drive, Dropbox, etc.). No file upload or storage backend involved; only `http(s)://` links are accepted and validated both on save and on render.
+
+The launch dashboard also runs four data-quality checks (missing owner, missing phone/email, open work orders without assignees) and feeds a readiness score before you export or hand off.
 
 ---
 
@@ -218,7 +224,7 @@ Includes a **Load Demo Company** option for exploring a realistic sample workspa
 
 ### Audit Log
 
-Every meaningful change (owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, paste-state operations, Team Sync connect/disconnect/sync events) is recorded in an append-only log. Capped at 500 entries. View or clear it from the stats bar.
+Every meaningful change (owner assignments, status and priority changes, task renames, auto-assign runs, work order advances and deletions, imports, paste-state operations, Team Sync connect/disconnect/sync events, rent payments recorded) is recorded in an append-only log. Capped at 500 entries. View or clear it from the stats bar.
 
 ---
 

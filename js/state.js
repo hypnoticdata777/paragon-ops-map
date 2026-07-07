@@ -102,6 +102,7 @@ export const AUDIT_LABELS = {
   portfolio_vendor_added:     'Vendor Added',
   portfolio_vendor_deleted:   'Vendor Deleted',
   portfolio_vendor_updated:   'Vendor Updated',
+  portfolio_payment_recorded: 'Payment Recorded',
   wo_recurring:               'Recurring Template Applied',
   starter_example_added:      'Starter Example Added',
   demo_company_loaded:        'Demo Company Loaded',

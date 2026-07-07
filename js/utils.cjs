@@ -99,6 +99,18 @@ function getLeaseStatus(tenant, todayISO = getTodayISO()) {
   return { tone: 'neutral', label: `Lease ends ${formatDueChip(tenant.leaseEnd)}`, days };
 }
 
+function getDelinquencyStatus(tenant) {
+  const balance = Number(tenant?.balanceDue || 0);
+  if (!(balance > 0)) return null;
+  const rent = Number(tenant?.rent || 0);
+  const tone = rent > 0 && balance >= rent ? 'danger' : 'warn';
+  return { tone, label: `${formatCurrency(balance)} past due`, balance };
+}
+
+function isSafeUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
 module.exports = {
   escapeHtml,
   jsonAttr,
@@ -114,4 +126,6 @@ module.exports = {
   formatWODate,
   formatCurrency,
   getLeaseStatus,
+  getDelinquencyStatus,
+  isSafeUrl,
 };

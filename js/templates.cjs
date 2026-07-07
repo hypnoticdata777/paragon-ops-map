@@ -94,9 +94,9 @@ function buildDemoWorkspace(now = new Date()) {
       configuredAt: now.toISOString(),
     },
     portfolio: {
-      properties: [{ id: propertyId, name: 'Oak Street Duplex', units: 2, owner: 'Rivera Family LLC', notes: 'Owner prefers text updates before non-urgent repairs.', createdAt: now.toISOString() }],
-      tenants: [{ id: `demo-tenant-${stamp}`, name: 'Maya Chen', propertyId, unit: '2B', status: 'active', phone: '(555) 010-2040', email: 'maya.chen@example.com', rent: 1450, leaseStart: _isoDateOffset(now, -320), leaseEnd: _isoDateOffset(now, 45), createdAt: now.toISOString() }],
-      vendors: [{ id: `demo-vendor-${stamp}`, name: 'Ace Plumbing', trade: 'Plumbing', phone: '(555) 010-1188', email: 'dispatch@aceplumbing.example', createdAt: now.toISOString() }],
+      properties: [{ id: propertyId, name: 'Oak Street Duplex', units: 2, owner: 'Rivera Family LLC', notes: 'Owner prefers text updates before non-urgent repairs.', documentUrl: 'https://example.com/documents/oak-street-deed.pdf', createdAt: now.toISOString() }],
+      tenants: [{ id: `demo-tenant-${stamp}`, name: 'Maya Chen', propertyId, unit: '2B', status: 'active', phone: '(555) 010-2040', email: 'maya.chen@example.com', rent: 1450, leaseStart: _isoDateOffset(now, -320), leaseEnd: _isoDateOffset(now, 45), balanceDue: 450, documentUrl: 'https://example.com/documents/maya-chen-lease.pdf', createdAt: now.toISOString() }],
+      vendors: [{ id: `demo-vendor-${stamp}`, name: 'Ace Plumbing', trade: 'Plumbing', phone: '(555) 010-1188', email: 'dispatch@aceplumbing.example', documentUrl: 'https://example.com/documents/ace-plumbing-coi.pdf', createdAt: now.toISOString() }],
     },
     workOrders: [{ id: `demo-wo-${stamp}`, property: 'Oak Street Duplex', unit: '2B', tenant: 'Maya Chen', title: 'Kitchen sink leak', notes: 'Resident reports slow drip under sink. Confirm access window before dispatch.', priority: 'high', status: 'submitted', assignee: 'Maintenance Coordinator', vendor: 'Ace Plumbing', dueDate: null, cost: 0, createdAt: now.toISOString(), updatedAt: now.toISOString() }],
   };
