@@ -149,13 +149,14 @@ export function exportCSV() {
 }
 
 export function exportPropertiesCSV() {
-  const rows = [['Property', 'Units', 'Owner / Client', 'Notes', 'Created At']];
+  const rows = [['Property', 'Units', 'Owner / Client', 'Notes', 'Document Link', 'Created At']];
   portfolio.properties.forEach(property => {
     rows.push([
       property.name,
       Number(property.units || 0),
       property.owner || '',
       property.notes || '',
+      property.documentUrl || '',
       property.createdAt || '',
     ]);
   });
@@ -163,7 +164,10 @@ export function exportPropertiesCSV() {
 }
 
 export function exportTenantsCSV() {
-  const rows = [['Tenant', 'Property', 'Unit', 'Status', 'Phone', 'Email', 'Created At']];
+  const rows = [[
+    'Tenant', 'Property', 'Unit', 'Status', 'Phone', 'Email',
+    'Monthly Rent', 'Lease Start', 'Lease End', 'Balance Due', 'Document Link', 'Created At',
+  ]];
   portfolio.tenants.forEach(tenant => {
     rows.push([
       tenant.name,
@@ -172,6 +176,11 @@ export function exportTenantsCSV() {
       tenant.status || 'active',
       tenant.phone || '',
       tenant.email || '',
+      Number(tenant.rent || 0),
+      tenant.leaseStart || '',
+      tenant.leaseEnd || '',
+      Number(tenant.balanceDue || 0),
+      tenant.documentUrl || '',
       tenant.createdAt || '',
     ]);
   });
@@ -179,13 +188,14 @@ export function exportTenantsCSV() {
 }
 
 export function exportVendorsCSV() {
-  const rows = [['Vendor', 'Trade', 'Phone', 'Email', 'Created At']];
+  const rows = [['Vendor', 'Trade', 'Phone', 'Email', 'Document Link', 'Created At']];
   portfolio.vendors.forEach(vendor => {
     rows.push([
       vendor.name,
       vendor.trade || '',
       vendor.phone || '',
       vendor.email || '',
+      vendor.documentUrl || '',
       vendor.createdAt || '',
     ]);
   });

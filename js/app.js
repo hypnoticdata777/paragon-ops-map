@@ -69,6 +69,7 @@ import {
   deleteProperty, deleteTenant, deleteVendor, addStarterExample,
   startEditProperty, startEditTenant, startEditVendor, cancelPortfolioEdit,
   recordTenantPayment,
+  importPropertiesCSV, importTenantsCSV, importVendorsCSV,
 } from './views/portfolio.js';
 import {
   exportJSON, exportCSV, exportPropertiesCSV, exportTenantsCSV,
@@ -315,6 +316,9 @@ Object.assign(window, {
   startEditVendor,
   cancelPortfolioEdit,
   recordTenantPayment,
+  importPropertiesCSV,
+  importTenantsCSV,
+  importVendorsCSV,
   // Import/export tools: let users keep ownership of their data with plain files
   // or clipboard transfer instead of needing a hosted database.
   exportJSON,

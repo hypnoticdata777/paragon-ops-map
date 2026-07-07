@@ -111,6 +111,45 @@ function isSafeUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
 }
 
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  const str = String(text || '');
+  const len = str.length;
+
+  for (let i = 0; i < len; i++) {
+    const char = str[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (str[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') { inQuotes = true; continue; }
+    if (char === ',') { row.push(field); field = ''; continue; }
+    if (char === '\r') { continue; }
+    if (char === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    field += char;
+  }
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function buildCsvHeaderMap(headerRow) {
+  const map = {};
+  (headerRow || []).forEach((name, idx) => {
+    const key = String(name || '').trim().toLowerCase();
+    if (key) map[key] = idx;
+  });
+  return map;
+}
+
 module.exports = {
   escapeHtml,
   jsonAttr,
@@ -128,4 +167,6 @@ module.exports = {
   getLeaseStatus,
   getDelinquencyStatus,
   isSafeUrl,
+  parseCSV,
+  buildCsvHeaderMap,
 };
