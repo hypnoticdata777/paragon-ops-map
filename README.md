@@ -84,6 +84,55 @@ Or with Node: `npm install && npm start`
 
 ---
 
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**Guided dashboard on day one**
+![Beginner PM Command Center dashboard](docs/screenshots/02-dashboard.png)
+
+</td>
+<td width="50%">
+
+**Every task, owned and tracked**
+![Tracking view with a department expanded](docs/screenshots/03-tracking-tasks.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Org flow at a glance**
+![SVG map view showing departments and owners](docs/screenshots/04-map-view.png)
+
+</td>
+<td width="50%">
+
+**Auto-assign and workload balancing**
+![Team Manager with workload dashboard](docs/screenshots/05-team-manager.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Maintenance pipeline**
+![Work Orders kanban board](docs/screenshots/06-work-orders.png)
+
+</td>
+<td width="50%">
+
+**Rent, leases, and delinquency**
+![Portfolio tab showing lease and past-due chips](docs/screenshots/07-portfolio.png)
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Features
 
 ### Task Tracking — The Core View
@@ -391,6 +440,33 @@ CI runs two jobs on every push and pull request: the app (`npm ci` → `npm test
 ## Browser Compatibility
 
 Chrome 80+, Firefox 74+, Safari 13.1+, Edge 80+. Mobile touch targets are optimized for phone/tablet use.
+
+---
+
+## Roadmap
+
+This is an actively developed proof of concept, not a finished product — here's the honest state of things.
+
+**Shipped:**
+- Task ownership tracking across 17 departments with auto-assign and workload balancing
+- Maintenance work order pipeline (intake → scheduled → in progress → completed)
+- Property, tenant, and vendor registry with lease dates, rent, and delinquency tracking
+- Document links (lease PDFs, COIs, W9s) via external URL — no file storage needed
+- CSV bulk import/export for the whole portfolio
+- Optional self-hosted Team Sync so more than one person can use this at once
+- Operations handbook export, audit log, auto-backups, guided first-week setup
+
+**Next up:**
+- Real notifications (email/SMS) instead of same-session browser alerts
+- Actual file uploads for documents, not just external links
+- Exportable rent-roll and delinquency reports formatted for owners
+- Field-level conflict resolution for Team Sync (right now a true conflict resolves as "take theirs or take mine," not a merge)
+
+**Further out, not committed to:**
+- A tenant-facing portal (payment status, maintenance requests)
+- Real user accounts/roles instead of the shared-passphrase workspace model
+
+If you're evaluating this for real use today: the core ownership/maintenance/portfolio workflow is solid and tested. Team Sync is genuinely useful for a small trusted team but intentionally skips enterprise auth. Treat it as what it is — a fast, honest way to see whether this kind of tool is worth building further for your company.
 
 ---
 
