@@ -21,8 +21,16 @@ class InlineConfigForFileProtocolPlugin {
         'InlineConfigForFileProtocolPlugin',
         (data, cb) => {
           const configJson = fs.readFileSync(path.resolve(__dirname, 'config.json'), 'utf8');
+          const originalTag = '<script type="module" src="js/app.js"></script>';
+          if (!data.html.includes(originalTag)) {
+            return cb(new Error(
+              `InlineConfigForFileProtocolPlugin: expected to find ${originalTag} in the rendered ` +
+              'HTML but did not — index.html\'s script tag changed, so config.json would not be inlined ' +
+              'and the built app would silently fail to load config over file://.'
+            ));
+          }
           data.html = data.html.replace(
-            '<script type="module" src="js/app.js"></script>',
+            originalTag,
             `<script>window.__PM_OPS_CONFIG__=${JSON.stringify(JSON.parse(configJson))};</script>\n<script src="js/app.js" defer></script>`
           );
           cb(null, data);
@@ -48,6 +56,7 @@ module.exports = merge(common, {
         { from: 'favicon.ico', to: 'favicon.ico' },
         { from: 'robots.txt', to: 'robots.txt' },
         { from: 'icon.png', to: 'icon.png' },
+        { from: 'og-image.png', to: 'og-image.png' },
         { from: '404.html', to: '404.html' },
         { from: 'site.webmanifest', to: 'site.webmanifest' },
       ],
