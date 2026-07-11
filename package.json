@@ -2,6 +2,7 @@
   "name": "pm-ops-map",
   "version": "1.0.0",
   "description": "A visual task ownership map for property management companies",
+  "license": "MIT",
   "private": true,
   "engines": {
     "node": ">=20.9"
