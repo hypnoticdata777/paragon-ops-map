@@ -369,6 +369,7 @@ pm-ops-map/
 ├── render.yaml              One-click Render deploy for the sync server
 ├── .github/workflows/ci.yml  CI: install, test, audit, build (app + sync server as separate jobs)
 ├── CONTRIBUTING.md
+├── SECURITY.md
 ├── LICENSE.txt
 └── webpack.config.*.js       Optional build configs (not needed to run)
 ```
@@ -473,6 +474,8 @@ If you're evaluating this for real use today: the core ownership/maintenance/por
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome — especially department templates, mobile UX improvements, and visualization options.
+
+Found a security issue? See [SECURITY.md](SECURITY.md) — please don't open a public issue for it.
 
 ---
 
