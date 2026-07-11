@@ -2,6 +2,7 @@
   "name": "pm-ops-map-sync-server",
   "version": "1.0.0",
   "description": "Optional self-hosted sync server for PM Ops Map — lets a team share one workspace across devices without a full backend.",
+  "license": "MIT",
   "private": true,
   "main": "index.js",
   "engines": {
