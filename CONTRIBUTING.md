@@ -8,7 +8,7 @@ Thanks for your interest in contributing. PM Ops Map is built to be simple — t
 If you've customized `config.json` for your company and built something useful — a new department, a better task breakdown, or a department specific to HOA or commercial PM — open a PR. Other companies benefit directly.
 
 ### 2. Report Issues
-Found a bug or something that doesn't work in your browser? [Open an issue](https://github.com/hypnoticdata777/paragon-ops-map/issues) with:
+Found a bug or something that doesn't work in your browser? [Open an issue](https://github.com/hypnoticdata777/pm-ops-map/issues) with:
 - What you expected to happen
 - What actually happened
 - Browser and OS
@@ -30,8 +30,8 @@ Features that are welcome:
 ## Getting Started Locally
 
 ```bash
-git clone https://github.com/hypnoticdata777/paragon-ops-map.git
-cd paragon-ops-map
+git clone https://github.com/hypnoticdata777/pm-ops-map.git
+cd pm-ops-map
 
 # Option A — no build step (quickest)
 python -m http.server 8000

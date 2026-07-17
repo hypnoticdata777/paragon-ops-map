@@ -6,8 +6,8 @@
 Track every department, every task, every maintenance request — and exactly who owns what.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
-[![Download](https://img.shields.io/badge/Download-v1.0.0-orange?style=flat-square)](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
-[![CI](https://github.com/hypnoticdata777/paragon-ops-map/actions/workflows/ci.yml/badge.svg)](https://github.com/hypnoticdata777/paragon-ops-map/actions)
+[![Download](https://img.shields.io/badge/Download-v1.0.0-orange?style=flat-square)](https://github.com/hypnoticdata777/pm-ops-map/releases/latest)
+[![CI](https://github.com/hypnoticdata777/pm-ops-map/actions/workflows/ci.yml/badge.svg)](https://github.com/hypnoticdata777/pm-ops-map/actions)
 
 **No database required. No login required. No backend required. No monthly fee.**
 
@@ -48,7 +48,7 @@ Everything saves to `localStorage` by default. Nothing goes to a server unless y
 
 ### Option B — Download the ZIP
 
-1. Go to [Releases](https://github.com/hypnoticdata777/paragon-ops-map/releases/latest)
+1. Go to [Releases](https://github.com/hypnoticdata777/pm-ops-map/releases/latest)
 2. Download `pm-ops-map.zip` under **Assets**
 3. Unzip → open `index.html` in any modern browser
 4. Done
@@ -56,8 +56,8 @@ Everything saves to `localStorage` by default. Nothing goes to a server unless y
 ### Option C — Run Locally from Source
 
 ```bash
-git clone https://github.com/hypnoticdata777/paragon-ops-map.git
-cd paragon-ops-map
+git clone https://github.com/hypnoticdata777/pm-ops-map.git
+cd pm-ops-map
 python -m http.server 8000
 # open http://localhost:8000
 ```
@@ -68,7 +68,7 @@ Or with Node: `npm install && npm start`
 
 1. Fork this repo
 2. **Settings → Pages → Source → main branch**
-3. Your team's URL is live at `https://yourusername.github.io/paragon-ops-map/`
+3. Your team's URL is live at `https://yourusername.github.io/pm-ops-map/`
 
 ---
 
