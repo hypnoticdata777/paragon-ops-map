@@ -462,6 +462,7 @@ This is an actively developed proof of concept, not a finished product — here'
 - Actual file uploads for documents, not just external links
 - Exportable rent-roll and delinquency reports formatted for owners
 - Field-level conflict resolution for Team Sync (right now a true conflict resolves as "take theirs or take mine," not a merge)
+- Import mapping presets for common PM software exports (Buildium, AppFolio, Rentvine) instead of the current generic-schema-only CSV import
 
 **Further out, not committed to:**
 - A tenant-facing portal (payment status, maintenance requests)
